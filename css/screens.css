@@ -1,0 +1,5 @@
+/* screens.css - 특정 화면에만 해당하는 세부 조정 */
+
+#home-screen .home-body { justify-content: flex-start; }
+#exercise-form-screen .screen-content { padding-bottom: var(--sp-6); }
+#settings-screen .backup-actions { display: flex; flex-direction: column; gap: var(--sp-2); margin-top: var(--sp-2); }

@@ -1,0 +1,182 @@
+// storage.js
+// 기기 로컬 저장(Local Storage) 및 JSON 내보내기/가져오기만 담당합니다.
+// 데이터의 "의미"는 모르고, 그대로 저장하고 그대로 돌려줄 뿐입니다.
+
+import { defaultAppData, SCHEMA_VERSION } from "./models.js";
+
+const STORAGE_KEY = "hangtory:data";
+
+export function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultAppData();
+    const parsed = JSON.parse(raw);
+    return migrate(parsed);
+  } catch (e) {
+    console.error("[storage] 데이터를 불러오지 못했습니다. 기본값으로 시작합니다.", e);
+    return defaultAppData();
+  }
+}
+
+export function saveData(data) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    return true;
+  } catch (e) {
+    console.error("[storage] 저장에 실패했습니다.", e);
+    return false;
+  }
+}
+
+// 스키마 버전이 바뀔 때마다 과거 백업을 최대한 살리기 위한 이관 지점입니다.
+// 새 필드가 추가되면 여기서 단계적으로(버전별로) 기본값을 채워 넣습니다.
+function migrate(data) {
+  const base = defaultAppData();
+  if (!data || typeof data !== "object") return base;
+
+  const fromVersion = data.schemaVersion || 1;
+
+  const merged = {
+    ...base,
+    ...data,
+    settings: { ...base.settings, ...(data.settings || {}) },
+    exerciseStates: { ...(data.exerciseStates || {}) },
+  };
+
+  // v1 -> v2: 종목마다 active(비활성화 여부) 필드가 추가됨. 과거 데이터는 모두 "사용 중"으로 간주합니다.
+  if (fromVersion < 2) {
+    merged.exercises = (merged.exercises || []).map((ex) => ({ active: true, ...ex }));
+  }
+
+  // v2 -> v3:
+  //  - 종목의 `type` 필드를 `gainMethod`로 옮깁니다("machine"/"freeweight" 값은 그대로 유효).
+  //  - 프리웨이트 자동 우선순위(challengePriority)는 더 이상 쓰지 않으므로 제거합니다.
+  //  - 고반복(high_rep) 전용 필드와 종목 상태값의 새 필드(warmupWeightOverride, challengeWeightDefault)를 기본값으로 채웁니다.
+  if (fromVersion < 3) {
+    merged.exercises = (merged.exercises || []).map((ex) => {
+      const { type, challengePriority, ...rest } = ex;
+      return {
+        ...rest,
+        gainMethod: ex.gainMethod || type || "machine",
+        highRepLower: ex.highRepLower ?? null,
+        highRepUpper: ex.highRepUpper ?? null,
+        highRepIncrement: ex.highRepIncrement ?? null,
+      };
+    });
+    merged.exerciseStates = Object.fromEntries(
+      Object.entries(merged.exerciseStates || {}).map(([id, st]) => [
+        id,
+        { warmupWeightOverride: null, challengeWeightDefault: null, ...st },
+      ])
+    );
+  }
+
+  // v3 -> v4:
+  //  - 맨몸(bodyweight) 전용 필드(bodyweightGoalType, targetSeconds)를 기본값으로 채웁니다.
+  //  - 편측성(isUnilateral) 필드를 기본값(false)으로 채웁니다.
+  //  - 과거 세션 기록의 세트에는 leftRaw/rightRaw 필드가 없었으므로 null로 채워 구조만 맞춥니다.
+  if (fromVersion < 4) {
+    merged.exercises = (merged.exercises || []).map((ex) => ({
+      bodyweightGoalType: ex.bodyweightGoalType ?? null,
+      targetSeconds: ex.targetSeconds ?? null,
+      isUnilateral: ex.isUnilateral ?? false,
+      ...ex,
+    }));
+    merged.sessions = (merged.sessions || []).map((session) => ({
+      ...session,
+      records: (session.records || []).map((record) => ({
+        ...record,
+        sets: (record.sets || []).map((s) => ({ leftRaw: null, rightRaw: null, ...s })),
+      })),
+    }));
+  }
+
+  // v4 -> v5:
+  //  - 맨몸 전용 상태값 bodyweightConsecutiveA(연속 A 카운트)를 기본값 0으로 채웁니다.
+  //  - 과거 세션 기록에는 goalAdjustSuggested 필드가 없었으므로 false로 채워 구조만 맞춥니다.
+  if (fromVersion < 5) {
+    merged.exerciseStates = Object.fromEntries(
+      Object.entries(merged.exerciseStates || {}).map(([id, st]) => [id, { bodyweightConsecutiveA: 0, ...st }])
+    );
+    merged.sessions = (merged.sessions || []).map((session) => ({
+      ...session,
+      records: (session.records || []).map((record) => ({ goalAdjustSuggested: false, ...record })),
+    }));
+  }
+
+  // v5 -> v6: 목표 조정 알림을 "1회성 팝업 + 지속 상태(pending)"로 분리하면서 추가된 필드입니다.
+  // 과거 데이터는 아직 알림을 받은 적이 없는 것으로 간주해 false로 채웁니다.
+  if (fromVersion < 6) {
+    merged.exerciseStates = Object.fromEntries(
+      Object.entries(merged.exerciseStates || {}).map(([id, st]) => [id, { bodyweightGoalAdjustPending: false, ...st }])
+    );
+  }
+
+  // v6 -> v7: 머신 전용 "도전세트 성공 후 보류 중인 증량 예정 중량"(machinePendingIncreaseWeight) 필드가 추가됨.
+  // 과거 데이터에는 이 개념 자체가 없었으므로 "보류 중인 증량 없음"을 뜻하는 null로 채웁니다.
+  // (freeweight/high_rep/bodyweight 종목의 상태값에도 필드는 생기지만, 해당 방식들의 로직에서는 이 필드를 전혀 참조하지 않습니다.)
+  if (fromVersion < 7) {
+    merged.exerciseStates = Object.fromEntries(
+      Object.entries(merged.exerciseStates || {}).map(([id, st]) => [id, { machinePendingIncreaseWeight: null, ...st }])
+    );
+  }
+
+  // v7 -> v8: 머신 전용 "도전세트 실패 시 재도전용으로 기억해두는 도전 중량"(machineChallengeWeight) 필드가 추가됨.
+  // machinePendingIncreaseWeight(성공 후 증량 대기)와는 별개의 필드이며, 과거 데이터는 기억해둔 재도전 중량이 없는 것으로 간주해 null로 채웁니다.
+  if (fromVersion < 8) {
+    merged.exerciseStates = Object.fromEntries(
+      Object.entries(merged.exerciseStates || {}).map(([id, st]) => [id, { machineChallengeWeight: null, ...st }])
+    );
+  }
+
+  // v8 -> v9: 프리웨이트 전용 "도전세트 실패 시 재도전용으로 기억해두는 도전 중량"(freeweightChallengeWeight) 필드가 추가됨.
+  // machineChallengeWeight와 이름은 비슷하지만 완전히 독립된 필드입니다. 과거 데이터는 null로 채웁니다.
+  if (fromVersion < 9) {
+    merged.exerciseStates = Object.fromEntries(
+      Object.entries(merged.exerciseStates || {}).map(([id, st]) => [id, { freeweightChallengeWeight: null, ...st }])
+    );
+  }
+
+  // v9 -> v10: 고반복(high_rep) 자동 증량을 제거하고 대신 세션 기록에만 남는 1회성 신호(highRepGoalReviewSuggested)로
+  // 교체했습니다. ExerciseState에는 대응하는 필드가 없습니다(의도적으로 없음). 과거 세션 기록에는 이 필드가 없었으므로
+  // false로 채워 구조만 맞춥니다. 과거에 이미 "auto_increase"로 기록된 세션의 gainEvent 값은 지난 이력이므로 그대로 둡니다.
+  if (fromVersion < 10) {
+    merged.sessions = (merged.sessions || []).map((session) => ({
+      ...session,
+      records: (session.records || []).map((record) => ({ highRepGoalReviewSuggested: false, ...record })),
+    }));
+  }
+
+  merged.schemaVersion = SCHEMA_VERSION;
+  return merged;
+}
+
+export function exportJSON(data) {
+  const payload = { ...data, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `hangtory-backup-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+export function importJSONFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        resolve(migrate(parsed));
+      } catch (e) {
+        reject(e);
+      }
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsText(file);
+  });
+}

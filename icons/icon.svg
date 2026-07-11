@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#D6FF3D"/>
+  <!-- 바벨: 중앙 배치, 완전 대칭, 주요 요소 -->
+  <g fill="#14181C">
+    <rect x="71" y="187.5" width="50" height="75" rx="10"/>
+    <rect x="121" y="150" width="35" height="150" rx="9"/>
+    <rect x="156" y="202" width="200" height="46" rx="10"/>
+    <rect x="356" y="150" width="35" height="150" rx="9"/>
+    <rect x="391" y="187.5" width="50" height="75" rx="10"/>
+  </g>
+  <!-- 실행 화살표: 바벨보다 약간 긴 길이(410 > 370), 두께 30 -->
+  <polygon fill="#FF2E9A" points="51,365 301,365 301,341 461,380 301,419 301,395 51,395"/>
+</svg>

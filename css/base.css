@@ -1,0 +1,35 @@
+/* base.css - 리셋 및 전역 타이포그래피 */
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  -webkit-tap-highlight-color: transparent;
+}
+button, input {
+  font-family: inherit;
+}
+button {
+  cursor: pointer;
+}
+h1, h2, h3, p {
+  margin: 0;
+}
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+}
+.screen-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--sp-4) var(--sp-4) var(--sp-3);
+  min-height: 0;
+}

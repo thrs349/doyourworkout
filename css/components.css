@@ -1,0 +1,248 @@
+/* components.css - 화면에 걸쳐 재사용되는 컴포넌트 스타일 */
+
+/* 상단바 */
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-2) 0 var(--sp-2); flex-shrink: 0; }
+.topbar .title { font-family: var(--font-display); font-weight: 700; font-size: 17px; }
+.icon-btn {
+  width: 30px; height: 30px; border-radius: 9px; background: transparent;
+  border: 1.5px solid var(--color-text-secondary); display: flex; align-items: center; justify-content: center;
+  color: var(--color-text-secondary); font-size: 14px; flex-shrink: 0;
+}
+.icon-btn.gear::before { content: "⚙"; }
+.opacity-50 { opacity: .5; }
+
+/* 버튼 */
+.btn {
+  display: flex; align-items: center; justify-content: center; height: 48px; border-radius: 12px;
+  font-family: var(--font-body); font-weight: 700; font-size: 15px; border: none; width: 100%;
+}
+.btn-primary { background: var(--color-primary); color: var(--color-on-primary); }
+.btn-ghost { background: transparent; color: var(--color-text-secondary); border: 1px solid var(--color-border); }
+.btn-danger { background: var(--color-x); color: var(--color-on-primary); }
+.btn-row { display: flex; flex-direction: column; gap: var(--sp-2); }
+/* 삭제 확인 팝업처럼 버튼을 가로로 나란히 배치할 때 사용(기존 .btn-row는 세로 스택이라 건드리지 않고 별도 클래스로 추가) */
+.btn-row-h { display: flex; flex-direction: row; gap: var(--sp-2); }
+.btn-row-h .btn { width: auto; flex: 1; }
+/* 비활성 종목 카드 전용(스코프 한정) - 버튼을 작고 오른쪽 정렬로 */
+.btn-row-h.compact { justify-content: flex-end; gap: 8px; }
+.btn-row-h.compact .btn { flex: none; width: auto; padding: 0 14px; }
+.btn-compact { height: 34px; font-size: 12.5px; border-radius: 9px; }
+.btn-danger-mute { background: transparent; color: var(--color-x); border: 1px solid var(--color-x); }
+.btn:disabled { opacity: .5; }
+
+/* 카드 */
+.card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--sp-4); }
+.eyebrow-sm { font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; color: var(--color-primary); text-transform: uppercase; margin-bottom: 8px; }
+
+/* 홈: 오늘의 루틴 카드 */
+.home-body { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.routine-card-lg { flex-shrink: 0; padding: var(--sp-4) var(--sp-4); position: relative; }
+.routine-card-lg .card-bg { position: absolute; inset: 0; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); opacity: .5; z-index: 0; }
+.routine-card-lg .card-fg { position: relative; z-index: 1; }
+.routine-card-lg h2 { font-family: var(--font-display); font-size: 24px; margin: 0 0 var(--sp-3); font-weight: 700; }
+.eyebrow-title { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; color: var(--color-primary); text-transform: uppercase; margin-bottom: 8px; }
+.ex-preview { display: flex; flex-direction: column; gap: var(--sp-2); }
+.ex-preview-row { display: flex; align-items: center; gap: var(--sp-2); font-size: 14px; color: var(--color-text-secondary); }
+.ex-num { font-family: var(--font-mono); font-size: 10.5px; color: var(--color-text-muted); width: 18px; }
+.home-spacer { flex: 1; min-height: var(--sp-4); }
+.home-cta { flex-shrink: 0; padding-bottom: var(--sp-4); position: relative; }
+.home-title { font-family: var(--font-display); font-weight: 700; font-size: 20px; padding: var(--sp-1) 0; }
+.home-title .sub { display: block; font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; color: var(--color-text-muted); margin-top: 4px; }
+.empty-routine { color: var(--color-text-secondary); font-size: 13px; line-height: 1.6; }
+
+/* 하단 내비게이션 */
+.bottom-nav { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: var(--sp-3) 0 var(--sp-2); flex-shrink: 0; border-top: 1px solid var(--color-border); background: transparent; }
+.nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; color: var(--color-text-muted); background: none; border: none; padding: 4px 0; }
+.nav-item .nav-icon { font-size: 15px; line-height: 1; }
+.nav-item.active { color: var(--color-primary); font-weight: 700; }
+.nav-item.active .nav-icon { font-size: 18px; }
+.nav-sub { font-size: 9px; color: var(--color-text-muted); }
+
+/* 표 (오늘의 운동) */
+.table-area { flex: 1; overflow-y: auto; min-height: 0; }
+.set-table { border: 1px solid var(--color-border); border-radius: 10px; overflow: hidden; margin-bottom: var(--sp-2); background: var(--color-surface); }
+/* v1.9.4: v1.9.3에서 overflow:visible로 "잘림"과 "열 폭"의 연결을 끊었지만, CSS Grid의 fr 트랙은
+   내용이 작다고 스스로 줄어들지 않는 특성 때문에(내용이 필요로 하는 만큼만 큰 것이 아니라, fr로 배정된
+   비율만큼 항상 차지) 순수 span 폭 조정만으로는 "중량"/"목표" 열에 공간을 돌려줄 수 없었습니다.
+   이번엔 요구 폭이 완화(최대 "10+10", 5글자)된 만큼 "수행" 비율을 v1.9.2(1.3fr)보다 낮춰 최소한으로만
+   되돌리고, 그만큼을 중량/목표/판정에 다시 배분했습니다(v1.9.2 이전 원래 비율보다는 여전히 "수행"이 넓음). */
+.head-row, .set-row { display: grid; grid-template-columns: 1fr .5fr .5fr 1fr .45fr; align-items: center; }
+.head-row { background: var(--color-surface-alt); padding: 6px 8px; }
+.head-row div { font-family: var(--font-mono); font-size: 9px; color: var(--color-text-muted); letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+.head-row div:first-child { text-align: left; }
+.head-row div:not(:first-child) { text-align: center; }
+.set-row { padding: 6px 8px; border-top: 1px solid var(--color-border); }
+.set-row > div, .set-row > span { font-family: var(--font-mono); font-size: 12.5px; color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.set-row .ex-name { text-align: left; font-family: var(--font-body); font-weight: 400; color: var(--color-text-primary); }
+.set-row .col { text-align: center; }
+.set-row.warmup { background: var(--color-surface-alt); }
+.set-row.warmup .ex-name { font-size: 11px; color: var(--color-text-muted); }
+.set-row.challenge { background: var(--color-challenge-hl); }
+.set-row .judge { font-weight: 700; font-family: var(--font-mono); }
+.judge-a { color: var(--color-a); }
+.judge-b { color: var(--color-b); }
+.judge-x { color: var(--color-x); }
+.judge-gain { color: var(--color-primary); }
+.cell-input {
+  width: 100%; max-width: 40px; margin: 0 auto; display: block; text-align: center;
+  border: 1px solid var(--color-border); border-radius: 6px; background: var(--color-surface);
+  font-family: var(--font-mono); font-size: 12.5px; color: var(--color-text-primary); padding: 4px 2px;
+}
+.cell-input::placeholder { color: var(--color-text-muted); }
+.dual-input { display: flex; gap: 3px; justify-content: center; }
+.dual-input .cell-input.dual { max-width: 26px; padding: 4px 1px; font-size: 11px; }
+.dual-result { display: flex; gap: 4px; justify-content: center; }
+/* v1.9.3: 진짜 원인 — `.set-row > span { overflow:hidden }`(64행)이 "수행" 칸의 바깥 래퍼(.col.dual-result)
+   자체에도 걸려서, 안쪽 두 span을 아무리 넓혀도(v1.9.2) 래퍼 폭을 넘는 순간 그대로 잘려나갔습니다.
+   grid-template-columns는 v1.9.2 상태 그대로 유지하고, 이 래퍼 하나에만 overflow를 되살립니다.
+   (`.set-row > span.dual-result`는 명시도가 더 높아 64행 규칙보다 우선 적용됩니다.)
+   안쪽 span은 이미 고정폭(6ch)이라 구분선 위치엔 영향이 없고, 폭이 부족한 극단적인 경우에만
+   "판정" 칸 쪽으로 살짝 넘칠 뿐 잘리지는 않습니다. */
+.set-row > span.dual-result { overflow: visible; }
+/* v1.9.2: min-width는 "최소값"일 뿐이라 "15+5"처럼 긴 값이 들어오면 그 칸만 넓어져서
+   세트마다 구분선(시각적 "/") 위치가 흔들렸습니다. 고정 width로 바꿔 좌/우 칸 너비를 항상 동일하게 만듭니다.
+   판정 로직/데이터와는 무관한 순수 표시(정렬) 수정입니다.
+   폭은 여전히 고정값입니다(width:auto 아님 — 내용에 따라 커지지 않으므로 구분선 정렬은 그대로 유지됩니다).
+   v1.9.4: 실사용 기준 최대 길이가 "10+10"(5글자) 정도로 완화되어 6ch → 5ch로 줄였습니다(Space Mono 고정폭 서체
+   기준 1글자=1ch). 이보다 드물게 더 긴 값이 들어와도 v1.9.3의 overflow:visible 덕분에 잘리지 않고
+   "판정" 칸 쪽으로 살짝 넘칠 뿐입니다. */
+.dual-result span { width: 5ch; flex-shrink: 0; text-align: center; overflow: hidden; text-overflow: ellipsis; }
+.dual-result span:first-child { border-right: 1px solid var(--color-border); padding-right: 4px; }
+.group-gap { height: var(--sp-2); }
+.bottom-fixed { flex-shrink: 0; padding-top: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2); }
+
+/* 모달 */
+.backdrop { position: fixed; inset: 0; background: rgba(20, 20, 10, .42); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 50; }
+.modal { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 20px; width: 100%; max-width: 340px; }
+.modal h3 { font-family: var(--font-display); font-size: 19px; margin: 0 0 6px; font-weight: 700; }
+.modal p.detail { color: var(--color-text-secondary); font-size: 12px; margin: 0 0 3px; }
+.modal .cond { font-family: var(--font-mono); font-size: 10.5px; color: var(--color-text-muted); margin-bottom: 14px; }
+
+.duration-modal { text-align: center; padding: 8px 4px; }
+.duration-title { font-family: var(--font-display); font-weight: 700; font-size: 18px; margin-bottom: 6px; }
+.duration-big { font-family: var(--font-mono); font-size: 24px; font-weight: 700; color: var(--color-primary); margin: 4px 0 10px; }
+.time-detail { font-family: var(--font-mono); font-size: 12px; color: var(--color-text-secondary); margin-bottom: 18px; }
+.time-detail b { color: var(--color-text-primary); }
+
+/* 루틴 설정 - 드래그 행 */
+.helper-text { color: var(--color-text-secondary); font-size: 11px; margin: 0 0 var(--sp-3); line-height: 1.55; }
+.drag-row {
+  display: flex; align-items: center; gap: var(--sp-3); padding: 12px 10px; background: var(--color-surface);
+  border: 1px solid var(--color-border); border-radius: 10px; margin-bottom: var(--sp-2); touch-action: none; user-select: none;
+}
+.drag-row.dragging { border-color: var(--color-primary); box-shadow: 0 10px 22px rgba(0,0,0,.14); opacity: .95; }
+.drag-ghost {
+  position: fixed; z-index: 999; pointer-events: none; box-shadow: 0 16px 32px rgba(0,0,0,.22);
+  border-radius: 10px; transform: scale(1.02) rotate(-1deg); opacity: .96; transition: none;
+}
+.drag-placeholder {
+  border: 1.5px dashed var(--color-primary); border-radius: 10px; background: var(--color-primary-soft);
+  margin-bottom: var(--sp-2);
+}
+.drag-handle { color: var(--color-text-muted); font-size: 16px; letter-spacing: 2px; line-height: 1; cursor: grab; padding: 4px; }
+.order-badge { font-family: var(--font-mono); font-size: 10.5px; color: var(--color-primary); background: var(--color-primary-soft); width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.drag-row .name { flex: 1; font-size: 13.5px; font-weight: 600; }
+.drag-row.inactive { opacity: .55; }
+.drag-row.inactive .name { text-decoration: line-through; color: var(--color-text-muted); font-weight: 500; }
+.drag-row .remove-btn { color: var(--color-x); font-size: 13px; background: none; border: none; padding: 4px; }
+
+/* 증량 후보 선택 */
+.cand-row { display: flex; align-items: center; justify-content: space-between; padding: 13px; border: 1px solid var(--color-border); border-radius: 12px; margin-bottom: var(--sp-2); background: var(--color-surface); }
+.cand-row.selected { border-color: var(--color-primary); background: var(--color-primary-soft); }
+.cand-left .name { font-size: 13.5px; font-weight: 600; margin-bottom: 3px; }
+.cand-left .meta { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-muted); }
+.cand-left .meta b { color: var(--color-a); font-weight: 700; }
+.radio { width: 19px; height: 19px; border-radius: 50%; border: 2px solid var(--color-border); flex-shrink: 0; }
+.radio.on { border-color: var(--color-primary); background: radial-gradient(circle, var(--color-primary) 0 40%, transparent 42%); }
+
+/* 홈 화면: Challenge FAB(우측)용 앵커.
+   v1.9.2: 화면 전체 기준 픽셀 추측을 그만두고, FAB를 home-cta(.home-cta에 position:relative 추가) 안에
+   절대 위치로 앵커링합니다. bottom:100%는 "이 컨테이너의 맨 위"를 뜻하므로, 버튼/하단바 실제 높이를
+   몰라도 항상 정확히 시작 버튼 바로 위에 위치하고, 하단 네비게이션과는 애초에 겹칠 방법이 없습니다.
+   absolute라 FAB가 있든 없든 home-cta/시작 버튼의 크기·위치는 전혀 변하지 않습니다.
+   v2에서 좌측 하단 알림 FAB를 추가할 때는 같은 home-cta 안에 class="fab-btn left"만 추가하면 됩니다. */
+.fab-btn {
+  position: absolute;
+  bottom: 100%;
+  margin-bottom: var(--sp-3);
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--color-primary); color: var(--color-on-primary); border: none;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .22);
+  z-index: 5;
+}
+.fab-btn.right { right: 0; }
+.fab-btn.left { left: 0; } /* v2 알림 FAB용으로 미리 준비해둔 자리 */
+.fab-btn:active { transform: scale(.96); }
+.fab-btn .fab-icon { font-size: 22px; line-height: 1; }
+
+/* 폼(종목 추가) */
+.field-group { margin-bottom: var(--sp-4); }
+.field-label { font-family: var(--font-mono); font-size: 10px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+.text-input {
+  width: 100%; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px;
+  padding: 12px; font-size: 14px; color: var(--color-text-primary); font-family: var(--font-body);
+}
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; }
+.switch { width: 42px; height: 24px; border-radius: 14px; background: var(--color-border); position: relative; flex-shrink: 0; border: none; }
+.switch.small { width: 34px; height: 20px; border-radius: 12px; }
+.switch.small::after { width: 14px; height: 14px; top: 3px; left: 3px; }
+.switch.small.on::after { transform: translateX(14px); }
+.switch.on { background: var(--color-primary); }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .15s; }
+.switch.on::after { transform: translateX(18px); }
+.type-toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.type-opt { flex: 1; min-width: 60px; text-align: center; padding: 9px 2px; border-radius: 9px; border: 1px solid var(--color-border); font-size: 12px; font-family: var(--font-body); color: var(--color-text-secondary); background: var(--color-surface); }
+.type-opt.selected { border-color: var(--color-primary); background: var(--color-primary-soft); color: var(--color-primary); font-weight: 700; }
+.stepper { display: flex; align-items: center; justify-content: space-between; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; padding: 8px 14px; }
+.stepper .sval { font-family: var(--font-mono); font-weight: 700; font-size: 16px; }
+.step-btn { width: 30px; height: 30px; border-radius: 8px; background: var(--color-primary-soft); color: var(--color-primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; border: none; }
+
+/* 설정 화면: 테마 목록 */
+.theme-row { display: flex; align-items: center; justify-content: space-between; padding: 13px; border: 1px solid var(--color-border); border-radius: 12px; margin-bottom: var(--sp-2); background: var(--color-surface); }
+.theme-row.selected { border-color: var(--color-primary); }
+.theme-row-left { display: flex; align-items: center; gap: 10px; }
+.chip-pair { display: flex; gap: 4px; }
+.chip { width: 16px; height: 16px; border-radius: 50%; border: 1px solid rgba(0,0,0,.15); }
+.theme-name { font-size: 13.5px; font-weight: 600; }
+.section-label { font-family: var(--font-mono); font-size: 10.5px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .06em; margin: var(--sp-5) 0 var(--sp-2); }
+
+/* 목록형 화면 (종목 목록, 요일 목록, 기록 목록) */
+.list-row { display: flex; align-items: center; justify-content: space-between; padding: 13px 14px; border: 1px solid var(--color-border); border-radius: 12px; margin-bottom: var(--sp-2); background: var(--color-surface); }
+.list-row .name { font-size: 14px; font-weight: 600; }
+.list-row .meta { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-muted); margin-top: 2px; }
+.list-row .arrow { color: var(--color-text-muted); }
+
+.result-summary { display: flex; align-items: center; justify-content: space-between; padding: 12px 4px; border-top: 1px solid var(--color-border); }
+.result-summary:first-child { border-top: none; }
+
+/* 기록 화면: 종목 카드 */
+.exercise-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--sp-4); margin-bottom: var(--sp-3); }
+.exercise-card .ec-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+.exercise-card .ec-name { font-family: var(--font-display); font-weight: 700; font-size: 16px; }
+.exercise-card .ec-max { font-family: var(--font-mono); font-size: 12.5px; color: var(--color-primary); font-weight: 700; }
+.exercise-card .ec-max small { color: var(--color-text-muted); font-weight: 400; margin-right: 3px; }
+.trend-chart { display: block; width: 100%; height: auto; margin: var(--sp-2) 0; }
+.chart-empty { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-muted); padding: 20px 0; text-align: center; }
+.ec-recent { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-secondary); border-top: 1px dashed var(--color-border); padding-top: 8px; margin-top: 4px; }
+.ec-recent b { color: var(--color-text-primary); }
+
+/* 토스트 (뒤로가기 종료 안내 등) */
+.toast {
+  position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%) translateY(10px);
+  background: var(--color-text-primary); color: var(--color-bg); font-family: var(--font-body);
+  font-size: 13px; padding: 10px 18px; border-radius: 24px; opacity: 0; transition: opacity .2s, transform .2s;
+  z-index: 200; white-space: nowrap; box-shadow: 0 8px 20px rgba(0,0,0,.2);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ⚠️ 임시 디버그 표시 (v1.8, debugBodyweightStatus.js 전용) - 정식 UI가 생기면 이 블록도 함께 제거하세요. */
+.debug-tag {
+  margin-top: 6px; padding: 4px 8px; border: 1px dashed #b08900; border-radius: 6px;
+  background: repeating-linear-gradient(45deg, rgba(176,137,0,.08), rgba(176,137,0,.08) 6px, rgba(176,137,0,.14) 6px, rgba(176,137,0,.14) 12px);
+  font-family: var(--font-mono); font-size: 10px; color: #8a6d00; display: inline-block;
+}
+.debug-tag-warn { color: var(--color-x); font-weight: 700; }
+
+
+

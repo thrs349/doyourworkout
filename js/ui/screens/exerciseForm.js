@@ -1,0 +1,302 @@
+// screens/exerciseForm.js
+// 종목 "추가"(#/exercise-form/:day)와 "수정"(#/exercise-edit/:id) 화면을 함께 다룹니다.
+import { el, mount } from "../dom.js";
+import { navigate } from "../router.js";
+import * as state from "../../core/state.js";
+
+function stepper(initial, min, max) {
+  let value = initial;
+  const valEl = el("div", { class: "sval", text: String(value) });
+  const dec = el("button", { class: "step-btn", text: "–", onclick: () => set(value - 1) });
+  const inc = el("button", { class: "step-btn", text: "+", onclick: () => set(value + 1) });
+  function set(v) {
+    value = Math.max(min, Math.min(max, v));
+    valEl.textContent = String(value);
+  }
+  const node = el("div", { class: "stepper" }, [dec, valEl, inc]);
+  return { node, get: () => value };
+}
+
+function numberField(labelText, initialValue, placeholder) {
+  let raw = initialValue === null || initialValue === undefined ? "" : String(initialValue);
+  const input = el("input", {
+    class: "text-input",
+    type: "number",
+    inputmode: "decimal",
+    placeholder: placeholder || "",
+    value: raw,
+    oninput: (e) => (raw = e.target.value),
+  });
+  const group = el("div", { class: "field-group" }, [el("div", { class: "field-label", text: labelText }), input]);
+  return { group, get: () => (raw === "" ? null : Number(raw)) };
+}
+
+// exerciseId가 있으면 수정, 없으면 신규 추가입니다.
+function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack, afterSaveHash }) {
+  let name = defInitial.name;
+  let gainMethod = defInitial.gainMethod;
+  let bodyweightGoalType = defInitial.bodyweightGoalType || "reps";
+  let warmupEnabled = defInitial.warmupEnabled;
+  let isUnilateral = defInitial.isUnilateral;
+
+  const isEdit = !!exerciseId;
+
+  const nameInput = el("input", {
+    class: "text-input",
+    type: "text",
+    placeholder: "예: 레그프레스",
+    value: name,
+    oninput: (e) => (name = e.target.value),
+  });
+
+  // ---- 증량 방식 4분기 토글 ----
+  const methodOpts = {
+    machine: el("div", { class: "type-opt", text: "머신", onclick: () => selectMethod("machine") }),
+    freeweight: el("div", { class: "type-opt", text: "프리웨이트", onclick: () => selectMethod("freeweight") }),
+    high_rep: el("div", { class: "type-opt", text: "고반복", onclick: () => selectMethod("high_rep") }),
+    bodyweight: el("div", { class: "type-opt", text: "맨몸", onclick: () => selectMethod("bodyweight") }),
+  };
+
+  // ---- 맨몸 전용: 목표 유형(반복수/시간) 토글 ----
+  const goalTypeOpts = {
+    reps: el("div", { class: "type-opt", text: "반복수 기반", onclick: () => selectGoalType("reps") }),
+    time: el("div", { class: "type-opt", text: "시간 기반", onclick: () => selectGoalType("time") }),
+  };
+  const goalTypeGroup = el("div", { class: "field-group" }, [
+    el("div", { class: "field-label", text: "목표 유형" }),
+    el("div", { class: "type-toggle" }, [goalTypeOpts.reps, goalTypeOpts.time]),
+  ]);
+
+  function refreshMethodUI() {
+    Object.entries(methodOpts).forEach(([key, node]) => node.classList.toggle("selected", key === gainMethod));
+    Object.entries(goalTypeOpts).forEach(([key, node]) => node.classList.toggle("selected", key === bodyweightGoalType));
+
+    const isHighRep = gainMethod === "high_rep";
+    const isBodyweight = gainMethod === "bodyweight";
+    const isBodyweightTime = isBodyweight && bodyweightGoalType === "time";
+
+    goalTypeGroup.style.display = isBodyweight ? "block" : "none";
+    highRepFields.style.display = isHighRep ? "block" : "none";
+    repsField.group.style.display = isHighRep || isBodyweightTime ? "none" : "block";
+    targetSecondsField.group.style.display = isBodyweightTime ? "block" : "none";
+    challengeWeightGroup.style.display = isEdit && !isUnilateral && (gainMethod === "machine" || gainMethod === "freeweight") ? "block" : "none";
+
+    // v1.9.1: 맨몸은 중량 추적 대상이 아니므로 "목표 중량"과 "워밍업 세트" 관련 입력을 전부 숨깁니다.
+    // (판정 로직은 건드리지 않고 설정 화면 표시만 제어합니다.)
+    targetWeightField.group.style.display = isBodyweight ? "none" : "block";
+    warmupToggleGroup.style.display = isBodyweight ? "none" : "block";
+    warmupRepsGroup.style.display = !isBodyweight && warmupEnabled ? "block" : "none";
+    if (warmupWeightGroup) warmupWeightGroup.group.style.display = !isBodyweight && warmupEnabled ? "block" : "none";
+  }
+  function selectMethod(m) {
+    gainMethod = m;
+    refreshMethodUI();
+  }
+  function selectGoalType(t) {
+    bodyweightGoalType = t;
+    refreshMethodUI();
+  }
+
+  const setsStepper = stepper(defInitial.baseSets, 1, 8);
+  const repsField = numberField("세트당 목표 횟수", defInitial.targetReps, "예: 12");
+
+  // ---- 고반복 전용 필드 ----
+  const highRepLowerField = numberField("하한 반복수", defInitial.highRepLower, "예: 15");
+  const highRepUpperField = numberField("상한 반복수", defInitial.highRepUpper, "예: 20");
+  // v1.9.1: "상한 연속 달성 시 자동 증량폭(kg)" 입력 UI 제거 — 자동 증량 로직 자체가 이미 없어서 이 값은
+  // 어디서도 읽히지 않는 죽은 필드였습니다. models.js/storage.js의 highRepIncrement 필드 자체는
+  // 기존 데이터 호환을 위해 그대로 남겨두고, UI에서만 제거합니다.
+  const highRepFields = el("div", {}, [highRepLowerField.group, highRepUpperField.group]);
+
+  // ---- 맨몸(시간 기반) 전용 필드 ----
+  const targetSecondsField = numberField("목표 시간 (초)", defInitial.targetSeconds, "예: 30");
+
+  // ---- 편측성(좌우 구분) - 증량 방식과 무관하게 항상 표시 ----
+  const unilateralSwitch = el("button", {
+    class: `switch${isUnilateral ? " on" : ""}`,
+    onclick: () => {
+      isUnilateral = !isUnilateral;
+      unilateralSwitch.classList.toggle("on", isUnilateral);
+      refreshMethodUI();
+    },
+  });
+  const unilateralGroup = el("div", { class: "field-group" }, [
+    el("div", { class: "toggle-row" }, [el("span", { text: "편측성 운동 (좌우 구분)" }), unilateralSwitch]),
+  ]);
+
+  // ---- 워밍업 ----
+  const warmupRepsField = numberField("워밍업 목표 횟수", defInitial.warmupTargetReps, "예: 8");
+  const warmupRepsGroup = warmupRepsField.group;
+  warmupRepsGroup.style.display = warmupEnabled ? "block" : "none";
+
+  const warmupWeightGroup = isEdit ? numberField("워밍업 중량 (비우면 자동 계산)", stateInitial.warmupWeightOverride, "자동") : null;
+  if (warmupWeightGroup) warmupWeightGroup.group.style.display = warmupEnabled ? "block" : "none";
+
+  const warmupSwitch = el("button", {
+    class: `switch${warmupEnabled ? " on" : ""}`,
+    onclick: () => {
+      warmupEnabled = !warmupEnabled;
+      warmupSwitch.classList.toggle("on", warmupEnabled);
+      warmupRepsGroup.style.display = warmupEnabled ? "block" : "none";
+      if (warmupWeightGroup) warmupWeightGroup.group.style.display = warmupEnabled ? "block" : "none";
+    },
+  });
+  const warmupToggleGroup = el("div", { class: "field-group" }, [
+    el("div", { class: "toggle-row" }, [el("span", { text: "워밍업 세트 사용" }), warmupSwitch]),
+  ]);
+
+  // ---- 목표 중량 (현재 중량) ----
+  const targetWeightField = numberField("목표 중량 (kg)", isEdit ? stateInitial.currentWeight : 0, "예: 40");
+
+  // ---- 도전세트 기본 중량 (수정 화면 + 머신/프리웨이트 + 비편측만) ----
+  const challengeWeightField = isEdit ? numberField("도전세트 중량 (비우면 매번 직접 입력)", stateInitial.challengeWeightDefault, "직접 입력") : null;
+  const challengeWeightGroup = challengeWeightField ? challengeWeightField.group : el("div", { style: { display: "none" } });
+
+  const screen = el("div", { id: "exercise-form-screen", class: "screen-content" }, [
+    el("div", { class: "topbar" }, [
+      el("button", { class: "icon-btn", text: "←", onclick: onBack }),
+      el("div", { class: "title", text: title }),
+      el("span", { style: { opacity: 0 } }, "·"),
+    ]),
+    el("div", { class: "field-group" }, [el("div", { class: "field-label", text: "운동명" }), nameInput]),
+    el("div", { class: "field-group" }, [
+      el("div", { class: "field-label", text: "증량 방식" }),
+      el("div", { class: "type-toggle" }, [methodOpts.machine, methodOpts.freeweight, methodOpts.high_rep, methodOpts.bodyweight]),
+    ]),
+    goalTypeGroup,
+    el("div", { class: "field-group" }, [el("div", { class: "field-label", text: "기본 세트 수" }), setsStepper.node]),
+    repsField.group,
+    targetSecondsField.group,
+    highRepFields,
+    targetWeightField.group,
+    unilateralGroup,
+    warmupToggleGroup,
+    warmupRepsGroup,
+    warmupWeightGroup ? warmupWeightGroup.group : null,
+    challengeWeightGroup,
+    el("div", { class: "bottom-fixed" }, [
+      el("button", {
+        class: "btn btn-primary",
+        text: "저장",
+        onclick: () => {
+          if (!name.trim()) {
+            alert("운동명을 입력해 주세요.");
+            return;
+          }
+          if (gainMethod === "high_rep" && (highRepLowerField.get() == null || highRepUpperField.get() == null)) {
+            alert("고반복 방식은 하한/상한 반복수를 입력해야 합니다.");
+            return;
+          }
+          if (gainMethod === "bodyweight" && bodyweightGoalType === "time" && targetSecondsField.get() == null) {
+            alert("시간 기반 맨몸 운동은 목표 시간(초)을 입력해야 합니다.");
+            return;
+          }
+
+          // v1.9.1: 맨몸은 워밍업 세트를 쓰지 않으므로, UI에서 막아뒀더라도 저장 시점에 한 번 더 강제로 false 처리합니다.
+          // (과거에 어떤 경로로든 warmupEnabled:true로 저장된 맨몸 종목이 있었다면 이 저장을 거치는 순간 정리됩니다.)
+          const effectiveWarmupEnabled = gainMethod === "bodyweight" ? false : warmupEnabled;
+
+          const defFields = {
+            name: name.trim(),
+            gainMethod,
+            baseSets: setsStepper.get(),
+            targetReps: repsField.get() ?? defInitial.targetReps,
+            warmupEnabled: effectiveWarmupEnabled,
+            warmupTargetReps: warmupRepsField.get() ?? defInitial.warmupTargetReps,
+            highRepLower: gainMethod === "high_rep" ? highRepLowerField.get() : null,
+            highRepUpper: gainMethod === "high_rep" ? highRepUpperField.get() : null,
+            // v1.9.1: UI가 사라졌으므로 이 필드는 더 이상 사용자가 바꿀 수 없습니다.
+            // 기존 값(defInitial.highRepIncrement)을 그대로 보존해 데이터 손실 없이 넘깁니다.
+            highRepIncrement: gainMethod === "high_rep" ? defInitial.highRepIncrement : null,
+            bodyweightGoalType: gainMethod === "bodyweight" ? bodyweightGoalType : null,
+            targetSeconds: gainMethod === "bodyweight" && bodyweightGoalType === "time" ? targetSecondsField.get() : null,
+            isUnilateral,
+          };
+
+          if (isEdit) {
+            state.updateExercise(exerciseId, defFields);
+            const newWeight = targetWeightField.get();
+            if (newWeight !== null && newWeight !== stateInitial.currentWeight) {
+              state.setExerciseWeight(exerciseId, newWeight);
+            }
+            if (warmupWeightGroup) state.setWarmupWeightOverride(exerciseId, warmupWeightGroup.get());
+            if (challengeWeightField) state.setChallengeWeightDefault(exerciseId, challengeWeightField.get());
+
+            // 맨몸 종목의 "목표 난이도 증가"로 볼 수 있는 변경이 있었을 때만 pending을 해제합니다.
+            // 대상: 목표 유형 변경, 목표 반복수 "증가", 목표 시간 "증가", 세트 수 "증가".
+            // 감소(반복수/시간/세트 수를 줄이는 것)나 종목명·메모·워밍업 등 비목표 변경은 pending을 그대로 유지합니다.
+            if (gainMethod === "bodyweight") {
+              const setsIncreased = setsStepper.get() > defInitial.baseSets;
+              const targetRepsIncreased =
+                bodyweightGoalType === "reps" &&
+                defFields.targetReps != null &&
+                defInitial.targetReps != null &&
+                defFields.targetReps > defInitial.targetReps;
+              const targetSecondsIncreased =
+                bodyweightGoalType === "time" &&
+                defFields.targetSeconds != null &&
+                defInitial.targetSeconds != null &&
+                defFields.targetSeconds > defInitial.targetSeconds;
+              const goalTypeChanged = bodyweightGoalType !== defInitial.bodyweightGoalType;
+              const goalChanged = goalTypeChanged || targetRepsIncreased || targetSecondsIncreased || setsIncreased;
+              if (goalChanged) state.clearBodyweightGoalPending(exerciseId);
+            }
+          } else {
+            state.addExercise({ ...defFields, startWeight: targetWeightField.get() ?? 0 });
+          }
+
+          navigate(afterSaveHash, { replace: true });
+        },
+      }),
+    ]),
+  ]);
+
+  refreshMethodUI();
+  mount(root, screen);
+}
+
+// 새 종목 추가. 요일별 종목 선택 화면(day 있음) 또는 종목 관리 화면(day 없음) 양쪽에서 진입 가능합니다.
+export function renderExerciseForm(root, params) {
+  const dayKey = params.day; // 없으면(종목 관리 화면에서 진입) undefined
+  renderForm(root, {
+    title: "운동 추가",
+    exerciseId: null,
+    defInitial: {
+      name: "",
+      gainMethod: "machine",
+      baseSets: 3,
+      targetReps: 12,
+      warmupEnabled: false,
+      warmupTargetReps: 8,
+      highRepLower: null,
+      highRepUpper: null,
+      highRepIncrement: null,
+      bodyweightGoalType: "reps",
+      targetSeconds: null,
+      isUnilateral: false,
+    },
+    stateInitial: null,
+    onBack: () => history.back(),
+    // 생성 후에는 루틴에 자동 연결하지 않고(기존 exercisePicker 흐름과 동일 원칙),
+    // 진입한 화면으로 그대로 돌아갑니다.
+    afterSaveHash: dayKey ? `#/exercise-picker/${dayKey}` : "#/exercise-manage",
+  });
+}
+
+// 기존 종목 수정 (종목 관리 화면에서 진입)
+export function renderExerciseEdit(root, params) {
+  const ex = state.getExercise(params.id);
+  if (!ex) {
+    navigate("#/exercise-manage", { replace: true });
+    return;
+  }
+  const exState = state.getExerciseState(ex.id);
+  renderForm(root, {
+    title: "운동 수정",
+    exerciseId: ex.id,
+    defInitial: ex,
+    stateInitial: exState,
+    onBack: () => history.back(),
+    afterSaveHash: "#/exercise-manage",
+  });
+}

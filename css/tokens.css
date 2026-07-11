@@ -1,0 +1,35 @@
+/* tokens.css
+   색상은 여기 "기본값"만 두고, 실제 적용은 js/core/theme.js가 런타임에 :root에 다시 씁니다.
+   레이아웃 관련 값(간격 스케일 등)은 테마와 무관하게 항상 고정입니다. */
+:root {
+  /* 간격 스케일 (4px 배수) - 모든 화면 공통 규칙 */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 22px;
+  --sp-6: 32px;
+  --radius: 12px;
+  --radius-lg: 16px;
+
+  /* 글꼴: 문학적인 톤(감성) 기본 적용 */
+  --font-display: "Gowun Batang", serif;
+  --font-body: "Gowun Batang", serif;
+  --font-mono: "Space Mono", monospace;
+
+  /* 색상 기본값 (Theme B) - theme.js가 부팅 시 즉시 덮어씀 */
+  --color-bg: #FFF8B9;
+  --color-primary: #7A8F4F;
+  --color-on-primary: #FFFFFF;
+  --color-surface: #FFFFFF;
+  --color-surface-alt: #FBF3D6;
+  --color-border: #E7DDA8;
+  --color-text-primary: #2B2A1F;
+  --color-text-secondary: #77744F;
+  --color-text-muted: #ACA679;
+  --color-a: #3F6A2B;
+  --color-b: #B8871B;
+  --color-x: #B0413E;
+  --color-challenge-hl: #FFFCD6;
+  --color-primary-soft: rgba(122, 143, 79, 0.14);
+}
