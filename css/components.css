@@ -236,6 +236,39 @@
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* ================= Exercise Cue System (v2.1.0) ================= */
+/* 운동 수행/결과 화면 head-row의 "운동" 칸: 아이콘 유무와 무관하게 폭/정렬이 절대 변하지 않도록
+   visibility만 토글합니다(display:none 사용 금지 — grid-template-columns 비율 보호). */
+.head-cue-cell { display: inline-flex; align-items: center; gap: 4px; }
+.cue-icon { font-size: 11px; line-height: 1; cursor: pointer; flex-shrink: 0; }
+.cue-icon-placeholder { visibility: hidden; cursor: default; }
+
+/* 큐노트 읽기 전용 팝업 (운동 수행 화면) */
+.cue-modal { text-align: left; }
+.cue-modal-title { font-family: var(--font-display); font-weight: 700; font-size: 17px; margin-bottom: 12px; text-align: center; }
+.cue-view-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.cue-view-item { font-size: 14px; color: var(--color-text-primary); line-height: 1.4; }
+.cue-view-item::before { content: "☑ "; color: var(--color-primary); font-weight: 700; }
+.cue-view-empty { color: var(--color-text-muted); font-size: 13px; text-align: center; margin: 8px 0; }
+
+/* 큐노트 관리(추가/수정/삭제) 모달 (운동 관리 화면) */
+.cue-editor-modal { text-align: left; }
+.cue-editor-modal .duration-title { text-align: center; margin-bottom: 14px; }
+.cue-edit-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.cue-edit-row {
+  display: flex; align-items: center; gap: 8px; padding: 11px 10px; min-height: 42px;
+  border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface);
+}
+.cue-edit-row.editing { border-color: var(--color-primary); }
+.cue-bullet { color: var(--color-primary); font-weight: 700; flex-shrink: 0; font-size: 13px; }
+.cue-edit-text { flex: 1; font-size: 14px; color: var(--color-text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cue-edit-input {
+  flex: 1; border: none; outline: none; background: transparent; padding: 0;
+  font-size: 14px; font-family: var(--font-body); color: var(--color-text-primary);
+}
+.cue-trash-btn { background: none; border: none; color: var(--color-x); font-size: 15px; padding: 4px; flex-shrink: 0; line-height: 1; }
+.cue-add-btn { margin-top: 2px; }
+
 /* ⚠️ 임시 디버그 표시 (v1.8, debugBodyweightStatus.js 전용) - 정식 UI가 생기면 이 블록도 함께 제거하세요. */
 .debug-tag {
   margin-top: 6px; padding: 4px 8px; border: 1px dashed #b08900; border-radius: 6px;
