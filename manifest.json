@@ -9,7 +9,7 @@
   "background_color": "#D6FF3D",
   "theme_color": "#D6FF3D",
   "icons": [
-    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+    { "src": "icons/icon.svg?v=3", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon.svg?v=3", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
   ]
 }

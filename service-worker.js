@@ -2,7 +2,7 @@
 // 오프라인에서도 앱 자체(껍데기)는 항상 열리도록 하는 최소한의 캐시 전략입니다.
 // 데이터는 여기서 다루지 않습니다(전부 Local Storage에 있음).
 
-const CACHE_NAME = "doyourworkout-v2.0";
+const CACHE_NAME = "doyourworkout-v2.0-patch";
 const CORE_ASSETS = [
   "./",
   "./index.html",
@@ -40,7 +40,7 @@ const CORE_ASSETS = [
   "./js/ui/screens/machineCandidate.js",
   "./js/ui/screens/settings.js",
   "./js/ui/screens/history.js",
-  "./icons/icon.svg",
+  "./icons/icon.svg?v=3",
 ];
 
 self.addEventListener("install", (event) => {
