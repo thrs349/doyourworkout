@@ -11,10 +11,8 @@ export function buildCueNoteViewerContent(ex) {
         { class: "cue-view-list" },
         notes.map((note) => el("li", { class: "cue-view-item", text: note }))
       )
-    : el("p", { class: "cue-view-empty", text: "등록된 큐노트가 없습니다." });
+    : el("p", { class: "cue-view-empty", text: "등록된 큐 노트가 없습니다." });
 
-  return el("div", { class: "cue-modal" }, [
-    el("div", { class: "cue-modal-title", text: ex.name }),
-    list,
-  ]);
+  // v2.1.0 Patch: 운동 직전 빠른 확인이 목적이므로 종목명은 표시하지 않고 체크리스트만 읽기 전용으로 보여줍니다.
+  return el("div", { class: "cue-modal" }, [list]);
 }

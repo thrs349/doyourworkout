@@ -110,7 +110,8 @@ export function renderWorkout(root) {
     if (row.warmup) {
       nodes.push(
         el("div", { class: "set-row warmup" }, [
-          el("span", { class: "ex-name", text: `${ex.name} · 워밍업` }),
+          // v2.1.0 Patch: 워밍업 여부는 행 배경 강조로 이미 구분되므로 텍스트에서 "· 워밍업"은 제거
+          el("span", { class: "ex-name", text: ex.name }),
           el(
             "span",
             { class: "col" },
@@ -232,7 +233,7 @@ export function renderWorkout(root) {
       if (rec.warmup) {
         rows.push(
           el("div", { class: "set-row warmup" }, [
-            el("span", { class: "ex-name", text: `${ex.name} · 워밍업` }),
+            el("span", { class: "ex-name", text: ex.name }),
             el("span", { class: "col", text: ex.gainMethod === "bodyweight" ? "" : rec.warmup.weight ?? "-" }),
             el("span", { class: "col", text: String(rec.warmup.targetReps) }),
             el("span", { class: "col", text: rec.warmup.performedRaw || "-" }),

@@ -54,7 +54,7 @@ export function openCueNoteEditor(exerciseId) {
     const ex = currentExercise();
     const noteText = ex.cueNotes[index];
     const content = el("div", { class: "duration-modal" }, [
-      el("div", { class: "duration-title", text: "큐노트를 삭제할까요?" }),
+      el("div", { class: "duration-title", text: "큐 노트를 삭제하시겠습니까?" }),
       el("p", { class: "detail", style: { textAlign: "center", margin: "0 0 16px" }, text: noteText }),
       el("div", { class: "btn-row-h" }, [
         el("button", {
@@ -141,13 +141,13 @@ export function openCueNoteEditor(exerciseId) {
     const listNode =
       rows.length > 0
         ? el("div", { class: "cue-edit-list" }, rows)
-        : el("div", { class: "cue-edit-list" }, [el("p", { class: "cue-view-empty", text: "등록된 큐노트가 없습니다." })]);
+        : el("div", { class: "cue-edit-list" }, [el("p", { class: "cue-view-empty", text: "등록된 큐 노트가 없습니다." })]);
 
     const showAddBtn = notes.length < MAX_CUE_NOTES && editingIndex !== "new";
     const addBtn = showAddBtn
       ? el("button", {
           class: "btn btn-ghost cue-add-btn",
-          text: "+ 큐노트 추가",
+          text: "+ 큐 노트 추가",
           onclick: () => {
             editingIndex = "new";
             render();
@@ -159,7 +159,9 @@ export function openCueNoteEditor(exerciseId) {
       "div",
       { class: "cue-editor-modal" },
       [
-        el("div", { class: "duration-title", text: `${ex.name} · 큐노트` }),
+        // v2.1.0 Patch: 종목명/제목 대신 짧은 안내 문구만 표시합니다.
+        // 어떤 종목의 큐 노트인지는 운동 관리 화면에서 이미 확인 가능하므로 모달 내부 중복 정보를 제거했습니다.
+        el("p", { class: "cue-editor-hint", text: "운동 직전 확인할 포인트를 최대 3개까지 기록해 두세요." }),
         listNode,
         addBtn,
       ].filter(Boolean)
