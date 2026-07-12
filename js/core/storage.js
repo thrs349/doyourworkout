@@ -147,6 +147,12 @@ function migrate(data) {
     }));
   }
 
+  // v10 -> v11: 종목별 큐노트(cueNotes) 필드가 추가됨. 판정/증량 상태와는 무관한 순수 표시용 메모이며,
+  // 과거 데이터에는 이 개념 자체가 없었으므로 "메모 없음"을 뜻하는 빈 배열([])로 채웁니다(null 사용하지 않음).
+  if (fromVersion < 11) {
+    merged.exercises = (merged.exercises || []).map((ex) => ({ cueNotes: [], ...ex }));
+  }
+
   merged.schemaVersion = SCHEMA_VERSION;
   return merged;
 }

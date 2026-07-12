@@ -5,6 +5,7 @@ import * as state from "../../core/state.js";
 import { formatExerciseMeta, GAIN_METHODS } from "../../core/models.js";
 import { renderBodyweightDebugTag } from "../components/debugBodyweightStatus.js"; // ⚠️ 임시 디버그용 (v1.8) - 정식 UI 생기면 이 줄과 컴포넌트 파일을 함께 제거
 import { openModal } from "../components/modal.js";
+import { openCueNoteEditor } from "../components/cueNoteEditor.js";
 
 // 이름순 정렬: 자연정렬(숫자/이모지 가공) 없이 일반 문자열 비교만 사용합니다.
 // ex.name 원본을 그대로 비교하므로(이모지 포함) 별도 가공이 없습니다.
@@ -56,8 +57,15 @@ export function renderExerciseManage(root) {
 
   function activeRow(ex) {
     const willDeactivate = deactivateIds.has(ex.id);
+    // v2.1.0: 큐노트(💡) 버튼은 editMode 여부와 무관하게 항상 노출합니다(숨김 처리하지 않음).
+    const cueBtn = el("button", {
+      class: "icon-btn",
+      text: "💡",
+      onclick: () => openCueNoteEditor(ex.id),
+    });
     const rightControls = editMode
       ? [
+          cueBtn,
           el("button", {
             class: `switch${willDeactivate ? "" : " on"}`,
             title: willDeactivate ? "비활성으로 전환 예정" : "활성 유지",
@@ -69,6 +77,7 @@ export function renderExerciseManage(root) {
           }),
         ]
       : [
+          cueBtn,
           el("button", {
             class: "icon-btn",
             text: "✎",
@@ -100,6 +109,14 @@ export function renderExerciseManage(root) {
         el("div", { class: "meta", text: formatExerciseMeta(ex) }),
       ]),
       el("div", { class: "btn-row-h compact", style: { flexShrink: 0 } }, [
+        // v2.1.0: 비활성 카드에서도 큐노트(💡) 버튼은 동일하게 노출하되, 기존 비활성 카드 스타일(회색 처리)에
+        // 맞춰 opacity만 낮춰 표시합니다. 카드 전체 스타일(취소선 등)에는 영향을 주지 않습니다.
+        el("button", {
+          class: "icon-btn",
+          text: "💡",
+          style: { opacity: 0.6 },
+          onclick: () => openCueNoteEditor(ex.id),
+        }),
         el("button", {
           class: "btn btn-ghost btn-compact",
           text: "재활성화",

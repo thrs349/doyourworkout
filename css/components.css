@@ -3,6 +3,9 @@
 /* 상단바 */
 .topbar { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-2) 0 var(--sp-2); flex-shrink: 0; }
 .topbar .title { font-family: var(--font-display); font-weight: 700; font-size: 17px; }
+/* v2.1.2: 운동 실행 화면 타이틀만 소폭 위로 이동 (2.3). #workout-screen으로 스코프를 좁혀 전역 .topbar .title과
+   다른 10개 화면에는 영향을 주지 않습니다. 뒤로가기 버튼(icon-btn)은 이 선택자에 포함되지 않아 위치 그대로입니다. */
+#workout-screen .topbar .title { position: relative; top: -2px; }
 .icon-btn {
   width: 30px; height: 30px; border-radius: 9px; background: transparent;
   border: 1.5px solid var(--color-text-secondary); display: flex; align-items: center; justify-content: center;
@@ -51,11 +54,16 @@
 .empty-routine { color: var(--color-text-secondary); font-size: 13px; line-height: 1.6; }
 
 /* 하단 내비게이션 */
-.bottom-nav { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: var(--sp-3) 0 var(--sp-2); flex-shrink: 0; border-top: 1px solid var(--color-border); background: transparent; }
-.nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; color: var(--color-text-muted); background: none; border: none; padding: 4px 0; }
-.nav-item .nav-icon { font-size: 15px; line-height: 1; }
+.bottom-nav { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: var(--sp-2) 0 6px; flex-shrink: 0; border-top: 1px solid var(--color-border); background: transparent; } /* v2.1.2(3.2): 상하 padding 축소로 전체 높이 소폭 감소 */
+/* v2.1.0 Patch: justify-content를 center -> flex-start로 변경. "기록" 항목만 nav-sub(3번째 줄)가 있어
+   center 정렬 시 콘텐츠 총 높이가 달라 아이콘 y축이 항목마다 미묘하게 달라 보이는 문제가 있었습니다.
+   flex-start + 고정 padding-top으로 바꾸면 줄 수와 무관하게 세 항목의 아이콘이 항상 같은 기준선에서 시작합니다. */
+.nav-item { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 2px; font-size: 11px; color: var(--color-text-muted); background: none; border: none; padding: 4px 0 3px; } /* v2.1.2(3.2): gap/padding 소폭 축소 */
+/* v2.1.2(3.1): 아이콘 자체 font-size는 활성/비활성 그대로 유지(강조 효과 유지)하되, 아이콘이 차지하는 "줄 높이"를
+   line-height로 고정(활성 21px보다 큰 22px)해서 활성 여부와 무관하게 그 아래 label의 y축이 항상 동일하게 유지됩니다. */
+.nav-item .nav-icon { font-size: 18px; line-height: 22px; } /* v2.1.0 Patch: 시인성 개선 (15px -> 18px) */
 .nav-item.active { color: var(--color-primary); font-weight: 700; }
-.nav-item.active .nav-icon { font-size: 18px; }
+.nav-item.active .nav-icon { font-size: 21px; line-height: 22px; } /* v2.1.0 Patch: 15->18 확대 비율에 맞춰 활성 아이콘도 18->21로 동일 비율 유지 */
 .nav-sub { font-size: 9px; color: var(--color-text-muted); }
 
 /* 표 (오늘의 운동) */
@@ -68,15 +76,16 @@
    되돌리고, 그만큼을 중량/목표/판정에 다시 배분했습니다(v1.9.2 이전 원래 비율보다는 여전히 "수행"이 넓음). */
 .head-row, .set-row { display: grid; grid-template-columns: 1fr .5fr .5fr 1fr .45fr; align-items: center; }
 .head-row { background: var(--color-surface-alt); padding: 6px 8px; }
-.head-row div { font-family: var(--font-mono); font-size: 9px; color: var(--color-text-muted); letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
-.head-row div:first-child { text-align: left; }
+.head-row div { font-family: var(--font-mono); font-size: 10px; color: var(--color-text-muted); letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; } /* v2.1.0 Patch: 시인성 개선을 위해 9px -> 10px (grid-template-columns 등 열 비율은 변경하지 않음) */
+.head-row div:first-child { text-align: left; padding-left: 3px; } /* v2.1.2: 종목명 왼쪽 여백 확보 (grid-template-columns는 미변경) */
 .head-row div:not(:first-child) { text-align: center; }
 .set-row { padding: 6px 8px; border-top: 1px solid var(--color-border); }
 .set-row > div, .set-row > span { font-family: var(--font-mono); font-size: 12.5px; color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.set-row .ex-name { text-align: left; font-family: var(--font-body); font-weight: 400; color: var(--color-text-primary); }
+.set-row .ex-name { text-align: left; font-family: var(--font-body); font-weight: 400; color: var(--color-text-primary); padding-left: 3px; } /* v2.1.2: 종목명 왼쪽 여백 확보 (grid-template-columns는 미변경) */
 .set-row .col { text-align: center; }
 .set-row.warmup { background: var(--color-surface-alt); }
-.set-row.warmup .ex-name { font-size: 11px; color: var(--color-text-muted); }
+/* v2.1.0 Patch: 워밍업 행 종목명도 일반 종목명과 동일한 스타일로 통일(같은 종목인데 표시 방식이 달라 보이는 문제 해소).
+   워밍업 강조 자체는 위 .set-row.warmup의 배경색으로 계속 유지됩니다. */
 .set-row.challenge { background: var(--color-challenge-hl); }
 .set-row .judge { font-weight: 700; font-family: var(--font-mono); }
 .judge-a { color: var(--color-a); }
@@ -89,8 +98,8 @@
   font-family: var(--font-mono); font-size: 12.5px; color: var(--color-text-primary); padding: 4px 2px;
 }
 .cell-input::placeholder { color: var(--color-text-muted); }
-.dual-input { display: flex; gap: 3px; justify-content: center; }
-.dual-input .cell-input.dual { max-width: 26px; padding: 4px 1px; font-size: 11px; }
+.dual-input { display: flex; gap: 2px; justify-content: center; } /* v2.1.0 Patch: 중앙 구분 여백 축소(3px -> 2px) */
+.dual-input .cell-input.dual { max-width: 32px; padding: 4px 1px; font-size: 11px; } /* v2.1.0 Patch: 입력칸 확장(26px -> 32px), "수행" 칸(1fr) 내부에서만 조정되어 grid 비율은 그대로 */
 .dual-result { display: flex; gap: 4px; justify-content: center; }
 /* v1.9.3: 진짜 원인 — `.set-row > span { overflow:hidden }`(64행)이 "수행" 칸의 바깥 래퍼(.col.dual-result)
    자체에도 걸려서, 안쪽 두 span을 아무리 넓혀도(v1.9.2) 래퍼 폭을 넘는 순간 그대로 잘려나갔습니다.
@@ -235,6 +244,38 @@
   z-index: 200; white-space: nowrap; box-shadow: 0 8px 20px rgba(0,0,0,.2);
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ================= Exercise Cue System (v2.1.0) ================= */
+/* 운동 수행/결과 화면 head-row의 "운동" 칸: 아이콘 유무와 무관하게 폭/정렬이 절대 변하지 않도록
+   visibility만 토글합니다(display:none 사용 금지 — grid-template-columns 비율 보호). */
+.head-cue-cell { display: inline-flex; align-items: center; gap: 4px; }
+.cue-icon { font-size: 11px; line-height: 1; cursor: pointer; flex-shrink: 0; }
+.cue-icon-placeholder { visibility: hidden; cursor: default; }
+
+/* 큐 노트 읽기 전용 팝업 (운동 수행 화면) */
+.cue-modal { text-align: left; }
+/* v2.1.0 Patch: 종목명 제목을 없앴으므로 .cue-modal-title은 더 이상 사용하지 않습니다. */
+.cue-view-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.cue-view-item { font-size: 14px; color: var(--color-text-primary); line-height: 1.4; }
+.cue-view-item::before { content: "☑ "; color: var(--color-primary); font-weight: 700; }
+.cue-view-empty { color: var(--color-text-muted); font-size: 13px; text-align: center; margin: 8px 0; }
+
+/* 큐 노트 관리(추가/수정/삭제) 모달 (운동 관리 화면) */
+.cue-editor-modal { text-align: left; }
+.cue-edit-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.cue-edit-row {
+  display: flex; align-items: center; gap: 8px; padding: 11px 10px; min-height: 42px;
+  border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface);
+}
+.cue-edit-row.editing { border-color: var(--color-primary); }
+.cue-bullet { color: var(--color-primary); font-weight: 700; flex-shrink: 0; font-size: 13px; }
+.cue-edit-text { flex: 1; font-size: 14px; color: var(--color-text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cue-edit-input {
+  flex: 1; border: none; outline: none; background: transparent; padding: 0;
+  font-size: 14px; font-family: var(--font-body); color: var(--color-text-primary);
+}
+.cue-trash-btn { background: none; border: none; color: var(--color-x); font-size: 15px; padding: 4px; flex-shrink: 0; line-height: 1; }
+.cue-add-btn { margin-top: 2px; }
 
 /* ⚠️ 임시 디버그 표시 (v1.8, debugBodyweightStatus.js 전용) - 정식 UI가 생기면 이 블록도 함께 제거하세요. */
 .debug-tag {

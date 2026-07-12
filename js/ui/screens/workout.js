@@ -2,8 +2,23 @@
 import { el, mount } from "../dom.js";
 import { navigate } from "../router.js";
 import { openModal } from "../components/modal.js";
+import { buildCueNoteViewerContent } from "../components/cueNoteViewer.js";
 import * as state from "../../core/state.js";
-import { DAYS } from "../../core/models.js";
+
+// v2.1.0: 큐노트 아이콘(💡). interactive=true(수행 화면)면 큐노트가 있을 때만 보이고 클릭도 가능합니다.
+// interactive=false(결과 화면)면 큐노트 존재 여부와 무관하게 항상 placeholder(투명)로만 유지되고 클릭 기능이 없습니다.
+// display:none이 아니라 visibility:hidden을 써서, 아이콘이 있든 없든 표(head-row/set-row) 열 폭과 정렬은 항상 동일합니다.
+function buildCueIcon(ex, interactive, onToggle) {
+  const hasNotes = interactive && Array.isArray(ex.cueNotes) && ex.cueNotes.length > 0;
+  const icon = el("span", { class: `cue-icon${hasNotes ? "" : " cue-icon-placeholder"}`, text: "💡" });
+  if (hasNotes) {
+    icon.addEventListener("click", (e) => {
+      e.stopPropagation();
+      onToggle(ex);
+    });
+  }
+  return icon;
+}
 
 function fmtDuration(minutes) {
   if (minutes < 60) return `${minutes}분`;
@@ -63,8 +78,28 @@ export function renderWorkout(root) {
     return;
   }
 
-  const dayLabel = DAYS.find((d) => d.key === draft.day)?.label || "";
+  // v2.1.2: 상단바에서 요일 표시를 제거하면서 dayLabel을 더 이상 쓰지 않아 선언도 함께 정리했습니다.
   let finishedSession = null;
+
+  // v2.1.0: 큐노트 팝업은 "같은 아이콘을 다시 터치하면 닫힘" 토글 방식입니다.
+  // 화면 전체에서 한 번에 하나만 열리도록, 현재 열려 있는 종목 id와 닫기 함수를 여기서 추적합니다.
+  let openCueExerciseId = null;
+  let closeCueViewer = null;
+  function toggleCueViewer(ex) {
+    if (openCueExerciseId === ex.id) {
+      if (closeCueViewer) closeCueViewer();
+      return;
+    }
+    if (closeCueViewer) closeCueViewer();
+    openCueExerciseId = ex.id;
+    closeCueViewer = openModal(buildCueNoteViewerContent(ex), {
+      dismissible: true,
+      onClose: () => {
+        openCueExerciseId = null;
+        closeCueViewer = null;
+      },
+    });
+  }
 
   // v1.1: 표 열 순서를 "중량 → 목표 → 수행 → 판정"으로 변경 (중량/목표를 먼저 보고 수행을 입력하는 흐름)
   function buildTableRow(row) {
@@ -74,7 +109,8 @@ export function renderWorkout(root) {
     if (row.warmup) {
       nodes.push(
         el("div", { class: "set-row warmup" }, [
-          el("span", { class: "ex-name", text: `${ex.name} · 워밍업` }),
+          // v2.1.0 Patch: 워밍업 여부는 행 배경 강조로 이미 구분되므로 텍스트에서 "· 워밍업"은 제거
+          el("span", { class: "ex-name", text: ex.name }),
           el(
             "span",
             { class: "col" },
@@ -140,7 +176,7 @@ export function renderWorkout(root) {
 
     return el("div", { class: "set-table" }, [
       el("div", { class: "head-row" }, [
-        el("div", { text: "운동" }),
+        el("div", { class: "head-cue-cell" }, [buildCueIcon(ex, true, toggleCueViewer), "운동"]),
         el("div", { text: "중량" }),
         el("div", { text: "목표" }),
         el("div", { text: "수행" }),
@@ -160,7 +196,7 @@ export function renderWorkout(root) {
     const screen = el("div", { id: "workout-screen", class: "screen-content" }, [
       el("div", { class: "topbar" }, [
         el("button", { class: "icon-btn", text: "←", onclick: () => history.back() }),
-        el("div", { class: "title", text: `${dayLabel} · 오늘의 운동` }),
+        el("div", { class: "title", text: "오늘의 운동" }),
         el("span", { style: { opacity: 0 } }, "·"),
       ]),
       tableArea,
@@ -196,7 +232,7 @@ export function renderWorkout(root) {
       if (rec.warmup) {
         rows.push(
           el("div", { class: "set-row warmup" }, [
-            el("span", { class: "ex-name", text: `${ex.name} · 워밍업` }),
+            el("span", { class: "ex-name", text: ex.name }),
             el("span", { class: "col", text: ex.gainMethod === "bodyweight" ? "" : rec.warmup.weight ?? "-" }),
             el("span", { class: "col", text: String(rec.warmup.targetReps) }),
             el("span", { class: "col", text: rec.warmup.performedRaw || "-" }),
@@ -244,7 +280,8 @@ export function renderWorkout(root) {
       }
       return el("div", { class: "set-table" }, [
         el("div", { class: "head-row" }, [
-          el("div", { text: "운동" }),
+          // v2.1.0: 결과 화면은 큐노트 기능을 제공하지 않으므로 항상 placeholder(투명)만 유지합니다(클릭 불가).
+          el("div", { class: "head-cue-cell" }, [buildCueIcon(ex, false, null), "운동"]),
           el("div", { text: "중량" }),
           el("div", { text: "목표" }),
           el("div", { text: "수행" }),
@@ -263,7 +300,7 @@ export function renderWorkout(root) {
     const screen = el("div", { id: "workout-result-screen", class: "screen-content" }, [
       el("div", { class: "topbar" }, [
         el("button", { class: "icon-btn", text: "←", onclick: () => afterResult() }),
-        el("div", { class: "title", text: `${dayLabel} · 결과` }),
+        el("div", { class: "title", text: "운동 결과" }),
         el("span", { style: { opacity: 0 } }, "·"),
       ]),
       tableArea,

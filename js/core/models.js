@@ -2,7 +2,7 @@
 // 앱이 다루는 데이터의 "형태"만 정의하는 순수 모듈입니다.
 // UI나 저장소에 의존하지 않으므로, 이후 다른 프레임워크로 옮기더라도 그대로 재사용할 수 있습니다.
 
-export const SCHEMA_VERSION = 10; // v1.8: 고반복 자동 증량을 제거하고, 상한 연속 달성 시 세션 결과에만 실리는 1회성 검토 신호(highRepGoalReviewSuggested)로 교체
+export const SCHEMA_VERSION = 11; // v2.1.0: 종목별 큐노트(cueNotes) 필드 추가. 판정/증량 로직과는 무관한 순수 표시용 메모입니다.
 
 // 증량 방식(gainMethod) 목록입니다. 새 방식을 추가하려면 여기 하나만 더 넣고,
 // judge.js/gain.js의 해당 분기만 채우면 됩니다.
@@ -88,6 +88,10 @@ export function makeExerciseDefinition({
   targetSeconds = null, // 목표 시간(초). bodyweightGoalType이 "time"일 때만 사용.
   // 편측성(좌우 구분) 여부 - gainMethod와 무관하게 어떤 종목에도 설정 가능
   isUnilateral = false,
+  // v2.1.0: 큐노트(운동 수행 포인트 메모). 판정/증량 로직에서는 전혀 참조하지 않는 순수 표시용 데이터입니다.
+  // 체크리스트 형태의 문자열 배열로, 최대 3개까지만 유지합니다(UI에서 강제 + 저장 직전 방어).
+  // null이 아닌 빈 배열([])을 기본값으로 사용합니다.
+  cueNotes = [],
 } = {}) {
   return {
     id,
@@ -104,6 +108,7 @@ export function makeExerciseDefinition({
     bodyweightGoalType,
     targetSeconds,
     isUnilateral,
+    cueNotes,
   };
 }
 
