@@ -4,6 +4,7 @@ import { navigate } from "../router.js";
 import { openModal } from "../components/modal.js";
 import { buildCueNoteViewerContent } from "../components/cueNoteViewer.js";
 import * as state from "../../core/state.js";
+import { parseSetInput } from "../../core/judge.js";
 
 // v2.1.0: 큐노트 아이콘(💡). interactive=true(수행 화면)면 큐노트가 있을 때만 보이고 클릭도 가능합니다.
 // interactive=false(결과 화면)면 큐노트 존재 여부와 무관하게 항상 placeholder(투명)로만 유지되고 클릭 기능이 없습니다.
@@ -81,6 +82,47 @@ export function renderWorkout(root) {
   // v2.1.2: 상단바에서 요일 표시를 제거하면서 dayLabel을 더 이상 쓰지 않아 선언도 함께 정리했습니다.
   let finishedSession = null;
 
+  // v2.2.0 Check Gate ----------------------------------------------------
+  // "입력 확인" 버튼의 활성/비활성을 제어하기 위한 참조. 입력이 바뀔 때마다 revalidate()가 다시 계산합니다.
+  let confirmBtn = null;
+
+  // Check Gate 진입 시 pushState()로 쌓은 더미 history 항목을 관리하기 위한 popstate 리스너 참조.
+  // "다시 수정" 버튼과 물리 뒤로가기(화면 내 "←" 포함)만 이 리스너를 거칩니다. "운동 완료"는 데이터
+  // 저장(judge/gain/storage)이라는 핵심 동작을 브라우저 navigation 이벤트에 의존시키지 않기 위해
+  // popstate와 완전히 분리해 onFinish()를 직접 호출합니다(아래 onCheckGateComplete 참고).
+  let checkGatePopstateHandler = null;
+
+  // 필수 입력(본세트 전체 / 편측 좌·우 모두 / 워밍업 있으면 수행값 / 도전세트 있으면 중량+수행값)이
+  // 모두 채워졌는지 검사합니다. judge.js의 parseSetInput()을 그대로 재사용해 "빈 입력" 판정 기준을
+  // judge 로직과 항상 일치시키며, judge.js 자체는 수정하지 않습니다.
+  function isEntryComplete() {
+    return draft.plan.every((row) => {
+      const ex = row.exercise;
+
+      if (row.warmup && parseSetInput(row.warmup.performedRaw).empty) return false;
+
+      const mainSetsOk = row.mainSets.every((s) =>
+        ex.isUnilateral
+          ? !parseSetInput(s.leftRaw).empty && !parseSetInput(s.rightRaw).empty
+          : !parseSetInput(s.performedRaw).empty
+      );
+      if (!mainSetsOk) return false;
+
+      if (row.challengeSet) {
+        const w = row.challengeSet.weight;
+        const weightOk = w !== null && w !== undefined && w !== "";
+        if (!weightOk || parseSetInput(row.challengeSet.performedRaw).empty) return false;
+      }
+
+      return true;
+    });
+  }
+
+  function revalidate() {
+    if (confirmBtn) confirmBtn.disabled = !isEntryComplete();
+  }
+  // ------------------------------------------------------------------------
+
   // v2.1.0: 큐노트 팝업은 "같은 아이콘을 다시 터치하면 닫힘" 토글 방식입니다.
   // 화면 전체에서 한 번에 하나만 열리도록, 현재 열려 있는 종목 id와 닫기 함수를 여기서 추적합니다.
   let openCueExerciseId = null;
@@ -122,11 +164,21 @@ export function renderWorkout(root) {
                   inputmode: "decimal",
                   value: row.warmup.weight ?? "",
                   placeholder: "-",
-                  oninput: (e) => (row.warmup.weight = e.target.value === "" ? null : Number(e.target.value)),
+                  oninput: (e) => {
+                    row.warmup.weight = e.target.value === "" ? null : Number(e.target.value);
+                    revalidate();
+                  },
                 })
           ),
           el("span", { class: "col", text: String(row.warmup.targetReps) }),
-          el("span", { class: "col" }, performedInput(null, (v) => (row.warmup.performedRaw = v))),
+          el(
+            "span",
+            { class: "col" },
+            performedInput(null, (v) => {
+              row.warmup.performedRaw = v;
+              revalidate();
+            })
+          ),
           el("span", { class: "col" }),
         ])
       );
@@ -134,8 +186,20 @@ export function renderWorkout(root) {
 
     row.mainSets.forEach((s, i) => {
       const performedCell = ex.isUnilateral
-        ? dualPerformedInput((v) => (s.leftRaw = v), (v) => (s.rightRaw = v))
-        : performedInput(null, (v) => (s.performedRaw = v));
+        ? dualPerformedInput(
+            (v) => {
+              s.leftRaw = v;
+              revalidate();
+            },
+            (v) => {
+              s.rightRaw = v;
+              revalidate();
+            }
+          )
+        : performedInput(null, (v) => {
+            s.performedRaw = v;
+            revalidate();
+          });
       nodes.push(
         el("div", { class: "set-row" }, [
           el("span", { class: "ex-name", text: "" }),
@@ -164,11 +228,21 @@ export function renderWorkout(root) {
               inputmode: "decimal",
               placeholder: "도전",
               value: row.challengeSet.weight ?? "",
-              oninput: (e) => (row.challengeSet.weight = e.target.value),
+              oninput: (e) => {
+                row.challengeSet.weight = e.target.value;
+                revalidate();
+              },
             })
           ),
           el("span", { class: "col", text: String(row.challengeSet.targetReps) }),
-          el("span", { class: "col" }, performedInput(null, (v) => (row.challengeSet.performedRaw = v))),
+          el(
+            "span",
+            { class: "col" },
+            performedInput(null, (v) => {
+              row.challengeSet.performedRaw = v;
+              revalidate();
+            })
+          ),
           el("span", { class: "col" }),
         ])
       );
@@ -193,6 +267,8 @@ export function renderWorkout(root) {
       draft.plan.flatMap((row, i) => [buildTableRow(row), i < draft.plan.length - 1 ? el("div", { class: "group-gap" }) : null])
     );
 
+    confirmBtn = el("button", { class: "btn btn-primary", text: "입력 확인", onclick: openCheckGate });
+
     const screen = el("div", { id: "workout-screen", class: "screen-content" }, [
       el("div", { class: "topbar" }, [
         el("button", { class: "icon-btn", text: "←", onclick: () => history.back() }),
@@ -200,11 +276,140 @@ export function renderWorkout(root) {
         el("span", { style: { opacity: 0 } }, "·"),
       ]),
       tableArea,
-      el("div", { class: "bottom-fixed" }, [el("button", { class: "btn btn-primary", text: "운동 종료", onclick: onFinish })]),
+      el("div", { class: "bottom-fixed" }, [confirmBtn]),
+    ]);
+    mount(root, screen);
+    revalidate(); // 초기 상태(대부분 미입력) 기준으로 버튼 활성 여부를 맞춥니다.
+  }
+
+  // v2.2.0 Check Gate ----------------------------------------------------
+  // 결과 화면과 동일한 레이아웃(set-table/head-row/set-row/col)으로 draft.plan(판정 이전 원본 입력값)을
+  // read-only 텍스트로만 표시합니다. 판정 칸은 아직 judge가 실행되지 않았으므로 항상 공란이며,
+  // 큐노트 아이콘도 결과 화면과 동일하게 표시하지 않습니다(interactive=false).
+  function buildCheckGateRow(row) {
+    const ex = row.exercise;
+    const rows = [];
+
+    if (row.warmup) {
+      rows.push(
+        el("div", { class: "set-row warmup" }, [
+          el("span", { class: "ex-name", text: ex.name }),
+          el("span", { class: "col", text: ex.gainMethod === "bodyweight" ? "" : row.warmup.weight ?? "-" }),
+          el("span", { class: "col", text: String(row.warmup.targetReps) }),
+          el("span", { class: "col", text: row.warmup.performedRaw || "-" }),
+          el("span", { class: "col judge" }),
+        ])
+      );
+    }
+
+    row.mainSets.forEach((s, i) => {
+      const performedCell =
+        ex.isUnilateral
+          ? el("span", { class: "col dual-result" }, [
+              el("span", { text: s.leftRaw || "-" }),
+              el("span", { text: s.rightRaw || "-" }),
+            ])
+          : el("span", { class: "col", text: s.performedRaw || "-" });
+      rows.push(
+        el("div", { class: "set-row" }, [
+          el("span", { class: "ex-name", text: !row.warmup && i === 0 ? ex.name : "" }),
+          el("span", { class: "col", text: ex.gainMethod === "bodyweight" ? "" : String(s.weight) }),
+          el("span", { class: "col", text: formatTarget(ex, s.targetReps) }),
+          performedCell,
+          el("span", { class: "col judge" }),
+        ])
+      );
+    });
+
+    if (row.challengeSet) {
+      rows.push(
+        el("div", { class: "set-row challenge" }, [
+          el("span", { class: "ex-name", text: "" }),
+          el("span", { class: "col", text: row.challengeSet.weight ?? "-" }),
+          el("span", { class: "col", text: String(row.challengeSet.targetReps) }),
+          el("span", { class: "col", text: row.challengeSet.performedRaw || "-" }),
+          el("span", { class: "col judge" }),
+        ])
+      );
+    }
+
+    return el("div", { class: "set-table" }, [
+      el("div", { class: "head-row" }, [
+        el("div", { class: "head-cue-cell" }, [buildCueIcon(ex, false, null), "운동"]),
+        el("div", { text: "중량" }),
+        el("div", { text: "목표" }),
+        el("div", { text: "수행" }),
+        el("div", { text: "판정" }),
+      ]),
+      ...rows,
+    ]);
+  }
+
+  function renderCheckGateView() {
+    const tableArea = el(
+      "div",
+      { class: "table-area" },
+      draft.plan.flatMap((row, i) => [buildCheckGateRow(row), i < draft.plan.length - 1 ? el("div", { class: "group-gap" }) : null])
+    );
+
+    const screen = el("div", { id: "workout-checkgate-screen", class: "screen-content" }, [
+      el("div", { class: "topbar" }, [
+        // 화면 내 "←"도 물리 뒤로가기와 동일하게 history.back()만 호출합니다. 별도 플래그를 세우지 않으므로
+        // popstate 핸들러가 기본값(= "다시 수정")으로 처리합니다.
+        el("button", { class: "icon-btn", text: "←", onclick: () => history.back() }),
+        el("div", { class: "title", text: "입력 확인" }),
+        el("span", { style: { opacity: 0 } }, "·"),
+      ]),
+      tableArea,
+      el("div", { class: "bottom-fixed" }, [
+        el("div", { class: "btn-row-h" }, [
+          el("button", { class: "btn btn-ghost", text: "다시 수정", onclick: onCheckGateRetry }),
+          el("button", { class: "btn btn-primary", text: "운동 완료", onclick: onCheckGateComplete }),
+        ]),
+      ]),
     ]);
     mount(root, screen);
   }
 
+  // "입력 확인" 버튼(입력 화면)을 눌렀을 때만 호출됩니다. 필수 입력이 모두 채워져야 버튼이 활성화되므로
+  // 여기서는 방어적으로 한 번 더 확인만 하고, 실제 judge/gain/storage는 전혀 실행하지 않습니다.
+  function openCheckGate() {
+    if (!isEntryComplete()) return;
+
+    history.pushState({ __checkGate: true }, "", location.hash);
+    checkGatePopstateHandler = () => {
+      window.removeEventListener("popstate", checkGatePopstateHandler);
+      checkGatePopstateHandler = null;
+      // 이 핸들러가 실행된다는 것 자체가 "다시 수정" 버튼 또는 물리/화면 내 뒤로가기라는 뜻입니다.
+      // (운동 완료는 onCheckGateComplete에서 이 리스너를 먼저 제거하므로 여기로 오지 않습니다.)
+      renderEntryView();
+    };
+    window.addEventListener("popstate", checkGatePopstateHandler);
+
+    renderCheckGateView();
+  }
+
+  function onCheckGateRetry() {
+    history.back(); // pushState로 쌓은 더미 항목을 소비 -> popstate -> 위 핸들러가 입력 화면으로 복귀
+  }
+
+  // 운동 완료: history 정리(리스너 제거 + back())를 먼저 끝내 Check Gate의 흔적을 지운 뒤,
+  // 기존 onFinish()를 그 자리에서 곧바로(동기적으로) 호출합니다. 순서를 이렇게 정한 이유는
+  // 아래 onFinish() 바로 위 주석에 정리했습니다.
+  function onCheckGateComplete() {
+    if (checkGatePopstateHandler) {
+      window.removeEventListener("popstate", checkGatePopstateHandler);
+      checkGatePopstateHandler = null;
+    }
+    history.back(); // 리스너가 이미 사라진 상태이므로, 이후 popstate가 언제 발생하든 아무 반응도 하지 않음(안전한 no-op)
+    onFinish();
+  }
+  // ------------------------------------------------------------------------
+
+  // 기존 "운동 종료" 버튼이 하던 일 그대로입니다. v2.2.0에서는 호출 위치만 Check Gate의
+  // "운동 완료" 버튼(onCheckGateComplete)으로 옮겼을 뿐이며, popstate/브라우저 navigation 이벤트를
+  // 전혀 거치지 않고 버튼 클릭 시점에 즉시(동기적으로) 실행됩니다. finishSession/showDurationPopup
+  // 호출 구조는 v2.1과 완전히 동일합니다.
   function onFinish() {
     finishedSession = state.finishSession(draft);
     showDurationPopup();
