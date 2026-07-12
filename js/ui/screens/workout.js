@@ -4,7 +4,6 @@ import { navigate } from "../router.js";
 import { openModal } from "../components/modal.js";
 import { buildCueNoteViewerContent } from "../components/cueNoteViewer.js";
 import * as state from "../../core/state.js";
-import { DAYS } from "../../core/models.js";
 
 // v2.1.0: 큐노트 아이콘(💡). interactive=true(수행 화면)면 큐노트가 있을 때만 보이고 클릭도 가능합니다.
 // interactive=false(결과 화면)면 큐노트 존재 여부와 무관하게 항상 placeholder(투명)로만 유지되고 클릭 기능이 없습니다.
@@ -79,7 +78,7 @@ export function renderWorkout(root) {
     return;
   }
 
-  const dayLabel = DAYS.find((d) => d.key === draft.day)?.label || "";
+  // v2.1.2: 상단바에서 요일 표시를 제거하면서 dayLabel을 더 이상 쓰지 않아 선언도 함께 정리했습니다.
   let finishedSession = null;
 
   // v2.1.0: 큐노트 팝업은 "같은 아이콘을 다시 터치하면 닫힘" 토글 방식입니다.
@@ -197,7 +196,7 @@ export function renderWorkout(root) {
     const screen = el("div", { id: "workout-screen", class: "screen-content" }, [
       el("div", { class: "topbar" }, [
         el("button", { class: "icon-btn", text: "←", onclick: () => history.back() }),
-        el("div", { class: "title", text: `${dayLabel} · 오늘의 운동` }),
+        el("div", { class: "title", text: "오늘의 운동" }),
         el("span", { style: { opacity: 0 } }, "·"),
       ]),
       tableArea,
@@ -301,7 +300,7 @@ export function renderWorkout(root) {
     const screen = el("div", { id: "workout-result-screen", class: "screen-content" }, [
       el("div", { class: "topbar" }, [
         el("button", { class: "icon-btn", text: "←", onclick: () => afterResult() }),
-        el("div", { class: "title", text: `${dayLabel} · 결과` }),
+        el("div", { class: "title", text: "운동 결과" }),
         el("span", { style: { opacity: 0 } }, "·"),
       ]),
       tableArea,

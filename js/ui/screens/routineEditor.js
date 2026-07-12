@@ -4,6 +4,7 @@ import { el, mount } from "../dom.js";
 import { navigate } from "../router.js";
 import * as state from "../../core/state.js";
 import { DAYS } from "../../core/models.js";
+import { openCueNoteEditor } from "../components/cueNoteEditor.js";
 
 export function renderRoutineEditor(root, params) {
   const dayKey = params.day;
@@ -35,6 +36,8 @@ export function renderRoutineEditor(root, params) {
       el("span", { class: "drag-handle", text: "≡" }),
       el("span", { class: "order-badge", text: String(index + 1).padStart(2, "0") }),
       el("span", { class: "name", text: exerciseName(exId) + (isActive ? "" : " (비활성)") }),
+      // v2.1.2(5): 종목 관리 화면과 동일한 순서(💡 -> ✎)로 큐 노트 버튼 추가. 기존 openCueNoteEditor()를 그대로 재사용합니다.
+      ex ? el("button", { class: "icon-btn", text: "💡", onclick: () => openCueNoteEditor(exId) }) : null,
       ex ? el("button", { class: "icon-btn", text: "✎", onclick: () => navigate(`#/exercise-edit/${exId}`) }) : null,
       el("button", {
         class: `switch small${isActive ? " on" : ""}`,
