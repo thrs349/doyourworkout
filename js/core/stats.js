@@ -35,10 +35,29 @@ export function getWeightTrend(sessions, exerciseId, days = 90, gainMethod = "ma
     const hasAchievedMainSet = mainSetsOf(record).some((s) => isSetAchievedAny(s, mode));
     if (!hasAchievedMainSet) continue; // 도전세트 성공 여부와 무관하게, 본세트 달성 기록만 반영
 
-    points.push({ date: session.date, weight: record.weightUsed });
+    points.push({ date: session.date, weight: record.weightUsed, generation: session.generation || 1 });
   }
 
   return points.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+// v2.3.0: Generation별 세션 요약(첫/마지막 운동 날짜)을 계산합니다. 세션 기록만으로 계산 가능한 정보만
+// 반환하며(리셋 시각 자체는 저장하지 않는다는 결정에 따름), 아직 세션이 하나도 없는 Generation은 결과에
+// 포함되지 않습니다. bodyweight 세션도 포함된 세션 배열이 들어오면 함께 집계되지만, 실제로는 화면에서
+// bodyweight를 걸러낸 세션만 넘기든 아니든 결과에 영향이 없습니다(날짜 집계에 gainMethod가 관여하지 않음).
+export function getGenerationSummaries(sessions) {
+  const byGen = new Map();
+  sessions.forEach((session) => {
+    const gen = session.generation || 1;
+    const existing = byGen.get(gen);
+    if (!existing) {
+      byGen.set(gen, { generation: gen, firstDate: session.date, lastDate: session.date });
+    } else {
+      if (session.date < existing.firstDate) existing.firstDate = session.date;
+      if (session.date > existing.lastDate) existing.lastDate = session.date;
+    }
+  });
+  return Array.from(byGen.values()).sort((a, b) => a.generation - b.generation);
 }
 
 export function getRecentMaxWeight(trendPoints) {

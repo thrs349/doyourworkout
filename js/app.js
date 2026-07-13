@@ -3,8 +3,10 @@ import * as state from "./core/state.js";
 import { applyTheme } from "./core/theme.js";
 import { APP_NAME, APP_TAGLINE } from "./core/appConfig.js";
 import { SEED_EXERCISES } from "./data/seedExercises.js";
-import { registerRoute, initRouter } from "./ui/router.js";
+import { registerRoute, initRouter, navigate } from "./ui/router.js";
 import { initExitGuard } from "./ui/exitGuard.js";
+import { el } from "./ui/dom.js";
+import { openModal } from "./ui/components/modal.js";
 import { renderHome } from "./ui/screens/home.js";
 import { renderWorkout } from "./ui/screens/workout.js";
 import { renderRoutineList } from "./ui/screens/routineList.js";
@@ -31,6 +33,37 @@ function applyAppIdentity() {
       manifestLink.href = URL.createObjectURL(blob);
     })
     .catch((e) => console.warn("[app] manifest 동적 반영 실패, 정적 manifest.json을 그대로 사용합니다.", e));
+}
+
+// v2.3.0: 운동 진행 상태(Draft) 복구. 어떤 화면이 그려지든(라우터가 결정한 화면 위에 오버레이) 앱 실행 시
+// 1회만 확인합니다. 자동 복구는 하지 않고(요구사항), 사용자가 명시적으로 선택하게 합니다.
+function checkDraftRecovery() {
+  const draft = state.loadDraft();
+  if (!draft) return;
+
+  const content = el("div", { class: "duration-modal" }, [
+    el("div", { class: "duration-title", text: "운동을 이어서 진행하시겠습니까?" }),
+    el("div", { class: "btn-row" }, [
+      el("button", {
+        class: "btn btn-ghost",
+        text: "새 운동 시작",
+        onclick: () => {
+          state.clearDraft();
+          close();
+        },
+      }),
+      el("button", {
+        class: "btn btn-primary",
+        text: "이어하기",
+        onclick: () => {
+          window.__draftSession = draft;
+          close();
+          navigate("#/workout");
+        },
+      }),
+    ]),
+  ]);
+  const close = openModal(content, { dismissible: false });
 }
 
 function bootstrap() {
@@ -60,6 +93,7 @@ function bootstrap() {
 
   initRouter(root, "#/home");
   initExitGuard();
+  checkDraftRecovery();
 }
 
 if (document.readyState === "loading") {

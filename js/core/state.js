@@ -3,7 +3,15 @@
 // "무엇을 해야 하는가"를 결정하는 오케스트레이션 계층입니다.
 // DOM을 전혀 다루지 않으므로, 이후 React 등으로 UI를 바꾸더라도 이 파일은 그대로 재사용할 수 있습니다.
 
-import { loadData, saveData, exportJSON, importJSONFile } from "./storage.js";
+import {
+  loadData,
+  saveData,
+  exportJSON,
+  importJSONFile,
+  saveDraft as storageSaveDraft,
+  loadDraft as storageLoadDraft,
+  clearDraft as storageClearDraft,
+} from "./storage.js";
 import { makeExerciseDefinition, makeExerciseState, makeRoutineVersion, makeWorkoutSession, makeExerciseRecord, uid, BODYWEIGHT_GOAL_ALERT_STREAK } from "./models.js";
 import {
   computeJudgement,
@@ -300,6 +308,83 @@ export function getPendingActions({ dayKey } = {}) {
   return actions;
 }
 
+/* ---------------- Generation (운동 기준 초기화) ---------------- */
+// v2.3.0: "기존 기록은 유지, 운동 기준(중량/증량 진행 상태)만 새로 시작"하기 위한 기능입니다.
+// gain.js는 전혀 호출하지 않고, ExerciseState의 대상 필드만 명시적으로 나열해 교체합니다
+// (models.js의 makeExerciseState() 팩토리로 통째 교체하지 않음 - 향후 필드가 추가되어도
+// 이 목록에 명시적으로 추가하기 전까지는 이 함수의 영향을 받지 않도록 하기 위함).
+// bodyweight는 이 기능의 대상이 아니며(ExerciseState 전혀 건드리지 않음), machine/freeweight/high_rep에만 적용됩니다.
+// 활성/비활성 여부와 무관하게 해당 gainMethod의 모든 종목에 적용됩니다.
+export function resetGeneration() {
+  data.exercises.forEach((ex) => {
+    if (ex.gainMethod === "bodyweight") return; // bodyweight는 완전히 제외
+
+    const st = getExerciseState(ex.id);
+
+    if (ex.gainMethod === "high_rep") {
+      // high_rep은 gain.js 상태머신 자체를 쓰지 않으므로 gainConditionState/isGainCandidate는 항상 기본값에
+      // 머물러 있지만(never mutated by gain.js), 최종 구현 스펙에 명시된 대로 명시적으로 초기화합니다.
+      // freeweightStage/machine*/freeweightChallengeWeight는 high_rep과 무관한 필드라 계속 건드리지 않습니다.
+      data.exerciseStates[ex.id] = {
+        ...st,
+        currentWeight: null,
+        warmupWeightOverride: null,
+        challengeWeightDefault: null,
+        gainConditionState: "none",
+        isGainCandidate: false,
+      };
+    } else {
+      // machine / freeweight
+      data.exerciseStates[ex.id] = {
+        ...st,
+        currentWeight: null,
+        warmupWeightOverride: null,
+        challengeWeightDefault: null,
+        gainConditionState: "none",
+        isGainCandidate: false,
+        freeweightStage: null,
+        machinePendingIncreaseWeight: null,
+        machineChallengeWeight: null,
+        freeweightChallengeWeight: null,
+      };
+    }
+  });
+
+  data.designatedChallengeExerciseId = null;
+  data.currentGeneration = (data.currentGeneration || 1) + 1;
+  persist();
+}
+
+// v2.3.0: 현재 중량이 설정되지 않은(currentWeight == null) 종목을 조회하는 읽기 전용 함수입니다.
+// "운동 시작 제한"(v2.3, day-scoped)과 향후 알림센터(v2.4 예정, 전역)가 동일한 함수를 재사용할 수 있도록
+// 전역 버전과 day-scoped 버전을 분리했습니다. 어떤 상태도 변경하지 않습니다.
+export function getExercisesMissingWeight() {
+  return getActiveExercises().filter(
+    (ex) => ex.gainMethod !== "bodyweight" && getExerciseState(ex.id).currentWeight == null
+  );
+}
+
+export function getExercisesMissingWeightForDay(dayKey) {
+  const routineIds = new Set(getRoutineExercises(dayKey).map((e) => e.id));
+  return getExercisesMissingWeight().filter((ex) => routineIds.has(ex.id));
+}
+
+/* ---------------- 운동 진행 상태(Draft) 복구 ---------------- */
+// v2.3.0: storage.js의 별도 key(STORAGE_KEY와 분리)에 대한 얇은 pass-through입니다.
+// UI(workout.js/app.js)는 storage.js를 직접 호출하지 않고 이 함수들을 통해서만 접근합니다(기존 레이어 원칙 유지).
+// startSession()/finishSession() 등 기존 세션 함수는 이 섹션과 무관하게 그대로 동작합니다.
+export function saveDraft(draft) {
+  storageSaveDraft(draft);
+}
+
+export function loadDraft() {
+  return storageLoadDraft();
+}
+
+export function clearDraft() {
+  storageClearDraft();
+}
+
 /* ---------------- 오늘의 운동(세션) ---------------- */
 
 // 화면에 그릴 계획(워밍업/본세트/도전세트 행 구조)을 만듭니다. 아직 세션을 저장하지는 않습니다.
@@ -518,6 +603,7 @@ export function finishSession(draftSession) {
     endTime,
     durationMinutes,
     records,
+    generation: data.currentGeneration, // v2.3.0: 완료 시점의 Generation 번호를 세션에 기록(그래프 색상 구분/히스토리 집계 전용)
   });
 
   data.sessions.push(session);

@@ -5,6 +5,9 @@
 import { defaultAppData, SCHEMA_VERSION } from "./models.js";
 
 const STORAGE_KEY = "hangtory:data";
+// v2.3.0: 운동 진행 상태(Draft) 복구 기능 전용 key입니다. STORAGE_KEY(메인 데이터)와 완전히 분리되어 있어
+// SCHEMA_VERSION/migrate()와는 무관합니다. 내부 식별자라 브랜딩 변경 대상이 아닙니다.
+const DRAFT_STORAGE_KEY = "hangtory:draft";
 
 export function loadData() {
   try {
@@ -153,6 +156,14 @@ function migrate(data) {
     merged.exercises = (merged.exercises || []).map((ex) => ({ cueNotes: [], ...ex }));
   }
 
+  // v11 -> v12: Generation(운동 기준 초기화) 지원을 위한 필드가 추가됨.
+  //  - 루트에 currentGeneration(현재 Generation 번호)을 1로 채웁니다(과거 데이터는 전부 "초기화 이전"이므로 1).
+  //  - 과거 세션 기록 전부에 generation:1을 채웁니다. 판정/증량 계산과 무관한, 그래프 색상 구분/히스토리 집계 전용 값입니다.
+  if (fromVersion < 12) {
+    merged.currentGeneration = merged.currentGeneration ?? 1;
+    merged.sessions = (merged.sessions || []).map((session) => ({ generation: 1, ...session }));
+  }
+
   merged.schemaVersion = SCHEMA_VERSION;
   return merged;
 }
@@ -162,13 +173,49 @@ export function exportJSON(data) {
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  const stamp = new Date().toISOString().slice(0, 10);
+  // v2.3.0: 브랜딩 변경 반영 + 날짜를 YYMMDD로 표기 (예: 260713). STORAGE_KEY 등 내부 식별자와는 무관합니다.
+  const stamp = new Date().toISOString().slice(2, 10).replace(/-/g, "");
   a.href = url;
-  a.download = `hangtory-backup-${stamp}.json`;
+  a.download = `doyourworkout-backup-${stamp}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+// ---------------- 운동 진행 상태(Draft) 복구 ----------------
+// v2.3.0: 메인 앱 데이터(STORAGE_KEY)와 완전히 분리된 별도 key를 사용합니다.
+// SCHEMA_VERSION/migrate()의 영향을 전혀 받지 않고, defaultAppData()에도 포함되지 않습니다.
+// 저장하는 값은 state.js의 startSession()이 만드는 draft 구조({id,date,day,startTime,plan})를 그대로,
+// 추가 필드 없이 저장합니다.
+
+export function saveDraft(draft) {
+  try {
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+    return true;
+  } catch (e) {
+    console.error("[storage] draft 저장에 실패했습니다.", e);
+    return false;
+  }
+}
+
+export function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error("[storage] draft를 불러오지 못했습니다.", e);
+    return null;
+  }
+}
+
+export function clearDraft() {
+  try {
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+  } catch (e) {
+    console.error("[storage] draft 삭제에 실패했습니다.", e);
+  }
 }
 
 export function importJSONFile(file) {

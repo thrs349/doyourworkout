@@ -130,6 +130,20 @@ export function renderWorkout(root) {
 
   function revalidate() {
     if (confirmBtn) confirmBtn.disabled = !isEntryComplete();
+    scheduleDraftSave();
+  }
+  // ------------------------------------------------------------------------
+
+  // v2.3.0 Draft 자동 저장 --------------------------------------------------
+  // 입력이 바뀔 때마다(revalidate 경유) 디바운스(약 0.8초)로 저장합니다. Polling/Interval은 쓰지 않고,
+  // 순수 이벤트(입력 변경) 기반으로만 저장합니다. 저장 위치는 storage.js의 별도 key(STORAGE_KEY와 분리)라
+  // 메인 데이터/SCHEMA_VERSION과 무관합니다.
+  let draftSaveTimer = null;
+  function scheduleDraftSave() {
+    if (draftSaveTimer) clearTimeout(draftSaveTimer);
+    draftSaveTimer = setTimeout(() => {
+      state.saveDraft(draft);
+    }, 800);
   }
   // ------------------------------------------------------------------------
 
@@ -443,6 +457,7 @@ export function renderWorkout(root) {
   // 호출 구조는 v2.1과 완전히 동일합니다.
   function onFinish() {
     finishedSession = state.finishSession(draft);
+    state.clearDraft(); // v2.3.0: 운동 완료 시에만 draft 삭제(그 외에는 뒤로가기/새로고침/앱 종료 모두 draft 유지)
     showDurationPopup();
   }
 

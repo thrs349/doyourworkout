@@ -2,7 +2,7 @@
 // 앱이 다루는 데이터의 "형태"만 정의하는 순수 모듈입니다.
 // UI나 저장소에 의존하지 않으므로, 이후 다른 프레임워크로 옮기더라도 그대로 재사용할 수 있습니다.
 
-export const SCHEMA_VERSION = 11; // v2.1.0: 종목별 큐노트(cueNotes) 필드 추가. 판정/증량 로직과는 무관한 순수 표시용 메모입니다.
+export const SCHEMA_VERSION = 12; // v2.3.0: Generation(운동 기준 초기화) 지원. 세션에 generation 필드, 루트에 currentGeneration 필드 추가. 판정/증량 계산식 자체는 무관.
 
 // 증량 방식(gainMethod) 목록입니다. 새 방식을 추가하려면 여기 하나만 더 넣고,
 // judge.js/gain.js의 해당 분기만 채우면 됩니다.
@@ -174,8 +174,9 @@ export function makeWorkoutSession({
   durationMinutes = null,
   freeweightChallengeExerciseId = null,
   records = [],
+  generation = 1, // v2.3.0: 이 세션이 속한 Generation 번호. "운동 기준 초기화" 전후 기록을 구분하는 데만 쓰이고(그래프 색상 구분/히스토리 집계), 판정/증량 로직에는 전혀 관여하지 않습니다.
 } = {}) {
-  return { id, date, day, routineVersionId, startTime, endTime, durationMinutes, freeweightChallengeExerciseId, records };
+  return { id, date, day, routineVersionId, startTime, endTime, durationMinutes, freeweightChallengeExerciseId, records, generation };
 }
 
 // 세션 내 종목별 기록
@@ -217,6 +218,7 @@ export function defaultAppData() {
     routines: DAYS.map((d) => makeRoutineDay(d.key)),
     sessions: [],
     designatedChallengeExerciseId: null, // 다음 해당 종목 세션에 도전세트를 적용할 종목 (머신/프리웨이트 공통, 사용자가 선택)
+    currentGeneration: 1, // v2.3.0: "운동 기준 초기화"를 누를 때마다 1씩 증가. bodyweight는 이 개념의 영향을 받지 않습니다.
     settings: {
       themeId: "themeB",
       customThemeNames: {}, // themeId -> 사용자가 Long Press로 바꾼 이름
