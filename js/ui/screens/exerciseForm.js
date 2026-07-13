@@ -79,14 +79,12 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
     highRepFields.style.display = isHighRep ? "block" : "none";
     repsField.group.style.display = isHighRep || isBodyweightTime ? "none" : "block";
     targetSecondsField.group.style.display = isBodyweightTime ? "block" : "none";
-    challengeWeightGroup.style.display = isEdit && !isUnilateral && (gainMethod === "machine" || gainMethod === "freeweight") ? "block" : "none";
 
     // v1.9.1: 맨몸은 중량 추적 대상이 아니므로 "목표 중량"과 "워밍업 세트" 관련 입력을 전부 숨깁니다.
     // (판정 로직은 건드리지 않고 설정 화면 표시만 제어합니다.)
     targetWeightField.group.style.display = isBodyweight ? "none" : "block";
     warmupToggleGroup.style.display = isBodyweight ? "none" : "block";
     warmupRepsGroup.style.display = !isBodyweight && warmupEnabled ? "block" : "none";
-    if (warmupWeightGroup) warmupWeightGroup.group.style.display = !isBodyweight && warmupEnabled ? "block" : "none";
   }
   function selectMethod(m) {
     gainMethod = m;
@@ -129,16 +127,12 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
   const warmupRepsGroup = warmupRepsField.group;
   warmupRepsGroup.style.display = warmupEnabled ? "block" : "none";
 
-  const warmupWeightGroup = isEdit ? numberField("워밍업 중량 (비우면 자동 계산)", stateInitial.warmupWeightOverride, "자동") : null;
-  if (warmupWeightGroup) warmupWeightGroup.group.style.display = warmupEnabled ? "block" : "none";
-
   const warmupSwitch = el("button", {
     class: `switch${warmupEnabled ? " on" : ""}`,
     onclick: () => {
       warmupEnabled = !warmupEnabled;
       warmupSwitch.classList.toggle("on", warmupEnabled);
       warmupRepsGroup.style.display = warmupEnabled ? "block" : "none";
-      if (warmupWeightGroup) warmupWeightGroup.group.style.display = warmupEnabled ? "block" : "none";
     },
   });
   const warmupToggleGroup = el("div", { class: "field-group" }, [
@@ -147,10 +141,11 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
 
   // ---- 목표 중량 (현재 중량) ----
   const targetWeightField = numberField("목표 중량 (kg)", isEdit ? stateInitial.currentWeight : 0, "예: 40");
-
-  // ---- 도전세트 기본 중량 (수정 화면 + 머신/프리웨이트 + 비편측만) ----
-  const challengeWeightField = isEdit ? numberField("도전세트 중량 (비우면 매번 직접 입력)", stateInitial.challengeWeightDefault, "직접 입력") : null;
-  const challengeWeightGroup = challengeWeightField ? challengeWeightField.group : el("div", { style: { display: "none" } });
+  // v2.3.2: "워밍업 중량"/"도전세트 중량" 설정 필드는 종목 관리 화면에서 제거했습니다. 이제 두 값 모두
+  // 운동 화면에서 실제 수행 흐름에 따라 관리됩니다(워밍업: warmupWeightOverride를 state.js가 자동 갱신,
+  // 도전세트: 매번 직접 입력하거나 실패 시 재도전 기억값을 그대로 사용). 저장 로직은 state.js의
+  // setWarmupWeightOverride()/setChallengeWeightDefault()를 그대로 두되(다른 화면에서 재사용될 가능성 대비),
+  // 이 화면에서는 더 이상 호출하지 않습니다.
 
   const screen = el("div", { id: "exercise-form-screen", class: "screen-content" }, [
     el("div", { class: "topbar" }, [
@@ -172,8 +167,6 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
     unilateralGroup,
     warmupToggleGroup,
     warmupRepsGroup,
-    warmupWeightGroup ? warmupWeightGroup.group : null,
-    challengeWeightGroup,
     el("div", { class: "bottom-fixed" }, [
       el("button", {
         class: "btn btn-primary",
@@ -219,8 +212,6 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
             if (newWeight !== null && newWeight !== stateInitial.currentWeight) {
               state.setExerciseWeight(exerciseId, newWeight);
             }
-            if (warmupWeightGroup) state.setWarmupWeightOverride(exerciseId, warmupWeightGroup.get());
-            if (challengeWeightField) state.setChallengeWeightDefault(exerciseId, challengeWeightField.get());
 
             // 맨몸 종목의 "목표 난이도 증가"로 볼 수 있는 변경이 있었을 때만 pending을 해제합니다.
             // 대상: 목표 유형 변경, 목표 반복수 "증가", 목표 시간 "증가", 세트 수 "증가".

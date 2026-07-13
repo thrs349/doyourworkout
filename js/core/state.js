@@ -33,7 +33,6 @@ import {
   applyFreeweightChallengeSuccess,
   applyFreeweightChallengeFailure,
 } from "./gain.js";
-import { computeWarmupWeight } from "./warmup.js";
 
 let data = null;
 const listeners = new Set();
@@ -104,7 +103,9 @@ export function setExerciseWeight(id, newWeight) {
   const ex = getExercise(id);
   const state = getExerciseState(id);
   const reset = resetAfterWeightIncrease(ex.gainMethod, state);
-  data.exerciseStates[id] = { ...reset, currentWeight: newWeight };
+  // v2.3.2: "변경 전" currentWeight(state.currentWeight, 재할당 전에 캡처된 값)를 다음 워밍업 기준값으로 이월합니다.
+  // gain.js의 resetAfterWeightIncrease() 반환값(reset)은 그대로 두고 warmupWeightOverride 필드만 덧씌웁니다.
+  data.exerciseStates[id] = { ...reset, currentWeight: newWeight, warmupWeightOverride: state.currentWeight };
   if (data.designatedChallengeExerciseId === id) data.designatedChallengeExerciseId = null;
   persist();
 }
@@ -412,9 +413,11 @@ export function buildWorkoutPlan(dayKey) {
     // v1.9.1: 맨몸은 워밍업 세트를 쓰지 않습니다. UI에서 이미 막아두지만, 과거 데이터에 warmupEnabled:true가
     // 남아있는 경우까지 대비한 방어 가드입니다(판정/증량 로직과는 무관, 워밍업 세트 생성 여부만 결정).
     const warmupApplicable = ex.warmupEnabled && ex.gainMethod !== "bodyweight";
-    const warmupWeight = warmupApplicable
-      ? state.warmupWeightOverride ?? computeWarmupWeight(data.sessions, ex.id, state.currentWeight)
-      : null;
+    // v2.3.2: 워밍업 중량은 더 이상 "종목 관리 설정값 -> 없으면 과거 기록 기반 자동계산"이 아니라,
+    // ExerciseState.warmupWeightOverride 하나가 "실제 운동 흐름에서 유지되는 워밍업 기준값" 역할을 그대로 겸합니다
+    // (신규/Generation 초기화 직후에는 null이라 화면에서 빈 칸으로 시작 -> 사용자가 최초 입력).
+    // 갱신 로직은 finishSession()에 있고, 여기서는 그 값을 그대로 읽기만 합니다. computeWarmupWeight()는 더 이상 호출하지 않습니다.
+    const warmupWeight = warmupApplicable ? state.warmupWeightOverride : null;
 
     return {
       exercise: ex,
@@ -433,15 +436,11 @@ export function buildWorkoutPlan(dayKey) {
       challengeSet: isChallengeToday
         ? {
             targetReps: ex.targetReps,
-            // machine: 직전 도전 실패로 기억해둔 machineChallengeWeight가 있으면 그 값을 우선 사용합니다.
-            // freeweight: 직전 도전 실패로 기억해둔 freeweightChallengeWeight가 있으면 그 값을 우선 사용합니다(machine과 완전히 별개 필드).
-            // 그 외/두 필드 모두 없으면 기존 방식(challengeWeightDefault ?? "")을 그대로 유지합니다.
-            weight:
-              ex.gainMethod === "machine"
-                ? state.machineChallengeWeight ?? state.challengeWeightDefault ?? ""
-                : ex.gainMethod === "freeweight"
-                ? state.freeweightChallengeWeight ?? state.challengeWeightDefault ?? ""
-                : state.challengeWeightDefault ?? "",
+            // v2.3.2: 종목 관리 화면의 고정 기본값(challengeWeightDefault)은 더 이상 사용하지 않습니다(fallback 제거).
+            // machine: 직전 도전 실패로 기억해둔 machineChallengeWeight가 있으면 그 값을 우선 사용(gain.js가 관리, 무변경).
+            // freeweight: 직전 도전 실패로 기억해둔 freeweightChallengeWeight가 있으면 그 값을 우선 사용(machine과 완전히 별개 필드, gain.js가 관리, 무변경).
+            // 둘 다 없으면(첫 도전이거나 직전 성공으로 초기화됨) 빈 칸으로 시작 -> 매번 직접 입력.
+            weight: ex.gainMethod === "machine" ? state.machineChallengeWeight ?? "" : state.freeweightChallengeWeight ?? "",
             performedRaw: "",
           }
         : null,
@@ -565,6 +564,19 @@ export function finishSession(draftSession) {
       } else if (challengeResult === "retry") {
         data.exerciseStates[ex.id] = applyFreeweightChallengeFailure(getExerciseState(ex.id), challengeWeightNum);
       }
+    }
+
+    // v2.3.2: 워밍업 기준값(warmupWeightOverride) 갱신 — 이 레코드에 대한 판정/도전세트 처리가 전부 끝난
+    // "최종 상태"를 딱 한 번만 읽어 갱신합니다(그 사이 gain.js가 반영한 다른 필드를 덮어쓰지 않기 위함).
+    // - currentWeight가 이번 세션 중 바뀌었으면(machine 지연 승격 또는 freeweight 도전 성공): "변경 전" 값을 다음 워밍업 기준값으로.
+    //   (state.currentWeight는 이 레코드 처리 시작 시점에 캡처된 값이라 이후 재할당과 무관하게 "변경 전" 값 그대로입니다.)
+    // - 바뀌지 않았으면: 이번 세션에 실제로 사용한 워밍업 중량을 그대로 기억(없으면 null 유지).
+    // bodyweight는 warmupApplicable이 애초에 false라 row.warmup이 없어 이 블록 자체가 실행되지 않습니다.
+    if (row.warmup) {
+      const finalState = getExerciseState(ex.id);
+      const weightChangedThisSession = finalState.currentWeight !== state.currentWeight;
+      const nextWarmup = weightChangedThisSession ? state.currentWeight : row.warmup.weight;
+      data.exerciseStates[ex.id] = { ...finalState, warmupWeightOverride: nextWarmup };
     }
 
     const sets = [
