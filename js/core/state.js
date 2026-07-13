@@ -335,7 +335,7 @@ export function buildWorkoutPlan(dayKey) {
       exercise: ex,
       isChallengeToday,
       warmup: warmupApplicable
-        ? { targetReps: ex.warmupTargetReps, weight: warmupWeight, performedRaw: "" }
+        ? { targetReps: ex.warmupTargetReps, weight: warmupWeight, performedRaw: "", leftRaw: "", rightRaw: "" }
         : null,
       mainSets: Array.from({ length: Math.max(mainSetCount, 0) }, (_, i) => ({
         setNo: i + 1,

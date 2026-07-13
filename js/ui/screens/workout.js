@@ -54,12 +54,14 @@ function performedInput(getter, setter) {
 }
 
 // v1.3: 편측(좌우 구분) 운동의 "수행" 칸. 입력 박스 2개를 위치로만 좌우 구분합니다(라벨/슬래시 없음).
-function dualPerformedInput(setLeft, setRight) {
+// v2.2.1: getLeft/getRight를 추가해 재렌더(예: Check Gate "다시 수정") 시 기존 입력값이 다시 표시되도록 함.
+function dualPerformedInput(getLeft, getRight, setLeft, setRight) {
   const leftInput = el("input", {
     class: "cell-input dual",
     type: "text",
     inputmode: "tel",
     placeholder: "-",
+    value: getLeft ? getLeft() ?? "" : "",
     oninput: (e) => setLeft(e.target.value),
   });
   const rightInput = el("input", {
@@ -67,6 +69,7 @@ function dualPerformedInput(setLeft, setRight) {
     type: "text",
     inputmode: "tel",
     placeholder: "-",
+    value: getRight ? getRight() ?? "" : "",
     oninput: (e) => setRight(e.target.value),
   });
   return el("div", { class: "dual-input" }, [leftInput, rightInput]);
@@ -92,14 +95,21 @@ export function renderWorkout(root) {
   // popstate와 완전히 분리해 onFinish()를 직접 호출합니다(아래 onCheckGateComplete 참고).
   let checkGatePopstateHandler = null;
 
-  // 필수 입력(본세트 전체 / 편측 좌·우 모두 / 워밍업 있으면 수행값 / 도전세트 있으면 중량+수행값)이
+  // 필수 입력(본세트 전체 / 편측 좌·우 모두 / 워밍업 있으면 중량+수행값 / 도전세트 있으면 중량+수행값)이
   // 모두 채워졌는지 검사합니다. judge.js의 parseSetInput()을 그대로 재사용해 "빈 입력" 판정 기준을
   // judge 로직과 항상 일치시키며, judge.js 자체는 수정하지 않습니다.
   function isEntryComplete() {
     return draft.plan.every((row) => {
       const ex = row.exercise;
 
-      if (row.warmup && parseSetInput(row.warmup.performedRaw).empty) return false;
+      if (row.warmup) {
+        const w = row.warmup.weight;
+        const weightOk = w !== null && w !== undefined && w !== "";
+        const performedOk = ex.isUnilateral
+          ? !parseSetInput(row.warmup.leftRaw).empty && !parseSetInput(row.warmup.rightRaw).empty
+          : !parseSetInput(row.warmup.performedRaw).empty;
+        if (!weightOk || !performedOk) return false;
+      }
 
       const mainSetsOk = row.mainSets.every((s) =>
         ex.isUnilateral
@@ -174,10 +184,23 @@ export function renderWorkout(root) {
           el(
             "span",
             { class: "col" },
-            performedInput(null, (v) => {
-              row.warmup.performedRaw = v;
-              revalidate();
-            })
+            ex.isUnilateral
+              ? dualPerformedInput(
+                  () => row.warmup.leftRaw,
+                  () => row.warmup.rightRaw,
+                  (v) => {
+                    row.warmup.leftRaw = v;
+                    revalidate();
+                  },
+                  (v) => {
+                    row.warmup.rightRaw = v;
+                    revalidate();
+                  }
+                )
+              : performedInput(() => row.warmup.performedRaw, (v) => {
+                  row.warmup.performedRaw = v;
+                  revalidate();
+                })
           ),
           el("span", { class: "col" }),
         ])
@@ -187,6 +210,8 @@ export function renderWorkout(root) {
     row.mainSets.forEach((s, i) => {
       const performedCell = ex.isUnilateral
         ? dualPerformedInput(
+            () => s.leftRaw,
+            () => s.rightRaw,
             (v) => {
               s.leftRaw = v;
               revalidate();
@@ -196,7 +221,7 @@ export function renderWorkout(root) {
               revalidate();
             }
           )
-        : performedInput(null, (v) => {
+        : performedInput(() => s.performedRaw, (v) => {
             s.performedRaw = v;
             revalidate();
           });
@@ -238,7 +263,7 @@ export function renderWorkout(root) {
           el(
             "span",
             { class: "col" },
-            performedInput(null, (v) => {
+            performedInput(() => row.challengeSet.performedRaw, (v) => {
               row.challengeSet.performedRaw = v;
               revalidate();
             })
@@ -291,12 +316,18 @@ export function renderWorkout(root) {
     const rows = [];
 
     if (row.warmup) {
+      const warmupPerformedCell = ex.isUnilateral
+        ? el("span", { class: "col dual-result" }, [
+            el("span", { text: row.warmup.leftRaw || "-" }),
+            el("span", { text: row.warmup.rightRaw || "-" }),
+          ])
+        : el("span", { class: "col", text: row.warmup.performedRaw || "-" });
       rows.push(
         el("div", { class: "set-row warmup" }, [
           el("span", { class: "ex-name", text: ex.name }),
           el("span", { class: "col", text: ex.gainMethod === "bodyweight" ? "" : row.warmup.weight ?? "-" }),
           el("span", { class: "col", text: String(row.warmup.targetReps) }),
-          el("span", { class: "col", text: row.warmup.performedRaw || "-" }),
+          warmupPerformedCell,
           el("span", { class: "col judge" }),
         ])
       );
@@ -435,23 +466,34 @@ export function renderWorkout(root) {
       const ex = draft.plan[idx].exercise;
       const rows = [];
       if (rec.warmup) {
+        const warmupPerformedCell = ex.isUnilateral
+          ? el("span", { class: "col dual-result" }, [
+              el("span", { text: rec.warmup.leftRaw || "-" }),
+              el("span", { text: rec.warmup.rightRaw || "-" }),
+            ])
+          : el("span", { class: "col", text: rec.warmup.performedRaw || "-" });
         rows.push(
           el("div", { class: "set-row warmup" }, [
             el("span", { class: "ex-name", text: ex.name }),
             el("span", { class: "col", text: ex.gainMethod === "bodyweight" ? "" : rec.warmup.weight ?? "-" }),
             el("span", { class: "col", text: String(rec.warmup.targetReps) }),
-            el("span", { class: "col", text: rec.warmup.performedRaw || "-" }),
+            warmupPerformedCell,
             el("span", { class: "col" }),
           ])
         );
       }
       const mainSets = rec.sets.filter((s) => !s.isChallenge && !s.isWarmup);
+      const challengeSet = rec.sets.find((s) => s.isChallenge);
       // v1.2: 고반복이 상한을 모두 연속 달성해 자동 증량된 경우 "증량!"으로 표시(마지막 본세트 행에 표기)
       const gainLabel = rec.gainEvent === "auto_increase" ? "증량!" : null;
+      // v2.2.1: 도전세트가 있는 종목은 "본세트 A/B/X"와 "도전세트 성공/재도전"이 동시에 표시되어 혼란을
+      // 준다는 피드백에 따라, 도전세트가 있으면 본세트 쪽 판정 칸은 비워두고 도전세트 판정만 보여줍니다.
+      // rec.judgement/rec.gainEvent 값 자체(=judge.js/gain.js/state.js가 계산한 데이터)는 그대로이며,
+      // 이 화면에서 무엇을 표시할지만 조건 처리합니다.
       mainSets.forEach((s, i) => {
         const isLast = i === mainSets.length - 1;
-        const judgeText = isLast ? gainLabel || rec.judgement || "" : "";
-        const judgeClass = gainLabel ? "judge-gain" : rec.judgement ? `judge-${rec.judgement.toLowerCase()}` : "";
+        const judgeText = isLast && !challengeSet ? gainLabel || rec.judgement || "" : "";
+        const judgeClass = challengeSet ? "" : gainLabel ? "judge-gain" : rec.judgement ? `judge-${rec.judgement.toLowerCase()}` : "";
         const performedCell =
           s.leftRaw != null || s.rightRaw != null
             ? el("span", { class: "col dual-result" }, [
@@ -469,7 +511,6 @@ export function renderWorkout(root) {
           ])
         );
       });
-      const challengeSet = rec.sets.find((s) => s.isChallenge);
       if (challengeSet) {
         // v1.2: 성공 문구에 느낌표 추가("성공!"), 재도전은 기존 표현 유지
         const resultText = rec.challengeResult === "success" ? "성공!" : "재도전";

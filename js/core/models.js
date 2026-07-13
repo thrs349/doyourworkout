@@ -183,7 +183,7 @@ export function makeExerciseRecord({
   exerciseId,
   weightUsed, // 본세트에 사용한 중량 (워밍업 계산의 기준이 됨)
   challengeWeight = null, // 도전세트에 사용한 중량(본세트와 다를 수 있음). 워밍업 계산에서 항상 제외.
-  warmup = null, // { targetReps, weight, performedRaw }
+  warmup = null, // { targetReps, weight, performedRaw, leftRaw, rightRaw } - leftRaw/rightRaw는 편측(isUnilateral) 종목의 워밍업에서만 값이 채워지고, 그 외에는 빈 문자열/미사용(본세트와 동일한 관례)
   sets = [], // [{setNo, targetReps, performedRaw, isChallenge, isWarmup, leftRaw, rightRaw}] - leftRaw/rightRaw는 편측(isUnilateral) 종목의 본세트에서만 사용, 그 외에는 null
   judgement = null, // "A" | "B" | "X" | null
   challengeResult = null, // "success" | "retry" | null
