@@ -477,18 +477,17 @@ export function finishSession(draftSession) {
 
     if (ex.isUnilateral) {
       // 편측 운동: 좌우 각각 입력받아 전용 규칙으로만 판정하고, 증량/후보 로직은 전혀 적용하지 않습니다.
-      // 맨몸 시간형은 목표/80% 3단계 기준의 전용 함수를 사용하고, 그 외(맨몸 반복수형/고반복)는
-      // "이상"(threshold) 기준을, machine/freeweight는 기존과 동일하게 "정확히"(exact) 기준을 사용합니다.
+      // 맨몸 시간형은 목표/80% 3단계 기준의 전용 함수를 사용하고, 그 외(맨몸 반복수형/고반복/machine/freeweight)는
+      // v2.3.x부터 전부 "이상"(threshold) 기준으로 통일합니다(비편측과 동일 정책, 헌장: 목표 이상 연속 수행 = A).
       const isUnilateralTimeGoal = isBodyweight && ex.bodyweightGoalType === "time";
       if (isUnilateralTimeGoal) {
         judgement = computeUnilateralTimeJudgement(
           row.mainSets.map((s) => ({ target: s.targetReps, leftRaw: s.leftRaw, rightRaw: s.rightRaw }))
         );
       } else {
-        const unilateralMode = isBodyweight || isHighRep ? "threshold" : "exact";
         judgement = computeUnilateralJudgement(
           row.mainSets.map((s) => ({ target: s.targetReps, leftRaw: s.leftRaw, rightRaw: s.rightRaw })),
-          unilateralMode
+          "threshold"
         );
       }
       // 고반복 편측: 상한 반복수 달성 여부(자동 증량 대신 검토 팝업 트리거)를 좌우 각각 확인합니다.
@@ -506,7 +505,7 @@ export function finishSession(draftSession) {
     } else {
       judgement = computeJudgement(
         row.mainSets.map((s) => ({ targetReps: s.targetReps, performedRaw: s.performedRaw })),
-        { mode: isHighRep ? "threshold" : "exact" }
+        { mode: "threshold" } // v2.3.x: machine/freeweight도 "목표 이상 연속 수행 = A"로 통일(기존엔 machine/freeweight만 "정확히 일치" 요구했던 것을 헌장 기준에 맞춰 수정). high_rep은 원래부터 threshold였음.
       );
 
       if (isHighRep) {
