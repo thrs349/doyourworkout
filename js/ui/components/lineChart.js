@@ -1,6 +1,9 @@
 // lineChart.js
 // 외부 차트 라이브러리 없이 아주 단순한 SVG 라인 차트를 그립니다.
-// points: [{ date: "YYYY-MM-DD", weight: number }] (오름차순 정렬되어 있어야 함)
+// points: [{ date: "YYYY-MM-DD", weight: number, generation? }] (오름차순 정렬되어 있어야 함)
+// v2.3.0: generation 필드가 있으면 "가장 큰 generation 값"만 기존 색상(현재 Generation)으로, 나머지는
+// 전부 회색(이전 Generation, 몇 세대 전이든 구분 없이 2색만 사용)으로 그리고, 색이 바뀌는 지점 1곳만
+// 회색 점선으로 연결합니다. generation 필드가 없는 점(과거 호출부와의 호환)은 항상 1로 취급됩니다.
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -45,18 +48,42 @@ export function renderLineChart(points, { width = 280, height = 96 } = {}) {
   // 기준선(최저/최고)
   svg.appendChild(svgEl("line", { x1: padding.left, y1: padding.top + innerH, x2: width - padding.right, y2: padding.top + innerH, stroke: "var(--color-border)", "stroke-width": 1 }));
 
-  const pathD = points
-    .map((p, i) => `${i === 0 ? "M" : "L"} ${xOf(new Date(p.date).getTime()).toFixed(1)} ${yOf(p.weight).toFixed(1)}`)
-    .join(" ");
-  svg.appendChild(svgEl("path", { d: pathD, fill: "none", stroke: "var(--color-primary)", "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+  // v2.3.0: 점마다 x/y 좌표와 함께 색상(자신의 generation 기준)을 미리 계산해둡니다.
+  const maxGen = Math.max(...points.map((p) => p.generation || 1));
+  const colorOf = (gen) => ((gen || 1) === maxGen ? "var(--color-primary)" : "var(--color-text-muted)");
+  const pts = points.map((p) => ({
+    x: xOf(new Date(p.date).getTime()),
+    y: yOf(p.weight),
+    color: colorOf(p.generation),
+  }));
 
-  points.forEach((p) => {
+  // 점과 점 사이를 구간별로 나눠 그립니다: 같은 색끼리는 실선, 이전 Generation -> 현재 Generation으로
+  // 바뀌는 경계 구간 1곳만 회색 점선으로 연결합니다(여러 Generation이 있어도 항상 2색만 사용).
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1];
+    const b = pts[i];
+    const isBoundary = a.color !== b.color;
+    svg.appendChild(
+      svgEl("line", {
+        x1: a.x.toFixed(1),
+        y1: a.y.toFixed(1),
+        x2: b.x.toFixed(1),
+        y2: b.y.toFixed(1),
+        stroke: isBoundary ? "var(--color-text-muted)" : b.color,
+        "stroke-width": 2,
+        "stroke-linecap": "round",
+        ...(isBoundary ? { "stroke-dasharray": "3 3" } : {}),
+      })
+    );
+  }
+
+  pts.forEach((p) => {
     svg.appendChild(
       svgEl("circle", {
-        cx: xOf(new Date(p.date).getTime()).toFixed(1),
-        cy: yOf(p.weight).toFixed(1),
-        r: points.length === 1 ? 3 : 2.5,
-        fill: "var(--color-primary)",
+        cx: p.x.toFixed(1),
+        cy: p.y.toFixed(1),
+        r: pts.length === 1 ? 3 : 2.5,
+        fill: p.color,
       })
     );
   });
@@ -70,25 +97,25 @@ export function renderLineChart(points, { width = 280, height = 96 } = {}) {
   minLabel.textContent = String(minW);
   svg.appendChild(minLabel);
 
-  // X축: 모든 날짜를 나열하지 않고, 시간축을 균등 3분할한 지점(최근/중간/과거)의 날짜만 표시
-  const fractions = tRange === 0 ? [0] : [0, 0.5, 1];
-  const seenX = new Set();
-  fractions.forEach((f) => {
-    const t = minT + tRange * f;
-    const x = xOf(t);
-    const anchor = f === 0 ? "start" : f === 1 ? "end" : "middle";
-    const key = anchor + Math.round(x);
-    if (seenX.has(key)) return;
-    seenX.add(key);
+  // X축: 시간을 계산해 만들어낸 날짜가 아니라, 실제 기록이 있는 포인트 중에서만 인덱스로 선택합니다.
+  // 1개 -> 그 1개, 2개 -> 그 2개, 3개 이상 -> 첫/중간/마지막 인덱스(항상 실제 운동 기록 날짜).
+  const n = points.length;
+  const labelIndices = n <= 2 ? points.map((_, i) => i) : [0, Math.floor((n - 1) / 2), n - 1];
+  const seenIdx = new Set();
+  labelIndices.forEach((idx) => {
+    if (seenIdx.has(idx)) return; // n=3일 때 중간 인덱스가 양끝과 겹치는 경우는 없지만 방어적으로 dedupe
+    seenIdx.add(idx);
+    const p = pts[idx];
+    const anchor = idx === 0 ? "start" : idx === n - 1 ? "end" : "middle";
     const label = svgEl("text", {
-      x: Math.min(Math.max(x, padding.left), width - padding.right).toFixed(1),
+      x: Math.min(Math.max(p.x, padding.left), width - padding.right).toFixed(1),
       y: height - 4,
       "font-size": 9,
       fill: "var(--color-text-muted)",
       "font-family": "var(--font-mono)",
       "text-anchor": anchor,
     });
-    label.textContent = fmtMD(t);
+    label.textContent = fmtMD(new Date(points[idx].date).getTime());
     svg.appendChild(label);
   });
 

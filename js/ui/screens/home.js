@@ -74,6 +74,14 @@ export function renderHome(root) {
       alert("루틴에 등록된 운동이 없습니다. 먼저 루틴 설정에서 운동을 추가해 주세요.");
       return;
     }
+    // v2.3.0: Generation 초기화 등으로 currentWeight가 설정되지 않은(null) 종목이 오늘 루틴에 있으면
+    // workout.js에 진입하기 전에 차단합니다(오늘 루틴에 포함된 종목만 검사).
+    const missing = state.getExercisesMissingWeightForDay(dayKey);
+    if (missing.length > 0) {
+      const names = missing.map((ex) => `- ${ex.name}`).join("\n");
+      alert(`중량이 설정되지 않은 종목이 있습니다.\n\n${names}\n\n먼저 종목 관리에서 중량을 설정해주세요.`);
+      return;
+    }
     const session = state.startSession(dayKey);
     window.__draftSession = session; // 세션 진행 중에는 메모리에만 두고, 종료 시 state에 커밋합니다.
     navigate("#/workout");

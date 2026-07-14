@@ -3,7 +3,15 @@
 // "무엇을 해야 하는가"를 결정하는 오케스트레이션 계층입니다.
 // DOM을 전혀 다루지 않으므로, 이후 React 등으로 UI를 바꾸더라도 이 파일은 그대로 재사용할 수 있습니다.
 
-import { loadData, saveData, exportJSON, importJSONFile } from "./storage.js";
+import {
+  loadData,
+  saveData,
+  exportJSON,
+  importJSONFile,
+  saveDraft as storageSaveDraft,
+  loadDraft as storageLoadDraft,
+  clearDraft as storageClearDraft,
+} from "./storage.js";
 import { makeExerciseDefinition, makeExerciseState, makeRoutineVersion, makeWorkoutSession, makeExerciseRecord, uid, BODYWEIGHT_GOAL_ALERT_STREAK } from "./models.js";
 import {
   computeJudgement,
@@ -25,7 +33,6 @@ import {
   applyFreeweightChallengeSuccess,
   applyFreeweightChallengeFailure,
 } from "./gain.js";
-import { computeWarmupWeight } from "./warmup.js";
 
 let data = null;
 const listeners = new Set();
@@ -96,7 +103,9 @@ export function setExerciseWeight(id, newWeight) {
   const ex = getExercise(id);
   const state = getExerciseState(id);
   const reset = resetAfterWeightIncrease(ex.gainMethod, state);
-  data.exerciseStates[id] = { ...reset, currentWeight: newWeight };
+  // v2.3.2: "변경 전" currentWeight(state.currentWeight, 재할당 전에 캡처된 값)를 다음 워밍업 기준값으로 이월합니다.
+  // gain.js의 resetAfterWeightIncrease() 반환값(reset)은 그대로 두고 warmupWeightOverride 필드만 덧씌웁니다.
+  data.exerciseStates[id] = { ...reset, currentWeight: newWeight, warmupWeightOverride: state.currentWeight };
   if (data.designatedChallengeExerciseId === id) data.designatedChallengeExerciseId = null;
   persist();
 }
@@ -300,6 +309,83 @@ export function getPendingActions({ dayKey } = {}) {
   return actions;
 }
 
+/* ---------------- Generation (운동 기준 초기화) ---------------- */
+// v2.3.0: "기존 기록은 유지, 운동 기준(중량/증량 진행 상태)만 새로 시작"하기 위한 기능입니다.
+// gain.js는 전혀 호출하지 않고, ExerciseState의 대상 필드만 명시적으로 나열해 교체합니다
+// (models.js의 makeExerciseState() 팩토리로 통째 교체하지 않음 - 향후 필드가 추가되어도
+// 이 목록에 명시적으로 추가하기 전까지는 이 함수의 영향을 받지 않도록 하기 위함).
+// bodyweight는 이 기능의 대상이 아니며(ExerciseState 전혀 건드리지 않음), machine/freeweight/high_rep에만 적용됩니다.
+// 활성/비활성 여부와 무관하게 해당 gainMethod의 모든 종목에 적용됩니다.
+export function resetGeneration() {
+  data.exercises.forEach((ex) => {
+    if (ex.gainMethod === "bodyweight") return; // bodyweight는 완전히 제외
+
+    const st = getExerciseState(ex.id);
+
+    if (ex.gainMethod === "high_rep") {
+      // high_rep은 gain.js 상태머신 자체를 쓰지 않으므로 gainConditionState/isGainCandidate는 항상 기본값에
+      // 머물러 있지만(never mutated by gain.js), 최종 구현 스펙에 명시된 대로 명시적으로 초기화합니다.
+      // freeweightStage/machine*/freeweightChallengeWeight는 high_rep과 무관한 필드라 계속 건드리지 않습니다.
+      data.exerciseStates[ex.id] = {
+        ...st,
+        currentWeight: null,
+        warmupWeightOverride: null,
+        challengeWeightDefault: null,
+        gainConditionState: "none",
+        isGainCandidate: false,
+      };
+    } else {
+      // machine / freeweight
+      data.exerciseStates[ex.id] = {
+        ...st,
+        currentWeight: null,
+        warmupWeightOverride: null,
+        challengeWeightDefault: null,
+        gainConditionState: "none",
+        isGainCandidate: false,
+        freeweightStage: null,
+        machinePendingIncreaseWeight: null,
+        machineChallengeWeight: null,
+        freeweightChallengeWeight: null,
+      };
+    }
+  });
+
+  data.designatedChallengeExerciseId = null;
+  data.currentGeneration = (data.currentGeneration || 1) + 1;
+  persist();
+}
+
+// v2.3.0: 현재 중량이 설정되지 않은(currentWeight == null) 종목을 조회하는 읽기 전용 함수입니다.
+// "운동 시작 제한"(v2.3, day-scoped)과 향후 알림센터(v2.4 예정, 전역)가 동일한 함수를 재사용할 수 있도록
+// 전역 버전과 day-scoped 버전을 분리했습니다. 어떤 상태도 변경하지 않습니다.
+export function getExercisesMissingWeight() {
+  return getActiveExercises().filter(
+    (ex) => ex.gainMethod !== "bodyweight" && getExerciseState(ex.id).currentWeight == null
+  );
+}
+
+export function getExercisesMissingWeightForDay(dayKey) {
+  const routineIds = new Set(getRoutineExercises(dayKey).map((e) => e.id));
+  return getExercisesMissingWeight().filter((ex) => routineIds.has(ex.id));
+}
+
+/* ---------------- 운동 진행 상태(Draft) 복구 ---------------- */
+// v2.3.0: storage.js의 별도 key(STORAGE_KEY와 분리)에 대한 얇은 pass-through입니다.
+// UI(workout.js/app.js)는 storage.js를 직접 호출하지 않고 이 함수들을 통해서만 접근합니다(기존 레이어 원칙 유지).
+// startSession()/finishSession() 등 기존 세션 함수는 이 섹션과 무관하게 그대로 동작합니다.
+export function saveDraft(draft) {
+  storageSaveDraft(draft);
+}
+
+export function loadDraft() {
+  return storageLoadDraft();
+}
+
+export function clearDraft() {
+  storageClearDraft();
+}
+
 /* ---------------- 오늘의 운동(세션) ---------------- */
 
 // 화면에 그릴 계획(워밍업/본세트/도전세트 행 구조)을 만듭니다. 아직 세션을 저장하지는 않습니다.
@@ -327,9 +413,11 @@ export function buildWorkoutPlan(dayKey) {
     // v1.9.1: 맨몸은 워밍업 세트를 쓰지 않습니다. UI에서 이미 막아두지만, 과거 데이터에 warmupEnabled:true가
     // 남아있는 경우까지 대비한 방어 가드입니다(판정/증량 로직과는 무관, 워밍업 세트 생성 여부만 결정).
     const warmupApplicable = ex.warmupEnabled && ex.gainMethod !== "bodyweight";
-    const warmupWeight = warmupApplicable
-      ? state.warmupWeightOverride ?? computeWarmupWeight(data.sessions, ex.id, state.currentWeight)
-      : null;
+    // v2.3.2: 워밍업 중량은 더 이상 "종목 관리 설정값 -> 없으면 과거 기록 기반 자동계산"이 아니라,
+    // ExerciseState.warmupWeightOverride 하나가 "실제 운동 흐름에서 유지되는 워밍업 기준값" 역할을 그대로 겸합니다
+    // (신규/Generation 초기화 직후에는 null이라 화면에서 빈 칸으로 시작 -> 사용자가 최초 입력).
+    // 갱신 로직은 finishSession()에 있고, 여기서는 그 값을 그대로 읽기만 합니다. computeWarmupWeight()는 더 이상 호출하지 않습니다.
+    const warmupWeight = warmupApplicable ? state.warmupWeightOverride : null;
 
     return {
       exercise: ex,
@@ -348,15 +436,11 @@ export function buildWorkoutPlan(dayKey) {
       challengeSet: isChallengeToday
         ? {
             targetReps: ex.targetReps,
-            // machine: 직전 도전 실패로 기억해둔 machineChallengeWeight가 있으면 그 값을 우선 사용합니다.
-            // freeweight: 직전 도전 실패로 기억해둔 freeweightChallengeWeight가 있으면 그 값을 우선 사용합니다(machine과 완전히 별개 필드).
-            // 그 외/두 필드 모두 없으면 기존 방식(challengeWeightDefault ?? "")을 그대로 유지합니다.
-            weight:
-              ex.gainMethod === "machine"
-                ? state.machineChallengeWeight ?? state.challengeWeightDefault ?? ""
-                : ex.gainMethod === "freeweight"
-                ? state.freeweightChallengeWeight ?? state.challengeWeightDefault ?? ""
-                : state.challengeWeightDefault ?? "",
+            // v2.3.2: 종목 관리 화면의 고정 기본값(challengeWeightDefault)은 더 이상 사용하지 않습니다(fallback 제거).
+            // machine: 직전 도전 실패로 기억해둔 machineChallengeWeight가 있으면 그 값을 우선 사용(gain.js가 관리, 무변경).
+            // freeweight: 직전 도전 실패로 기억해둔 freeweightChallengeWeight가 있으면 그 값을 우선 사용(machine과 완전히 별개 필드, gain.js가 관리, 무변경).
+            // 둘 다 없으면(첫 도전이거나 직전 성공으로 초기화됨) 빈 칸으로 시작 -> 매번 직접 입력.
+            weight: ex.gainMethod === "machine" ? state.machineChallengeWeight ?? "" : state.freeweightChallengeWeight ?? "",
             performedRaw: "",
           }
         : null,
@@ -392,18 +476,17 @@ export function finishSession(draftSession) {
 
     if (ex.isUnilateral) {
       // 편측 운동: 좌우 각각 입력받아 전용 규칙으로만 판정하고, 증량/후보 로직은 전혀 적용하지 않습니다.
-      // 맨몸 시간형은 목표/80% 3단계 기준의 전용 함수를 사용하고, 그 외(맨몸 반복수형/고반복)는
-      // "이상"(threshold) 기준을, machine/freeweight는 기존과 동일하게 "정확히"(exact) 기준을 사용합니다.
+      // 맨몸 시간형은 목표/80% 3단계 기준의 전용 함수를 사용하고, 그 외(맨몸 반복수형/고반복/machine/freeweight)는
+      // v2.3.x부터 전부 "이상"(threshold) 기준으로 통일합니다(비편측과 동일 정책, 헌장: 목표 이상 연속 수행 = A).
       const isUnilateralTimeGoal = isBodyweight && ex.bodyweightGoalType === "time";
       if (isUnilateralTimeGoal) {
         judgement = computeUnilateralTimeJudgement(
           row.mainSets.map((s) => ({ target: s.targetReps, leftRaw: s.leftRaw, rightRaw: s.rightRaw }))
         );
       } else {
-        const unilateralMode = isBodyweight || isHighRep ? "threshold" : "exact";
         judgement = computeUnilateralJudgement(
           row.mainSets.map((s) => ({ target: s.targetReps, leftRaw: s.leftRaw, rightRaw: s.rightRaw })),
-          unilateralMode
+          "threshold"
         );
       }
       // 고반복 편측: 상한 반복수 달성 여부(자동 증량 대신 검토 팝업 트리거)를 좌우 각각 확인합니다.
@@ -421,7 +504,7 @@ export function finishSession(draftSession) {
     } else {
       judgement = computeJudgement(
         row.mainSets.map((s) => ({ targetReps: s.targetReps, performedRaw: s.performedRaw })),
-        { mode: isHighRep ? "threshold" : "exact" }
+        { mode: "threshold" } // v2.3.x: machine/freeweight도 "목표 이상 연속 수행 = A"로 통일(기존엔 machine/freeweight만 "정확히 일치" 요구했던 것을 헌장 기준에 맞춰 수정). high_rep은 원래부터 threshold였음.
       );
 
       if (isHighRep) {
@@ -483,6 +566,19 @@ export function finishSession(draftSession) {
       }
     }
 
+    // v2.3.2: 워밍업 기준값(warmupWeightOverride) 갱신 — 이 레코드에 대한 판정/도전세트 처리가 전부 끝난
+    // "최종 상태"를 딱 한 번만 읽어 갱신합니다(그 사이 gain.js가 반영한 다른 필드를 덮어쓰지 않기 위함).
+    // - currentWeight가 이번 세션 중 바뀌었으면(machine 지연 승격 또는 freeweight 도전 성공): "변경 전" 값을 다음 워밍업 기준값으로.
+    //   (state.currentWeight는 이 레코드 처리 시작 시점에 캡처된 값이라 이후 재할당과 무관하게 "변경 전" 값 그대로입니다.)
+    // - 바뀌지 않았으면: 이번 세션에 실제로 사용한 워밍업 중량을 그대로 기억(없으면 null 유지).
+    // bodyweight는 warmupApplicable이 애초에 false라 row.warmup이 없어 이 블록 자체가 실행되지 않습니다.
+    if (row.warmup) {
+      const finalState = getExerciseState(ex.id);
+      const weightChangedThisSession = finalState.currentWeight !== state.currentWeight;
+      const nextWarmup = weightChangedThisSession ? state.currentWeight : row.warmup.weight;
+      data.exerciseStates[ex.id] = { ...finalState, warmupWeightOverride: nextWarmup };
+    }
+
     const sets = [
       ...(row.warmup ? [{ setNo: 0, targetReps: row.warmup.targetReps, performedRaw: row.warmup.performedRaw, isChallenge: false, isWarmup: true, leftRaw: null, rightRaw: null }] : []),
       ...row.mainSets.map((s) => ({
@@ -518,6 +614,7 @@ export function finishSession(draftSession) {
     endTime,
     durationMinutes,
     records,
+    generation: data.currentGeneration, // v2.3.0: 완료 시점의 Generation 번호를 세션에 기록(그래프 색상 구분/히스토리 집계 전용)
   });
 
   data.sessions.push(session);

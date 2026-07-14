@@ -36,9 +36,9 @@ export function renderRoutineEditor(root, params) {
       el("span", { class: "drag-handle", text: "≡" }),
       el("span", { class: "order-badge", text: String(index + 1).padStart(2, "0") }),
       el("span", { class: "name", text: exerciseName(exId) + (isActive ? "" : " (비활성)") }),
-      // v2.1.2(5): 종목 관리 화면과 동일한 순서(💡 -> ✎)로 큐 노트 버튼 추가. 기존 openCueNoteEditor()를 그대로 재사용합니다.
+      // v2.1.2(5): 종목 관리 화면과 동일한 순서로 큐 노트 버튼 추가. 기존 openCueNoteEditor()를 그대로 재사용합니다.
+      // v2.3.0: 종목 수정(✎) 버튼은 제거했습니다(종목 관리 화면에서는 계속 가능). 종목명/큐노트/활성 스위치/삭제는 그대로 유지합니다.
       ex ? el("button", { class: "icon-btn", text: "💡", onclick: () => openCueNoteEditor(exId) }) : null,
-      ex ? el("button", { class: "icon-btn", text: "✎", onclick: () => navigate(`#/exercise-edit/${exId}`) }) : null,
       el("button", {
         class: `switch small${isActive ? " on" : ""}`,
         title: isActive ? "비활성화" : "다시 활성화",
