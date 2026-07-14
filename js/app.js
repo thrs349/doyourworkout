@@ -15,6 +15,7 @@ import { renderExercisePicker } from "./ui/screens/exercisePicker.js";
 import { renderExerciseForm, renderExerciseEdit } from "./ui/screens/exerciseForm.js";
 import { renderExerciseManage } from "./ui/screens/exerciseManage.js";
 import { renderChallengeCandidate } from "./ui/screens/machineCandidate.js";
+import { renderNotificationCenter } from "./ui/screens/notificationCenter.js";
 import { renderSettings } from "./ui/screens/settings.js";
 import { renderHistory } from "./ui/screens/history.js";
 
@@ -88,6 +89,7 @@ function bootstrap() {
   registerRoute("/exercise-edit/:id", renderExerciseEdit);
   registerRoute("/exercise-manage", renderExerciseManage);
   registerRoute("/machine-candidate", renderChallengeCandidate);
+  registerRoute("/notification-center", renderNotificationCenter);
   registerRoute("/settings", renderSettings);
   registerRoute("/history", renderHistory);
 

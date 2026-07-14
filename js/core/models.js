@@ -2,7 +2,9 @@
 // 앱이 다루는 데이터의 "형태"만 정의하는 순수 모듈입니다.
 // UI나 저장소에 의존하지 않으므로, 이후 다른 프레임워크로 옮기더라도 그대로 재사용할 수 있습니다.
 
-export const SCHEMA_VERSION = 12; // v2.3.0: Generation(운동 기준 초기화) 지원. 세션에 generation 필드, 루트에 currentGeneration 필드 추가. 판정/증량 계산식 자체는 무관.
+export const SCHEMA_VERSION = 14; // v2.4.0: bodyweight의 Notification(알림 표시 여부)과 Pending(성장 사이클 상태)을 분리하기 위해
+// ExerciseState에 bodyweightGoalAdjustNotificationDismissed 필드 추가. bodyweightGoalAdjustPending의 의미/생성 조건은 무변경이며,
+// 판정/증량 계산식과는 무관합니다.
 
 // 증량 방식(gainMethod) 목록입니다. 새 방식을 추가하려면 여기 하나만 더 넣고,
 // judge.js/gain.js의 해당 분기만 채우면 됩니다.
@@ -123,9 +125,14 @@ export function makeExerciseState({
   challengeWeightDefault = null, // 종목 수정 화면에서 지정한 도전세트 기본 중량. null이면 운동 화면에서 매번 직접 입력.
   bodyweightConsecutiveA = 0, // 맨몸 전용: 세션 최종 판정 A가 연속으로 몇 번 나왔는지. B/X 발생 시 0으로 초기화.
   bodyweightGoalAdjustPending = false, // 맨몸 전용: "목표 조정 검토가 필요한 상태"인지. 연속 A 기준(기본 3회)에 처음 도달했을 때 true가 되고,
-  // 이후에는 세션 결과와 무관하게 유지되며, 사용자가 실제로 목표(반복수/시간)를 수정해야만 false로 해제됩니다.
-  // 팝업은 이 값이 false -> true로 "새로 바뀌는 순간"에만 1회 표시되고, true인 동안에는 이 상태값만 유지합니다.
-  // (UI에 이 상태를 어떻게 노출할지는 이후 UX 개선 단계에서 다룰 예정이라, 지금은 상태만 정확히 유지합니다.)
+  // 이후에는 세션 결과와 무관하게 유지되며, 사용자가 실제로 목표(반복수/시간/세트 수)를 수정해야만 false로 해제됩니다.
+  // v2.4.0: 이 필드는 "성장 사이클상 목표 조정이 필요한 상태"만 나타냅니다. Notification Center에 지금 보여줄지 여부는
+  // 더 이상 이 필드만으로 판단하지 않고, 아래 bodyweightGoalAdjustNotificationDismissed와 함께 판단합니다.
+  bodyweightGoalAdjustNotificationDismissed = false, // 맨몸 전용(v2.4.0): Pending과 별개로 "이번에 발생한 알림을 이미
+  // Notification Center에서 확인/처리했는지"만 나타내는 UI 전용 파생 상태입니다. "현행 유지"를 선택하면 이 값만 true가 되고
+  // bodyweightGoalAdjustPending은 그대로 유지됩니다("목표 수정"을 선택하면 pending 자체가 false가 되므로 이 값은 의미가 없어짐).
+  // pending이 false -> true로 "새로 바뀌는 순간"에는 항상 false로 다시 리셋되어, 다음에 새로 발생한 알림이 정상 노출됩니다.
+  // Notification Center 표시 조건: bodyweightGoalAdjustPending === true && bodyweightGoalAdjustNotificationDismissed === false.
   machinePendingIncreaseWeight = null, // 머신(machine) 전용: 도전세트 성공 직후, 아직 실제로 적용되지 않은 "증량 예정 중량".
   // currentWeight와는 별개로 보관되며, 원래 중량(currentWeight)에서 A-A를 다시 달성하는 순간에만 currentWeight로 승격되고 null로 비워집니다.
   // freeweight/high_rep/bodyweight에서는 사용하지 않습니다(항상 null로 유지).
@@ -148,6 +155,7 @@ export function makeExerciseState({
     challengeWeightDefault,
     bodyweightConsecutiveA,
     bodyweightGoalAdjustPending,
+    bodyweightGoalAdjustNotificationDismissed,
     machinePendingIncreaseWeight,
     machineChallengeWeight,
     freeweightChallengeWeight,
@@ -219,6 +227,11 @@ export function defaultAppData() {
     sessions: [],
     designatedChallengeExerciseId: null, // 다음 해당 종목 세션에 도전세트를 적용할 종목 (머신/프리웨이트 공통, 사용자가 선택)
     currentGeneration: 1, // v2.3.0: "운동 기준 초기화"를 누를 때마다 1씩 증가. bodyweight는 이 개념의 영향을 받지 않습니다.
+    // v2.4.0: 고반복(high_rep) "목표 검토" 알림 저장소. exerciseId -> { updatedAt }.
+    // ExerciseState의 Pending 개념과는 별개이며, gain.js/judge.js는 이 값을 전혀 참조하지 않습니다.
+    // 종목당 최대 1건만 유지되고(같은 종목에서 다시 발생하면 updatedAt만 갱신), 사용자가 알림센터에서
+    // "목표 수정" 또는 "현행 유지"를 선택하면 해당 항목이 삭제됩니다.
+    highRepReviewAlerts: {},
     settings: {
       themeId: "themeB",
       customThemeNames: {}, // themeId -> 사용자가 Long Press로 바꾼 이름

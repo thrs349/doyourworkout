@@ -52,6 +52,19 @@ export function renderHome(root) {
       }, [el("span", { class: "fab-icon", text: "🏆" })])
     : null;
 
+  // v2.4.0: 운동 알림(Exercise Notification Center) FAB. 도전세트 후보 FAB와 같은 home-cta 컨테이너에
+  // class="fab-btn left"만 추가하면 되도록 CSS가 이미 준비돼 있었습니다(위 challengeFab 주석 참고).
+  // 숫자 배지는 쓰지 않고, 알림이 하나라도 있으면 표시/없으면 숨김만 처리합니다.
+  const showNotificationFab = state.shouldShowNotificationFab();
+  const notificationFab = showNotificationFab
+    ? el("button", {
+        class: "fab-btn left",
+        "aria-label": "운동 알림",
+        onclick: () => navigate("#/notification-center"),
+        title: "운동 알림",
+      }, [el("span", { class: "fab-icon", text: "🔔" })])
+    : null;
+
   const screen = el("div", { id: "home-screen", class: "screen-content" }, [
     el("div", { class: "topbar" }, [
       el("div", { class: "home-title" }, [document.createTextNode(APP_NAME), el("span", { class: "sub", text: `${dateStr} (${dayLabel})` })]),
@@ -60,7 +73,7 @@ export function renderHome(root) {
     el("div", { class: "home-body" }, [
       routineCard,
       el("div", { class: "home-spacer" }),
-      el("div", { class: "home-cta" }, [challengeFab, startBtn]),
+      el("div", { class: "home-cta" }, [notificationFab, challengeFab, startBtn]),
     ]),
     renderBottomNav("home"),
   ]);

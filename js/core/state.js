@@ -12,7 +12,16 @@ import {
   loadDraft as storageLoadDraft,
   clearDraft as storageClearDraft,
 } from "./storage.js";
-import { makeExerciseDefinition, makeExerciseState, makeRoutineVersion, makeWorkoutSession, makeExerciseRecord, uid, BODYWEIGHT_GOAL_ALERT_STREAK } from "./models.js";
+import {
+  makeExerciseDefinition,
+  makeExerciseState,
+  makeRoutineVersion,
+  makeWorkoutSession,
+  makeExerciseRecord,
+  uid,
+  BODYWEIGHT_GOAL_ALERT_STREAK,
+  DAYS_DISPLAY_ORDER,
+} from "./models.js";
 import {
   computeJudgement,
   computeChallengeResult,
@@ -309,6 +318,69 @@ export function getPendingActions({ dayKey } = {}) {
   return actions;
 }
 
+/* ---------------- Exercise Notification Center (v2.4.0) ---------------- */
+// 여러 gainMethod에 흩어진 "확인이 필요한 상태/알림"을 하나의 화면에서 모아 보여주기 위한 순수 조회(+ 최소 저장) 계층입니다.
+// judge.js/gain.js를 전혀 호출하지 않으며, 각 gainMethod의 기존 철학(머신/프리웨이트 후보 선택, 맨몸 Pending,
+// 고반복 단발성 신호)은 이 섹션의 어떤 함수도 바꾸지 않습니다.
+
+// 도전세트 후보(머신/프리웨이트)를 "요일별 루틴" 기준으로 그룹핑해 읽기 전용으로 반환합니다.
+// - 오늘 요일로 한정하지 않고, 후보가 포함된 모든 요일 루틴을 대상으로 합니다(동일 종목이 여러 요일에 있으면 각각 노출).
+// - 그룹 내 정렬은 getRoutineExercises()가 이미 반환하는 루틴 order 순서를 그대로 따릅니다.
+// - "후보가 된 시점" 순서는 사용하지 않습니다(ExerciseState에 그런 타임스탬프가 없고, 요구사항에도 불필요함).
+export function getChallengeCandidateGroups() {
+  const candidateIds = new Set(getChallengeCandidates().map((ex) => ex.id));
+  if (candidateIds.size === 0) return [];
+
+  return DAYS_DISPLAY_ORDER.map((d) => {
+    const version = getDefaultVersion(d.key);
+    const exercises = getRoutineExercises(d.key).filter((ex) => candidateIds.has(ex.id));
+    return { dayKey: d.key, dayLabel: d.label, routineTitle: version.title, exercises };
+  }).filter((g) => g.exercises.length > 0);
+}
+
+// 고반복(high_rep) "목표 검토" 알림을 사용자가 처리(목표 수정/현행 유지)하기 전까지 최소 보관합니다.
+// ExerciseState에는 아무 것도 쓰지 않으므로 Pending 개념으로 바뀌는 것이 아닙니다. 종목당 1건만 유지하며,
+// 같은 종목에서 다시 발생하면(finishSession) 기존 항목의 updatedAt만 갱신됩니다(새 항목을 추가하지 않음).
+export function clearHighRepReviewAlert(exerciseId) {
+  if (!data.highRepReviewAlerts || !(exerciseId in data.highRepReviewAlerts)) return;
+  const next = { ...data.highRepReviewAlerts };
+  delete next[exerciseId];
+  data.highRepReviewAlerts = next;
+  persist();
+}
+
+// 알림센터 표시용 목록. 활성 종목 등록 순서를 그대로 따르고, 비활성화된 종목의 과거 알림은
+// 별도 삭제 로직 없이 이 필터링만으로 자연스럽게 화면에서 숨겨집니다(저장된 값 자체는 남아있을 수 있음).
+export function getHighRepReviewAlerts() {
+  const alerts = data.highRepReviewAlerts || {};
+  return getActiveExercises().filter((ex) => ex.gainMethod === "high_rep" && alerts[ex.id]);
+}
+
+// 맨몸(bodyweight) 목표 조정 Pending 목록. v2.4.0부터 Pending(성장 사이클 상태)과 Notification(표시 여부)이
+// 분리되었으므로, 화면에는 "지금도 조정이 필요하고(pending) + 아직 처리 안 한(dismissed=false)" 것만 노출합니다.
+export function getBodyweightGoalAdjustList() {
+  return getActiveExercises().filter((ex) => {
+    if (ex.gainMethod !== "bodyweight") return false;
+    const st = getExerciseState(ex.id);
+    return st.bodyweightGoalAdjustPending && !st.bodyweightGoalAdjustNotificationDismissed;
+  });
+}
+
+// v2.4.0: Notification Center "현행 유지" 전용. bodyweightGoalAdjustPending(성장 사이클 상태)은 절대 건드리지 않고,
+// "이번 알림을 확인했다"는 표시(dismissed)만 남깁니다. 이후 finishSession에서 pending이 다시 false->true로
+// 새로 발생하면 dismissed는 자동으로 false로 리셋되어 새 알림이 정상적으로 다시 노출됩니다.
+export function dismissBodyweightGoalAdjustNotification(exerciseId) {
+  const st = getExerciseState(exerciseId);
+  data.exerciseStates[exerciseId] = { ...st, bodyweightGoalAdjustNotificationDismissed: true };
+  persist();
+}
+
+// 알림 FAB(운동 화면 좌측 하단) 노출 여부. 위 세 종류 중 하나라도 있으면 true. 숫자 배지는 쓰지 않으므로
+// 정확한 개수가 아니라 boolean만 필요합니다.
+export function shouldShowNotificationFab() {
+  return getChallengeCandidateGroups().length > 0 || getHighRepReviewAlerts().length > 0 || getBodyweightGoalAdjustList().length > 0;
+}
+
 /* ---------------- Generation (운동 기준 초기화) ---------------- */
 // v2.3.0: "기존 기록은 유지, 운동 기준(중량/증량 진행 상태)만 새로 시작"하기 위한 기능입니다.
 // gain.js는 전혀 호출하지 않고, ExerciseState의 대상 필드만 명시적으로 나열해 교체합니다
@@ -318,9 +390,21 @@ export function getPendingActions({ dayKey } = {}) {
 // 활성/비활성 여부와 무관하게 해당 gainMethod의 모든 종목에 적용됩니다.
 export function resetGeneration() {
   data.exercises.forEach((ex) => {
-    if (ex.gainMethod === "bodyweight") return; // bodyweight는 완전히 제외
-
     const st = getExerciseState(ex.id);
+
+    if (ex.gainMethod === "bodyweight") {
+      // v2.4.0: 기존에는 bodyweight를 완전히 제외했으나, "현재 성장 사이클 기준값은 모두 초기화한다"는
+      // Generation 취지에 맞춰 bodyweightConsecutiveA(연속 달성 횟수)/bodyweightGoalAdjustPending(목표 조정
+      // 검토 필요 여부)만 명시적으로 초기화합니다. bodyweight는 currentWeight/도전세트 관련 필드를 애초에
+      // 쓰지 않으므로 그 외 필드는 여전히 건드리지 않습니다(judge.js의 판정 계산식 자체와는 무관).
+      data.exerciseStates[ex.id] = {
+        ...st,
+        bodyweightConsecutiveA: 0,
+        bodyweightGoalAdjustPending: false,
+        bodyweightGoalAdjustNotificationDismissed: false,
+      };
+      return;
+    }
 
     if (ex.gainMethod === "high_rep") {
       // high_rep은 gain.js 상태머신 자체를 쓰지 않으므로 gainConditionState/isGainCandidate는 항상 기본값에
@@ -352,6 +436,9 @@ export function resetGeneration() {
   });
 
   data.designatedChallengeExerciseId = null;
+  // v2.4.0: 현재 Generation 기준으로 발생한 미처리 고반복 알림도 "현재 성장 사이클" 소속이므로 함께 초기화합니다.
+  // 이 저장소는 오직 high_rep 알림만 담으므로 전체를 비우는 것으로 충분합니다(과거 세션 기록/history는 무관, 그대로 유지).
+  data.highRepReviewAlerts = {};
   data.currentGeneration = (data.currentGeneration || 1) + 1;
   persist();
 }
@@ -537,6 +624,10 @@ export function finishSession(draftSession) {
         ...getExerciseState(ex.id),
         bodyweightConsecutiveA: nextStreak,
         bodyweightGoalAdjustPending: nowPending,
+        // v2.4.0: pending이 새로 false -> true가 되는 순간에는 Notification도 새로 발생한 것이므로,
+        // 예전에 "현행 유지"로 닫아뒀던 dismissed 상태를 여기서 다시 false로 리셋합니다.
+        // (pending이 이미 true였던 경우/false인 채로 유지되는 경우는 dismissed를 건드리지 않습니다.)
+        ...(goalAdjustSuggested ? { bodyweightGoalAdjustNotificationDismissed: false } : {}),
       };
     }
 
@@ -618,6 +709,15 @@ export function finishSession(draftSession) {
   });
 
   data.sessions.push(session);
+
+  // v2.4.0: 세션 종료 시점에만 존재하던 highRepGoalReviewSuggested 신호를, Notification Center에서
+  // 나중에도 다시 확인할 수 있도록 최소 저장소(data.highRepReviewAlerts)에 기록합니다.
+  // ExerciseState는 건드리지 않으며(Pending 아님), 종목당 1건만 유지하고 다시 발생하면 updatedAt만 갱신합니다(A안).
+  records.forEach((r) => {
+    if (r.highRepGoalReviewSuggested) {
+      data.highRepReviewAlerts = { ...data.highRepReviewAlerts, [r.exerciseId]: { updatedAt: endTime } };
+    }
+  });
 
   // 도전을 실제로 시도했다면(성공/재도전 상관없이), 성공한 경우에만 지정 해제(재도전은 다음 기회에 재시도)
   const challengeRecord = records.find((r) => r.challengeResult);

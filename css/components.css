@@ -233,6 +233,16 @@
 .exercise-card .ec-max small { color: var(--color-text-muted); font-weight: 400; margin-right: 3px; }
 .trend-chart { display: block; width: 100%; height: auto; margin: var(--sp-2) 0; }
 .chart-empty { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-muted); padding: 20px 0; text-align: center; }
+
+/* v2.4.0: Exercise Notification Center */
+.notif-card-title { font-family: var(--font-display); font-weight: 700; font-size: 15px; margin-bottom: var(--sp-2); }
+.notif-group:not(:first-of-type) { margin-top: var(--sp-2); }
+.notif-group .section-label { margin: 0 0 var(--sp-1); }
+/* 도전세트 후보: Read Only 목록이라 .list-row(클릭형)와 구분되는 단순 텍스트 행만 사용합니다. */
+.notif-ro-row { padding: 8px 10px; font-size: 13.5px; color: var(--color-text-primary); }
+.notif-ro-row + .notif-ro-row { border-top: 1px solid var(--color-border); }
+/* 고반복/맨몸 액션 행: 종목명 + 버튼 2개를 한 줄에 배치하고, 공간이 부족하면 종목명만 줄어들며 버튼은 유지됩니다. */
+.notif-action-row .notif-action-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; margin-right: var(--sp-2); }
 .ec-recent { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-secondary); border-top: 1px dashed var(--color-border); padding-top: 8px; margin-top: 4px; }
 .ec-recent b { color: var(--color-text-primary); }
 

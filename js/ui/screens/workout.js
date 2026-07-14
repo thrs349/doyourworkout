@@ -570,96 +570,46 @@ export function renderWorkout(root) {
     mount(root, screen);
   }
 
+  // v2.4.0: 맨몸 목표 조정/고반복 증량 검토 안내를 유형별로 나눠 순차 표시하던 것을,
+  // "루틴 내 종목 정렬 순서"를 최우선 기준으로 하는 하나의 통합 큐로 바꿨습니다.
+  // finishedSession.records는 buildWorkoutPlan(dayKey)→getRoutineExercises(dayKey) 순서를 그대로 따르므로,
+  // 이 배열을 한 번만 순회해 조건을 만족하는 record를 순서 그대로 모으면 루틴 순서가 자연히 유지됩니다.
+  // 한 record는 gainMethod가 하나뿐이라 goalAdjustSuggested와 highRepGoalReviewSuggested가 동시에 true인
+  // 경우는 없습니다(finishSession의 분기 구조상 배타적).
   function afterResult() {
-    const goalAlerts = finishedSession.records.filter((r) => r.goalAdjustSuggested);
-    if (goalAlerts.length > 0) {
-      showGoalAdjustPopups(goalAlerts, 0, afterGoalAdjustPopups);
-    } else {
-      afterGoalAdjustPopups();
-    }
+    const alertRecords = finishedSession.records.filter((r) => r.goalAdjustSuggested || r.highRepGoalReviewSuggested);
+    showSessionAlertPopups(alertRecords, 0, proceedAfterResult);
   }
 
-  // v1.5: 맨몸 종목이 A 연속 달성 기준을 채우면, 홈으로 넘어가기 전에 "목표 조정 검토" 안내를 순서대로 보여줍니다.
-  // v1.8: "유지하기"를 선택하면 그 자리에서 즉시 pending을 해제합니다(목표 수정 화면으로 가야만 해제되던 방식에서 변경).
-  function showGoalAdjustPopups(records, index, done) {
+  // v1.5/v1.8: 맨몸 "목표 조정 검토" 안내와 고반복 "증량 검토" 안내를 순서대로 보여줍니다.
+  // v2.4.0: "방금 발생한 이벤트를 알려주는" 순수 안내 팝업입니다. 버튼은 "확인" 1개뿐이며, 어떤 상태도 바꾸지
+  // 않습니다(bodyweightGoalAdjustPending 해제 없음, highRepReviewAlerts 삭제 없음, 화면 이동 없음). 실제 처리
+  // (목표 수정/현행 유지 선택과 그에 따른 삭제)는 전부 Notification Center에서만 이뤄집니다.
+  function showSessionAlertPopups(records, index, done) {
     if (index >= records.length) {
       done();
       return;
     }
-    const ex = state.getExercise(records[index].exerciseId);
+    const record = records[index];
+    const ex = state.getExercise(record.exerciseId);
     const exName = ex ? ex.name : "운동";
+    const isHighRep = !!record.highRepGoalReviewSuggested;
+
+    const title = isHighRep ? `🎉 ${exName}` : `🎉 ${exName} 3회 연속 목표 달성!`;
+    const detail = isHighRep
+      ? "상한 반복수를 달성했습니다.\n운동 알림에서 중량 조정을 검토할 수 있습니다."
+      : "목표 조정 검토가 필요합니다.\n운동 알림에서 확인할 수 있습니다.";
 
     const content = el("div", { class: "duration-modal" }, [
-      el("div", { class: "duration-title", text: `🎉 ${exName} 3회 연속 목표 달성!` }),
-      el("p", { class: "detail", style: { textAlign: "center", margin: "0 0 16px" }, text: "목표 조정을 검토해보세요." }),
+      el("div", { class: "duration-title", text: title }),
+      el("p", { class: "detail", style: { textAlign: "center", margin: "0 0 16px" }, text: detail }),
       el("div", { class: "btn-row" }, [
         el("button", {
           class: "btn btn-primary",
-          text: "수정하기",
+          text: "확인",
           onclick: () => {
             close();
-            window.__draftSession = null;
-            navigate(`#/exercise-edit/${records[index].exerciseId}`);
-          },
-        }),
-        el("button", {
-          class: "btn btn-ghost",
-          text: "유지하기",
-          onclick: () => {
-            // 목표를 그대로 유지하기로 선택 → 즉시 pending 해제 + 연속 A 카운트 초기화.
-            // 이후 같은 종목에서 다시 A-A-A를 달성하면 새로운 팝업이 뜰 수 있습니다.
-            state.clearBodyweightGoalPending(records[index].exerciseId);
-            close();
-            showGoalAdjustPopups(records, index + 1, done);
-          },
-        }),
-      ]),
-    ]);
-    const close = openModal(content);
-  }
-
-  function afterGoalAdjustPopups() {
-    const highRepAlerts = finishedSession.records.filter((r) => r.highRepGoalReviewSuggested);
-    if (highRepAlerts.length > 0) {
-      showHighRepReviewPopups(highRepAlerts, 0, proceedAfterResult);
-    } else {
-      proceedAfterResult();
-    }
-  }
-
-  // v1.8: 고반복(high_rep) 종목이 상한 반복수를 모든 본세트에서 연속 달성하면, 자동 증량 대신
-  // "목표 중량 검토" 안내를 1회성으로 보여줍니다. ExerciseState에는 아무 것도 저장하지 않으므로,
-  // "유지하기"를 선택해도 별도 상태가 남지 않고 다음 세션은 그 세션의 결과만으로 다시 판단됩니다.
-  // (맨몸의 showGoalAdjustPopups와는 완전히 별개의 함수/문구/필드를 사용합니다.)
-  function showHighRepReviewPopups(records, index, done) {
-    if (index >= records.length) {
-      done();
-      return;
-    }
-    const ex = state.getExercise(records[index].exerciseId);
-    const exName = ex ? ex.name : "운동";
-
-    const content = el("div", { class: "duration-modal" }, [
-      el("div", { class: "duration-title", text: `🎉 ${exName}` }),
-      el("p", { class: "detail", style: { textAlign: "center", margin: "0 0 16px" }, text: "상한 반복수를 달성했습니다.\n중량 조정을 검토해보세요." }),
-      el("div", { class: "btn-row" }, [
-        el("button", {
-          class: "btn btn-primary",
-          text: "수정하기",
-          onclick: () => {
-            close();
-            window.__draftSession = null;
-            navigate(`#/exercise-edit/${records[index].exerciseId}`);
-          },
-        }),
-        el("button", {
-          class: "btn btn-ghost",
-          text: "유지하기",
-          onclick: () => {
-            // high_rep은 pending 상태를 저장하지 않으므로 여기서 할 일은 팝업을 닫고 다음으로 넘어가는 것뿐입니다.
-            // 현재 중량/하한/상한은 그대로 유지되며, 다음 세션은 이번 선택과 무관하게 그 세션 결과만으로 다시 판단됩니다.
-            close();
-            showHighRepReviewPopups(records, index + 1, done);
+            showSessionAlertPopups(records, index + 1, done);
           },
         }),
       ]),
