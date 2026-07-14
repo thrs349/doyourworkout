@@ -56,6 +56,7 @@ export function renderExerciseManage(root) {
   /* ---------------- 활성 탭 ---------------- */
 
   function activeRow(ex) {
+    const exState = state.getExerciseState(ex.id);
     const willDeactivate = deactivateIds.has(ex.id);
     // v2.1.0: 큐노트(💡) 버튼은 editMode 여부와 무관하게 항상 노출합니다(숨김 처리하지 않음).
     const cueBtn = el("button", {
@@ -63,8 +64,15 @@ export function renderExerciseManage(root) {
       text: "💡",
       onclick: () => openCueNoteEditor(ex.id),
     });
+    // v2.4.3: 중량 미설정(currentWeight === null) 종목에 표시하는 읽기 전용 아이콘. 클릭 핸들러가 없는
+    // <span>이라 상태를 전혀 바꾸지 않습니다(순수 표시용). bodyweight는 중량 개념 자체가 없어 대상에서 제외.
+    const missingWeightIcon =
+      ex.gainMethod !== "bodyweight" && exState.currentWeight == null
+        ? el("span", { class: "readonly-icon", text: "⚠️", title: "중량 미설정" })
+        : null;
     const rightControls = editMode
       ? [
+          missingWeightIcon,
           cueBtn,
           el("button", {
             class: `switch${willDeactivate ? "" : " on"}`,
@@ -77,6 +85,7 @@ export function renderExerciseManage(root) {
           }),
         ]
       : [
+          missingWeightIcon,
           cueBtn,
           el("button", {
             class: "icon-btn",

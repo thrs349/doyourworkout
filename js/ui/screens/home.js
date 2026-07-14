@@ -30,7 +30,7 @@ export function renderHome(root) {
               ])
             )
           )
-        : el("div", { class: "empty-routine", text: "아직 이 요일에 등록된 운동이 없습니다. 루틴 설정에서 추가해 주세요." }),
+        : el("div", { class: "empty-routine", text: "계획된 운동이 없습니다." }),
     ]),
   ]);
 
@@ -87,15 +87,20 @@ export function renderHome(root) {
   // (exerciseManage.js의 완전 삭제 확인 팝업과 동일 패턴) 화면 폭에 따라 단어 중간에서 줄바꿈되는 것을 방지합니다.
   // v2.4.1 후속 수정: 설명 문구(안내/지시 문장)는 전부 제거하고 종목명만 보여주도록 단순화했습니다.
   function showMissingWeightModal(missing) {
-    const lines = missing.map((ex) => ex.name);
+    const checklist = el(
+      "div",
+      { class: "checklist-wrap" },
+      missing.map((ex) =>
+        el("div", { class: "checklist-item" }, [
+          el("span", { class: "checklist-box", text: "☐" }),
+          el("span", { text: ex.name }),
+        ])
+      )
+    );
 
     const content = el("div", { class: "duration-modal" }, [
       el("div", { class: "duration-title", text: "중량 미설정 운동" }),
-      el(
-        "div",
-        { style: { margin: "0 0 16px" } },
-        lines.map((line) => el("p", { class: "detail", style: { textAlign: "center", margin: "0" }, text: line }))
-      ),
+      checklist,
       el("button", { class: "btn btn-primary", text: "확인", onclick: () => close() }),
     ]);
     const close = openModal(content);
@@ -103,7 +108,7 @@ export function renderHome(root) {
 
   function onStartClick() {
     if (exercises.length === 0) {
-      alert("루틴에 등록된 운동이 없습니다. 먼저 루틴 설정에서 운동을 추가해 주세요.");
+      navigate(`#/routine/${dayKey}`);
       return;
     }
     // v2.3.0: Generation 초기화 등으로 currentWeight가 설정되지 않은(null) 종목이 오늘 루틴에 있으면

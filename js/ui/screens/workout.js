@@ -596,13 +596,17 @@ export function renderWorkout(root) {
     const isHighRep = !!record.highRepGoalReviewSuggested;
 
     const title = isHighRep ? `🎉 ${exName}` : `🎉 ${exName} 3회 연속 목표 달성!`;
-    const detail = isHighRep
-      ? "상한 반복수를 달성했습니다.\n운동 알림에서 중량 조정을 검토할 수 있습니다."
-      : "목표 조정 검토가 필요합니다.\n운동 알림에서 확인할 수 있습니다.";
+    const detailLines = isHighRep
+      ? ["상한 반복수를 달성했습니다.", "운동 알림에서 중량 조정을 검토할 수 있습니다."]
+      : ["목표 조정 검토가 필요합니다.", "운동 알림에서 확인할 수 있습니다."];
 
     const content = el("div", { class: "duration-modal" }, [
       el("div", { class: "duration-title", text: title }),
-      el("p", { class: "detail", style: { textAlign: "center", margin: "0 0 16px" }, text: detail }),
+      el(
+        "div",
+        { style: { margin: "0 0 16px" } },
+        detailLines.map((line) => el("p", { class: "detail", style: { textAlign: "center", margin: "0" }, text: line }))
+      ),
       el("div", { class: "btn-row" }, [
         el("button", {
           class: "btn btn-primary",

@@ -13,6 +13,8 @@
 }
 .icon-btn.gear::before { content: "⚙"; }
 .opacity-50 { opacity: .5; }
+/* v2.4.3: 표시 전용 아이콘(클릭 불가). icon-btn과 달리 테두리 박스가 없어 버튼처럼 보이지 않습니다. */
+.readonly-icon { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 30px; font-size: 13px; flex-shrink: 0; cursor: default; }
 
 /* 버튼 */
 .btn {
@@ -128,6 +130,9 @@
 .modal .cond { font-family: var(--font-mono); font-size: 10.5px; color: var(--color-text-muted); margin-bottom: 14px; }
 
 .duration-modal { text-align: center; padding: 8px 4px; }
+.checklist-wrap { display: inline-block; text-align: left; margin: 0 auto 16px; }
+.checklist-item { display: flex; align-items: flex-start; gap: 8px; padding: 3px 0; font-size: 12px; color: var(--color-text-secondary); }
+.checklist-item .checklist-box { flex-shrink: 0; }
 .duration-title { font-family: var(--font-display); font-weight: 700; font-size: 18px; margin-bottom: 6px; }
 .duration-big { font-family: var(--font-mono); font-size: 24px; font-weight: 700; color: var(--color-primary); margin: 4px 0 10px; }
 .time-detail { font-family: var(--font-mono); font-size: 12px; color: var(--color-text-secondary); margin-bottom: 18px; }
@@ -236,12 +241,25 @@
 
 /* v2.4.0: Exercise Notification Center */
 .notif-card-title { font-family: var(--font-display); font-weight: 700; font-size: 15px; margin-bottom: var(--sp-2); }
+.notif-card { padding: var(--sp-3); } /* v2.4.3: 고반복/맨몸 카드 여백 축소(기존 exercise-card 기본 padding var(--sp-4)보다 좁게) */
 .notif-group:not(:first-of-type) { margin-top: var(--sp-2); }
-.notif-group .section-label { margin: 0 0 var(--sp-1); }
+/* v2.4.3: 요일/루틴 텍스트를 종목명보다 눈에 띄게 강조(기존 muted/uppercase 스타일 대신 진한 색상+굵게) */
+.notif-group .section-label {
+  margin: 0 0 var(--sp-1);
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  text-transform: none;
+  letter-spacing: normal;
+}
 /* 도전세트 후보: Read Only 목록이라 .list-row(클릭형)와 구분되는 단순 텍스트 행만 사용합니다. */
-.notif-ro-row { padding: 8px 10px; font-size: 13.5px; color: var(--color-text-primary); }
+/* v2.4.3: 요일/루틴 강조 대비 종목명은 더 작고 옅게(계층 구분) */
+.notif-ro-row { padding: 6px 10px; font-size: 12.5px; color: var(--color-text-secondary); }
 .notif-ro-row + .notif-ro-row { border-top: 1px solid var(--color-border); }
 /* 고반복/맨몸 액션 행: 종목명 + 버튼 2개를 한 줄에 배치하고, 공간이 부족하면 종목명만 줄어들며 버튼은 유지됩니다. */
+/* v2.4.3: 카드 폭/여백 축소 요청에 맞춰 행 자체의 좌우 패딩과 아래 여백도 줄임(기존 .list-row 기본값보다 좁게) */
+.notif-action-row { padding: 10px 10px; margin-bottom: var(--sp-1); }
 .notif-action-row .notif-action-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; margin-right: var(--sp-2); }
 .ec-recent { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-secondary); border-top: 1px dashed var(--color-border); padding-top: 8px; margin-top: 4px; }
 .ec-recent b { color: var(--color-text-primary); }
