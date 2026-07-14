@@ -46,6 +46,8 @@ function buildHighRepCard(rerender) {
     buildActionRow(ex, {
       onEdit: () => {
         state.clearHighRepReviewAlert(ex.id);
+        // v2.4.1: 저장 후 Notification Center로 돌아오도록 진입 출처를 남깁니다.
+        window.__exerciseEditReturnHash = "#/notification-center";
         navigate(`#/exercise-edit/${ex.id}`);
       },
       onKeep: () => {
@@ -72,6 +74,8 @@ function buildBodyweightCard(rerender) {
     buildActionRow(ex, {
       onEdit: () => {
         state.clearBodyweightGoalPending(ex.id);
+        // v2.4.1: 저장 후 Notification Center로 돌아오도록 진입 출처를 남깁니다.
+        window.__exerciseEditReturnHash = "#/notification-center";
         navigate(`#/exercise-edit/${ex.id}`);
       },
       onKeep: () => {

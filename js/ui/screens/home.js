@@ -2,6 +2,7 @@
 import { el, mount } from "../dom.js";
 import { navigate } from "../router.js";
 import { renderBottomNav } from "../components/bottomNav.js";
+import { openModal } from "../components/modal.js";
 import * as state from "../../core/state.js";
 import { todayDayKey, DAYS } from "../../core/models.js";
 import { APP_NAME } from "../../core/appConfig.js";
@@ -82,6 +83,23 @@ export function renderHome(root) {
 
   // v1.2: 프리웨이트 도전 여부도 이제 "운동 종료 후 후보 선택" 화면 하나로 통일되어서,
   // 운동 시작 전 별도 추천 팝업 없이 바로 오늘의 운동으로 들어갑니다.
+  // v2.4.1: 기존 native alert() 대신 앱 전역 커스텀 modal 디자인을 사용합니다. 문장 단위로 <p>를 나눠서
+  // (exerciseManage.js의 완전 삭제 확인 팝업과 동일 패턴) 화면 폭에 따라 단어 중간에서 줄바꿈되는 것을 방지합니다.
+  function showMissingWeightModal(missing) {
+    const lines = ["중량이 설정되지 않은 종목이 있습니다.", ...missing.map((ex) => `- ${ex.name}`), "먼저 종목 관리에서 중량을 설정해주세요."];
+
+    const content = el("div", { class: "duration-modal" }, [
+      el("div", { class: "duration-title", text: "중량 설정 필요" }),
+      el(
+        "div",
+        { style: { margin: "0 0 16px" } },
+        lines.map((line) => el("p", { class: "detail", style: { textAlign: "center", margin: "0" }, text: line }))
+      ),
+      el("button", { class: "btn btn-primary", text: "확인", onclick: () => close() }),
+    ]);
+    const close = openModal(content);
+  }
+
   function onStartClick() {
     if (exercises.length === 0) {
       alert("루틴에 등록된 운동이 없습니다. 먼저 루틴 설정에서 운동을 추가해 주세요.");
@@ -91,8 +109,7 @@ export function renderHome(root) {
     // workout.js에 진입하기 전에 차단합니다(오늘 루틴에 포함된 종목만 검사).
     const missing = state.getExercisesMissingWeightForDay(dayKey);
     if (missing.length > 0) {
-      const names = missing.map((ex) => `- ${ex.name}`).join("\n");
-      alert(`중량이 설정되지 않은 종목이 있습니다.\n\n${names}\n\n먼저 종목 관리에서 중량을 설정해주세요.`);
+      showMissingWeightModal(missing);
       return;
     }
     const session = state.startSession(dayKey);

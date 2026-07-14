@@ -291,8 +291,16 @@ export function renderExerciseForm(root, params) {
   });
 }
 
-// 기존 종목 수정 (종목 관리 화면에서 진입)
+// 기존 종목 수정 (종목 관리 화면 또는 Notification Center에서 진입)
 export function renderExerciseEdit(root, params) {
+  // v2.4.1: Notification Center(고반복/맨몸 카드의 "목표 수정")에서 진입한 경우, 저장 후 그 화면으로
+  // 돌아가야 합니다. notificationCenter.js가 navigate 직전에 세팅해두는 임시 플래그를 여기서 한 번만
+  // 읽고 즉시 비웁니다 — router.js(쿼리스트링 파싱 등)는 전혀 건드리지 않는 최소 변경입니다.
+  // 플래그가 없으면(종목 관리 등 다른 경로로 진입) 기존과 동일하게 #/exercise-manage로 돌아갑니다.
+  // 아래의 "종목을 찾을 수 없음" 조기 반환보다 반드시 먼저 읽고 비워야, 그 경우에도 플래그가 남지 않습니다.
+  const returnHash = window.__exerciseEditReturnHash || "#/exercise-manage";
+  window.__exerciseEditReturnHash = null;
+
   const ex = state.getExercise(params.id);
   if (!ex) {
     navigate("#/exercise-manage", { replace: true });
@@ -305,6 +313,6 @@ export function renderExerciseEdit(root, params) {
     defInitial: ex,
     stateInitial: exState,
     onBack: () => history.back(),
-    afterSaveHash: "#/exercise-manage",
+    afterSaveHash: returnHash,
   });
 }
