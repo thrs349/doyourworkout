@@ -60,11 +60,18 @@ export function renderSettings(root) {
   function confirmResetGeneration() {
     const content = el("div", { class: "duration-modal" }, [
       el("div", { class: "duration-title", text: "운동 기준 초기화" }),
-      el("p", {
-        class: "detail",
-        style: { textAlign: "center", margin: "0 0 16px" },
-        text: "모든 운동의 현재 중량 및 증량 기준이 초기화됩니다. 기존 운동 기록은 삭제되지 않습니다.",
-      }),
+      el("div", {}, [
+        el("p", {
+          class: "detail",
+          style: { textAlign: "center", margin: "0 0 3px" },
+          text: "모든 운동의 현재 중량 및 증량 기준이 초기화됩니다.",
+        }),
+        el("p", {
+          class: "detail",
+          style: { textAlign: "center", margin: "0 0 16px" },
+          text: "기존 운동 기록은 삭제되지 않습니다.",
+        }),
+      ]),
       el("div", { class: "btn-row-h" }, [
         el("button", { class: "btn btn-ghost", text: "취소", onclick: () => close() }),
         el("button", {
@@ -89,7 +96,7 @@ export function renderSettings(root) {
       const isCurrent = s.generation === data.currentGeneration;
       const rangeText = isCurrent ? `${fmtDot(s.firstDate)} ~ 진행중` : `${fmtDot(s.firstDate)} ~ ${fmtDot(s.lastDate)}`;
       const dayCount = isCurrent ? daysBetween(s.firstDate, todayStr) : daysBetween(s.firstDate, s.lastDate);
-      return el("div", { class: "helper-text", text: `Gen${s.generation} ${rangeText} (${dayCount}일)` });
+      return el("div", { class: "helper-text", text: `Generation ${s.generation} ${rangeText} (${dayCount}일)` });
     });
 
     return el("div", {}, [

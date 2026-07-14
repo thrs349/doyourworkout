@@ -186,7 +186,7 @@ export function renderWorkout(root) {
                   class: "cell-input",
                   type: "number",
                   inputmode: "decimal",
-                  value: row.warmup.weight ?? "",
+                  value: row.warmup.weight ?? undefined,
                   placeholder: "-",
                   oninput: (e) => {
                     row.warmup.weight = e.target.value === "" ? null : Number(e.target.value);

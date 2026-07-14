@@ -76,7 +76,7 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
     const isBodyweightTime = isBodyweight && bodyweightGoalType === "time";
 
     goalTypeGroup.style.display = isBodyweight ? "block" : "none";
-    highRepFields.style.display = isHighRep ? "block" : "none";
+    highRepFields.style.display = isHighRep ? "flex" : "none"; // v2.3.2: 하한/상한 같은 행 배치(flex)로 변경됨에 따라 block이 아닌 flex로 토글
     repsField.group.style.display = isHighRep || isBodyweightTime ? "none" : "block";
     targetSecondsField.group.style.display = isBodyweightTime ? "block" : "none";
 
@@ -104,7 +104,12 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
   // v1.9.1: "상한 연속 달성 시 자동 증량폭(kg)" 입력 UI 제거 — 자동 증량 로직 자체가 이미 없어서 이 값은
   // 어디서도 읽히지 않는 죽은 필드였습니다. models.js/storage.js의 highRepIncrement 필드 자체는
   // 기존 데이터 호환을 위해 그대로 남겨두고, UI에서만 제거합니다.
-  const highRepFields = el("div", {}, [highRepLowerField.group, highRepUpperField.group]);
+  // v2.3.2: 하한/상한을 같은 행에 50%씩 배치(인라인 스타일만 사용, CSS 파일 무수정).
+  highRepLowerField.group.style.flex = "1";
+  highRepLowerField.group.style.minWidth = "0";
+  highRepUpperField.group.style.flex = "1";
+  highRepUpperField.group.style.minWidth = "0";
+  const highRepFields = el("div", { style: { display: "flex", gap: "10px" } }, [highRepLowerField.group, highRepUpperField.group]);
 
   // ---- 맨몸(시간 기반) 전용 필드 ----
   const targetSecondsField = numberField("목표 시간 (초)", defInitial.targetSeconds, "예: 30");
@@ -140,7 +145,10 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
   ]);
 
   // ---- 목표 중량 (현재 중량) ----
-  const targetWeightField = numberField("목표 중량 (kg)", isEdit ? stateInitial.currentWeight : 0, "예: 40");
+  // v2.3.2: 신규 종목의 초기값을 0이 아니라 null로 바꿔, 진짜 "빈 칸"에서 시작하도록 합니다.
+  // (0으로 프리필되어 있으면 사용자가 지우지 않는 한 항상 "값이 있는" 상태라 방금 추가한 필수 입력 검증이 걸리지 않고,
+  // 화면에도 의미 없는 0이 표시되는 문제가 있었습니다.)
+  const targetWeightField = numberField("목표 중량 (kg)", isEdit ? stateInitial.currentWeight : null, "예: 40");
   // v2.3.2: "워밍업 중량"/"도전세트 중량" 설정 필드는 종목 관리 화면에서 제거했습니다. 이제 두 값 모두
   // 운동 화면에서 실제 수행 흐름에 따라 관리됩니다(워밍업: warmupWeightOverride를 state.js가 자동 갱신,
   // 도전세트: 매번 직접 입력하거나 실패 시 재도전 기억값을 그대로 사용). 저장 로직은 state.js의
@@ -174,6 +182,12 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
         onclick: () => {
           if (!name.trim()) {
             alert("운동명을 입력해 주세요.");
+            return;
+          }
+          // v2.3.2: 목표 중량 미입력 시 조용히 currentWeight:0으로 저장되던 기존 공백을 막습니다.
+          // bodyweight는 이 필드 자체가 화면에 없으므로(gainMethod !== "bodyweight" 조건으로) 자동 제외됩니다.
+          if (gainMethod !== "bodyweight" && targetWeightField.get() == null) {
+            alert("목표 중량을 입력해 주세요.");
             return;
           }
           if (gainMethod === "high_rep" && (highRepLowerField.get() == null || highRepUpperField.get() == null)) {

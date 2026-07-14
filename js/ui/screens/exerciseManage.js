@@ -38,7 +38,7 @@ export function renderExerciseManage(root) {
   // 스위치는 항상 "현재/저장 시 반영될 active 상태"를 그대로 보여줍니다(on = 활성 유지, off = 비활성 전환 예정).
   let deactivateIds = new Set();
   let searchQuery = "";
-  let sortKey = "name"; // "name" | "gainMethod" | "recent"
+  let sortKey = "gainMethod"; // "name" | "gainMethod" | "recent" — v2.3.2: 기본값을 유형순으로 변경(저장되지 않는 화면 진입 시 기본값)
 
   function matchesSearch(ex) {
     const q = searchQuery.trim().toLowerCase();
