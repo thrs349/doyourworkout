@@ -83,13 +83,14 @@ export function renderHome(root) {
 
   // v1.2: 프리웨이트 도전 여부도 이제 "운동 종료 후 후보 선택" 화면 하나로 통일되어서,
   // 운동 시작 전 별도 추천 팝업 없이 바로 오늘의 운동으로 들어갑니다.
-  // v2.4.1: 기존 native alert() 대신 앱 전역 커스텀 modal 디자인을 사용합니다. 문장 단위로 <p>를 나눠서
+  // v2.4.1: 기존 native alert() 대신 앱 전역 커스텀 modal 디자인을 사용합니다. 종목명만 종목별로 <p>를 나눠서
   // (exerciseManage.js의 완전 삭제 확인 팝업과 동일 패턴) 화면 폭에 따라 단어 중간에서 줄바꿈되는 것을 방지합니다.
+  // v2.4.1 후속 수정: 설명 문구(안내/지시 문장)는 전부 제거하고 종목명만 보여주도록 단순화했습니다.
   function showMissingWeightModal(missing) {
-    const lines = ["중량이 설정되지 않은 종목이 있습니다.", ...missing.map((ex) => `- ${ex.name}`), "먼저 종목 관리에서 중량을 설정해주세요."];
+    const lines = missing.map((ex) => ex.name);
 
     const content = el("div", { class: "duration-modal" }, [
-      el("div", { class: "duration-title", text: "중량 설정 필요" }),
+      el("div", { class: "duration-title", text: "중량 미설정 운동" }),
       el(
         "div",
         { style: { margin: "0 0 16px" } },

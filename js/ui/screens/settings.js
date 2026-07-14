@@ -144,7 +144,7 @@ export function renderSettings(root) {
     el("div", {
       class: "helper-text",
       style: { textAlign: "center", margin: "var(--sp-5) 0 0" },
-      text: `Version ${APP_VERSION}`,
+      text: APP_VERSION,
     }),
   ]);
   mount(root, screen);

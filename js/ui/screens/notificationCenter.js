@@ -64,8 +64,11 @@ function buildHighRepCard(rerender) {
 }
 
 // 3. 🤸 맨몸 목표 조정 — 기존 bodyweightGoalAdjustPending(성장 사이클 상태) 그대로 사용.
-// v2.4.0: "목표 수정"은 clearBodyweightGoalPending()으로 pending 자체를 해제하지만,
-// "현행 유지"는 dismissBodyweightGoalAdjustNotification()으로 이번 알림 표시만 끄고 pending은 그대로 둡니다.
+// v2.4.1: "목표 수정"과 "현행 유지" 모두 clearBodyweightGoalPending()으로 pending을 함께 종료합니다
+// (재확정된 요구사항 — 이전 v2.4.0에서는 "현행 유지"가 dismissBodyweightGoalAdjustNotification()으로
+// Notification만 끄고 pending은 유지했으나, 이후 "성장 Pending도 함께 종료되어야 한다"로 요구사항이 바뀌었습니다).
+// 차이는 오직 화면 이동 여부뿐입니다. dismissBodyweightGoalAdjustNotification()/관련 필드 자체는 state.js에
+// 그대로 남아있지만(스키마 변경 없음, 최소 변경 원칙) 이 화면에서는 더 이상 호출하지 않습니다.
 function buildBodyweightCard(rerender) {
   const list = state.getBodyweightGoalAdjustList();
   if (list.length === 0) return null;
@@ -79,7 +82,7 @@ function buildBodyweightCard(rerender) {
         navigate(`#/exercise-edit/${ex.id}`);
       },
       onKeep: () => {
-        state.dismissBodyweightGoalAdjustNotification(ex.id);
+        state.clearBodyweightGoalPending(ex.id);
         rerender();
       },
     })
