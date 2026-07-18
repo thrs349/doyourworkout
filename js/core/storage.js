@@ -192,7 +192,7 @@ export function exportJSON(data) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   // v2.3.0: 브랜딩 변경 반영 + 날짜를 YYMMDD로 표기 (예: 260713). STORAGE_KEY 등 내부 식별자와는 무관합니다.
-  // v2.5.0: 여러 백업 파일을 구분하기 쉽도록 앱 버전을 파일명에 추가합니다(예: doyourworkout-backup-260713-v2.4.json).
+  // v2.5.0: 여러 백업 파일을 구분하기 쉽도록 앱 버전을 파일명에 추가합니다(예: doyourworkout-backup-260713-v2.5.0.json).
   // JSON 내부 payload 구조는 그대로이며, 파일명에만 반영합니다.
   const stamp = new Date().toISOString().slice(2, 10).replace(/-/g, "");
   a.href = url;
