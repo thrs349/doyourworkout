@@ -92,7 +92,7 @@ export function renderHome(root) {
       { class: "checklist-wrap" },
       missing.map((ex) =>
         el("div", { class: "checklist-item" }, [
-          el("span", { class: "checklist-box", text: "☐" }),
+          el("span", { class: "checklist-box", text: "⚠️" }),
           el("span", { text: ex.name }),
         ])
       )

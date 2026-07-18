@@ -595,7 +595,7 @@ export function renderWorkout(root) {
     const exName = ex ? ex.name : "운동";
     const isHighRep = !!record.highRepGoalReviewSuggested;
 
-    const title = isHighRep ? `🎉 ${exName}` : `🎉 ${exName} 3회 연속 목표 달성!`;
+    const title = isHighRep ? `🎉 ${exName} 상한 목표 달성!` : `🎉 ${exName} 3회 연속 목표 달성!`;
     const detailLines = isHighRep
       ? ["상한 반복수를 달성했습니다.", "운동 알림에서 중량 조정을 검토할 수 있습니다."]
       : ["목표 조정 검토가 필요합니다.", "운동 알림에서 확인할 수 있습니다."];

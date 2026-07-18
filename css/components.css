@@ -6,6 +6,10 @@
 /* v2.1.2: 운동 실행 화면 타이틀만 소폭 위로 이동 (2.3). #workout-screen으로 스코프를 좁혀 전역 .topbar .title과
    다른 10개 화면에는 영향을 주지 않습니다. 뒤로가기 버튼(icon-btn)은 이 선택자에 포함되지 않아 위치 그대로입니다. */
 #workout-screen .topbar .title { position: relative; top: -2px; }
+/* v2.4.5: 루틴 설정 화면(하단 탭 루트라 뒤로가기 버튼이 없음)은 타이틀 좌우 균형을 맞출 대칭 요소가 없어
+   우측 버튼 쪽으로 타이틀이 치우쳐 보였습니다. 화면 폭 기준 절대 중앙 정렬로 고정합니다. */
+#routine-list-screen .topbar { position: relative; }
+#routine-list-screen .topbar .title { position: absolute; left: 50%; transform: translateX(-50%); }
 .icon-btn {
   width: 30px; height: 30px; border-radius: 9px; background: transparent;
   border: 1.5px solid var(--color-text-secondary); display: flex; align-items: center; justify-content: center;
@@ -256,10 +260,10 @@
   text-transform: none;
   letter-spacing: normal;
 }
-/* 도전세트 후보: Read Only 목록이라 .list-row(클릭형)와 구분되는 단순 텍스트 행만 사용합니다. */
-/* v2.4.3: 요일/루틴 강조 대비 종목명은 더 작고 옅게(계층 구분) */
-.notif-ro-row { padding: 6px 10px; font-size: 12.5px; color: var(--color-text-secondary); }
-.notif-ro-row + .notif-ro-row { border-top: 1px solid var(--color-border); }
+/* 도전세트 후보: Read Only, 가로 나열(v2.4.5). 종목명은 항상 전체 표시(ellipsis 미사용). */
+.notif-candidate-row { display: flex; flex-wrap: wrap; column-gap: 4px; row-gap: 4px; padding: 4px 10px; }
+.notif-candidate-chip { font-size: 12.5px; color: var(--color-text-secondary); white-space: nowrap; }
+.notif-candidate-chip:not(:last-child)::after { content: " | "; color: var(--color-text-muted); }
 /* 고반복/맨몸 액션 행: 종목명 + 버튼 2개를 한 줄에 배치하고, 공간이 부족하면 종목명만 줄어들며 버튼은 유지됩니다. */
 /* v2.4.3: 카드 폭/여백 축소 요청에 맞춰 행 자체의 좌우 패딩과 아래 여백도 줄임(기존 .list-row 기본값보다 좁게) */
 .notif-action-row { padding: 10px 10px; margin-bottom: var(--sp-1); }
@@ -280,7 +284,7 @@
 /* 운동 수행/결과 화면 head-row의 "운동" 칸: 아이콘 유무와 무관하게 폭/정렬이 절대 변하지 않도록
    visibility만 토글합니다(display:none 사용 금지 — grid-template-columns 비율 보호). */
 .head-cue-cell { display: inline-flex; align-items: center; gap: 4px; }
-.cue-icon { font-size: 11px; line-height: 1; cursor: pointer; flex-shrink: 0; }
+.cue-icon { font-size: 11px; line-height: 1; cursor: pointer; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 5px; background: var(--color-primary-soft); }
 .cue-icon-placeholder { visibility: hidden; cursor: default; }
 
 /* 큐 노트 읽기 전용 팝업 (운동 수행 화면) */
@@ -299,7 +303,7 @@
   border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface);
 }
 .cue-edit-row.editing { border-color: var(--color-primary); }
-.cue-bullet { color: var(--color-primary); font-weight: 700; flex-shrink: 0; font-size: 13px; }
+.cue-bullet { flex-shrink: 0; font-size: 13px; }
 .cue-edit-text { flex: 1; font-size: 14px; color: var(--color-text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cue-edit-input {
   flex: 1; border: none; outline: none; background: transparent; padding: 0;

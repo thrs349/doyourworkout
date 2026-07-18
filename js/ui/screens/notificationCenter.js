@@ -16,7 +16,11 @@ function buildChallengeCandidateCard() {
   const groupNodes = groups.map((g) =>
     el("div", { class: "notif-group" }, [
       el("div", { class: "section-label", text: `${g.dayLabel}요일 - ${g.routineTitle}` }),
-      ...g.exercises.map((ex) => el("div", { class: "notif-ro-row", text: ex.name })),
+      el(
+        "div",
+        { class: "notif-candidate-row" },
+        g.exercises.map((ex) => el("span", { class: "notif-candidate-chip", text: ex.name }))
+      ),
     ])
   );
 

@@ -22,7 +22,7 @@ export function renderRoutineList(root) {
   const screen = el("div", { id: "routine-list-screen", class: "screen-content" }, [
     el("div", { class: "topbar" }, [
       el("div", { class: "title", text: "루틴 설정" }),
-      el("button", { class: "icon-btn", text: "운동", style: { fontSize: "11px", width: "auto", padding: "0 10px" }, onclick: () => navigate("#/exercise-manage") }),
+      el("button", { class: "icon-btn", text: "운동 관리", style: { width: "auto", padding: "0 12px" }, onclick: () => navigate("#/exercise-manage") }),
     ]),
     el("div", { class: "table-area" }, rows),
     renderBottomNav("routine"),
