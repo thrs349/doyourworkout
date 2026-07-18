@@ -7,7 +7,9 @@ import {
   loadData,
   saveData,
   exportJSON,
-  importJSONFile,
+  readJSONFile,
+  validateBackupShape,
+  migrate,
   saveDraft as storageSaveDraft,
   loadDraft as storageLoadDraft,
   clearDraft as storageClearDraft,
@@ -747,9 +749,26 @@ export function backupNow() {
   exportJSON(data);
 }
 
-export async function restoreFromFile(file) {
-  const restored = await importJSONFile(file);
-  data = restored;
+// v2.5.0: 파일을 읽고 최소 구조 검증까지만 수행합니다(아직 앱 데이터에 반영하지 않음).
+// UI에서 이 결과로 복원 확인 모달을 띄운 뒤, 사용자가 확인하면 restoreFromData()를 호출합니다.
+export async function readBackupFile(file) {
+  const parsed = await readJSONFile(file);
+  if (!validateBackupShape(parsed)) {
+    throw new Error("올바른 Do Your Workout 백업 파일이 아닙니다.");
+  }
+  return parsed;
+}
+
+// v2.5.0: 검증된 백업 데이터를 실제로 반영합니다. migrate()는 기존과 동일하게 적용되어
+// SCHEMA_VERSION/구버전 호환 로직은 변경되지 않습니다. 복원 성공 후 진행 중이던 운동 draft만 삭제합니다.
+export function restoreFromData(parsedData) {
+  data = migrate(parsedData);
+  storageClearDraft();
   persist();
   return data;
+}
+
+export async function restoreFromFile(file) {
+  const parsed = await readBackupFile(file);
+  return restoreFromData(parsed);
 }

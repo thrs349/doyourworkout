@@ -2,8 +2,8 @@
 // 오프라인에서도 앱 자체(껍데기)는 항상 열리도록 하는 최소한의 캐시 전략입니다.
 // 데이터는 여기서 다루지 않습니다(전부 Local Storage에 있음).
 
-const CACHE_NAME = "doyourworkout-v2.4.8"; // v2.4.8: 개발용 Pending 디버그 태그 제거(debugBodyweightStatus.js
-// 삭제)를 새 캐시로 확실히 반영하기 위해 버전을 올립니다. 삭제된 파일은 CORE_ASSETS에서도 제거했습니다.
+const CACHE_NAME = "doyourworkout-v2.4"; // v2.4 Stable: v2.4.0~v2.4.8까지의 누적 변경사항을 하나의 안정화
+// 릴리즈로 묶으면서, 세부 패치 번호 대신 "v2.4" 라벨로 캐시를 새로 무효화합니다.
 const CORE_ASSETS = [
   "./",
   "./index.html",

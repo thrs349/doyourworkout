@@ -107,6 +107,35 @@ export function renderSettings(root) {
     ]);
   }
 
+  // v2.5.0: 복원 전 확인 모달. confirmResetGeneration()과 동일한 openModal 패턴을 재사용합니다.
+  function confirmRestore(parsedData) {
+    const content = el("div", { class: "duration-modal" }, [
+      el("div", { class: "duration-title", text: "백업 복원" }),
+      el("div", {}, [
+        el("p", {
+          class: "detail",
+          style: { textAlign: "center", margin: "0 0 16px" },
+          text: "기존 운동 데이터를 백업 파일 기준으로 덮어씁니다. 계속하시겠습니까?",
+        }),
+      ]),
+      el("div", { class: "btn-row-h" }, [
+        el("button", { class: "btn btn-ghost", text: "취소", onclick: () => close() }),
+        el("button", {
+          class: "btn btn-primary",
+          text: "복원하기",
+          onclick: () => {
+            state.restoreFromData(parsedData);
+            applyTheme(state.getData().settings.themeId);
+            close();
+            alert("복원이 완료되었습니다.\n최신 데이터를 적용하기 위해 앱을 다시 실행해주세요.");
+            navigate("#/home", { replace: true });
+          },
+        }),
+      ]),
+    ]);
+    const close = openModal(content);
+  }
+
   const fileInput = el("input", {
     type: "file",
     accept: "application/json",
@@ -114,13 +143,12 @@ export function renderSettings(root) {
     onchange: async (e) => {
       const file = e.target.files[0];
       if (!file) return;
+      fileInput.value = ""; // 같은 파일을 다시 선택해도 onchange가 발생하도록 초기화
       try {
-        await state.restoreFromFile(file);
-        applyTheme(state.getData().settings.themeId);
-        alert("데이터를 불러왔습니다.");
-        navigate("#/home", { replace: true });
+        const parsed = await state.readBackupFile(file);
+        confirmRestore(parsed);
       } catch (err) {
-        alert("파일을 불러오지 못했습니다. 올바른 백업 파일인지 확인해 주세요.");
+        alert("올바른 Do Your Workout 백업 파일이 아닙니다.");
       }
     },
   });

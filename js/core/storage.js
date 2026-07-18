@@ -3,6 +3,7 @@
 // 데이터의 "의미"는 모르고, 그대로 저장하고 그대로 돌려줄 뿐입니다.
 
 import { defaultAppData, SCHEMA_VERSION } from "./models.js";
+import { APP_VERSION } from "./appConfig.js";
 
 const STORAGE_KEY = "hangtory:data";
 // v2.3.0: 운동 진행 상태(Draft) 복구 기능 전용 key입니다. STORAGE_KEY(메인 데이터)와 완전히 분리되어 있어
@@ -33,7 +34,7 @@ export function saveData(data) {
 
 // 스키마 버전이 바뀔 때마다 과거 백업을 최대한 살리기 위한 이관 지점입니다.
 // 새 필드가 추가되면 여기서 단계적으로(버전별로) 기본값을 채워 넣습니다.
-function migrate(data) {
+export function migrate(data) {
   const base = defaultAppData();
   if (!data || typeof data !== "object") return base;
 
@@ -191,9 +192,11 @@ export function exportJSON(data) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   // v2.3.0: 브랜딩 변경 반영 + 날짜를 YYMMDD로 표기 (예: 260713). STORAGE_KEY 등 내부 식별자와는 무관합니다.
+  // v2.5.0: 여러 백업 파일을 구분하기 쉽도록 앱 버전을 파일명에 추가합니다(예: doyourworkout-backup-260713-v2.4.json).
+  // JSON 내부 payload 구조는 그대로이며, 파일명에만 반영합니다.
   const stamp = new Date().toISOString().slice(2, 10).replace(/-/g, "");
   a.href = url;
-  a.download = `doyourworkout-backup-${stamp}.json`;
+  a.download = `doyourworkout-backup-${stamp}-${APP_VERSION}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -235,13 +238,14 @@ export function clearDraft() {
   }
 }
 
-export function importJSONFile(file) {
+// v2.5.0: 백업 파일을 읽고 JSON으로 파싱만 합니다(migrate 미적용). 복원 확인 모달에 보여줄 데이터를
+// 먼저 확보하기 위한 용도로, 실제 앱 데이터로 반영하는 시점(migrate + 저장)과 분리했습니다.
+export function readJSONFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        const parsed = JSON.parse(reader.result);
-        resolve(migrate(parsed));
+        resolve(JSON.parse(reader.result));
       } catch (e) {
         reject(e);
       }
@@ -249,4 +253,15 @@ export function importJSONFile(file) {
     reader.onerror = () => reject(reader.error);
     reader.readAsText(file);
   });
+}
+
+// v2.5.0: 백업 파일의 "최소 구조"만 확인합니다. 세부 값이나 모든 필드를 강제하지 않으며,
+// 구버전 백업(과거 스키마)도 이 조건은 만족하므로 migrate()가 담당하는 하위호환 영역은 건드리지 않습니다.
+export function validateBackupShape(parsed) {
+  if (!parsed || typeof parsed !== "object") return false;
+  if (!Array.isArray(parsed.exercises)) return false;
+  if (!Array.isArray(parsed.sessions)) return false;
+  if (!Array.isArray(parsed.routines)) return false;
+  if (!parsed.settings || typeof parsed.settings !== "object") return false;
+  return true;
 }
