@@ -1,15 +1,17 @@
 /* components.css - 화면에 걸쳐 재사용되는 컴포넌트 스타일 */
 
 /* 상단바 */
-.topbar { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-2) 0 var(--sp-2); flex-shrink: 0; }
-.topbar .title { font-family: var(--font-display); font-weight: 700; font-size: 17px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-2) 0 var(--sp-2); flex-shrink: 0; position: relative; }
+/* v2.4.6: 타이틀을 절대 위치로 빼내어 좌우 버튼 존재 여부/폭과 무관하게 항상 화면(topbar) 정중앙에 고정합니다.
+   .screen-content의 좌우 패딩이 대칭이라(css/base.css) 이는 실질적으로 viewport 기준 중앙과 동일합니다. */
+.topbar .title { font-family: var(--font-display); font-weight: 700; font-size: 17px; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
 /* v2.1.2: 운동 실행 화면 타이틀만 소폭 위로 이동 (2.3). #workout-screen으로 스코프를 좁혀 전역 .topbar .title과
-   다른 10개 화면에는 영향을 주지 않습니다. 뒤로가기 버튼(icon-btn)은 이 선택자에 포함되지 않아 위치 그대로입니다. */
-#workout-screen .topbar .title { position: relative; top: -2px; }
-/* v2.4.5: 루틴 설정 화면(하단 탭 루트라 뒤로가기 버튼이 없음)은 타이틀 좌우 균형을 맞출 대칭 요소가 없어
-   우측 버튼 쪽으로 타이틀이 치우쳐 보였습니다. 화면 폭 기준 절대 중앙 정렬로 고정합니다. */
-#routine-list-screen .topbar { position: relative; }
-#routine-list-screen .topbar .title { position: absolute; left: 50%; transform: translateX(-50%); }
+   다른 화면에는 영향을 주지 않습니다. 뒤로가기 버튼(icon-btn)은 이 선택자에 포함되지 않아 위치 그대로입니다.
+   v2.4.6: position은 위 공통 규칙(absolute)을 그대로 쓰고, transform에 -2px만 더합니다. */
+#workout-screen .topbar .title { transform: translate(-50%, calc(-50% - 2px)); }
+/* v2.4.6: 루틴 설정 화면은 뒤로가기 버튼이 없어 "운동 관리" 버튼 하나만 정상 flex 흐름에 남습니다.
+   justify-content:space-between은 자식이 1개면 좌측에 붙이므로, 우측 정렬을 명시적으로 유지합니다. */
+#routine-list-screen .topbar { justify-content: flex-end; }
 .icon-btn {
   width: 30px; height: 30px; border-radius: 9px; background: transparent;
   border: 1.5px solid var(--color-text-secondary); display: flex; align-items: center; justify-content: center;
@@ -284,7 +286,7 @@
 /* 운동 수행/결과 화면 head-row의 "운동" 칸: 아이콘 유무와 무관하게 폭/정렬이 절대 변하지 않도록
    visibility만 토글합니다(display:none 사용 금지 — grid-template-columns 비율 보호). */
 .head-cue-cell { display: inline-flex; align-items: center; gap: 4px; }
-.cue-icon { font-size: 11px; line-height: 1; cursor: pointer; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 5px; background: var(--color-primary-soft); }
+.cue-icon { font-size: 11px; line-height: 1; cursor: pointer; flex-shrink: 0; }
 .cue-icon-placeholder { visibility: hidden; cursor: default; }
 
 /* 큐 노트 읽기 전용 팝업 (운동 수행 화면) */
