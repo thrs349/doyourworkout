@@ -5,5 +5,5 @@ export const APP_NAME = "Do Your Workout";
 export const APP_TAGLINE = "운동 헌장 앱";
 // v2.4.1: 사용자에게 보여주는 "릴리즈" 버전입니다. models.js의 SCHEMA_VERSION(저장 데이터 구조 migration 번호)과는
 // 완전히 별개이며 서로 참조하지 않습니다 — 이 값은 릴리즈마다 사람이 직접 갱신합니다.
-// v2.5.1: 복원 모달 UI 개선 + 그래프 최고중량 갱신 버그수정 릴리즈에 맞춰 값을 갱신합니다.
-export const APP_VERSION = "v2.5.1";
+// v2.6.0: Exercise Tag System(운동 종목 태그 시스템) 릴리즈.
+export const APP_VERSION = "v2.6.0";

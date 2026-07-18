@@ -182,6 +182,13 @@ export function migrate(data) {
     );
   }
 
+  // v14 -> v15: 운동 태그 시스템(primaryBodyPart/secondaryTags)이 추가됨. 탐색(검색/필터) 전용 필드이며
+  // judge.js/gain.js 판정·증량 계산과는 무관합니다. 기존 종목은 아직 부위가 지정되지 않은 상태이므로
+  // primaryBodyPart는 null(사용자가 종목 수정 화면에서 직접 지정), secondaryTags는 빈 배열로 채웁니다.
+  if (fromVersion < 15) {
+    merged.exercises = (merged.exercises || []).map((ex) => ({ primaryBodyPart: null, secondaryTags: [], ...ex }));
+  }
+
   merged.schemaVersion = SCHEMA_VERSION;
   return merged;
 }

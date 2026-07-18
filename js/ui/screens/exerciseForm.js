@@ -3,6 +3,7 @@
 import { el, mount } from "../dom.js";
 import { navigate } from "../router.js";
 import * as state from "../../core/state.js";
+import { BODY_PARTS, SECONDARY_TAGS } from "../../core/models.js";
 
 function stepper(initial, min, max) {
   let value = initial;
@@ -38,6 +39,9 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
   let bodyweightGoalType = defInitial.bodyweightGoalType || "reps";
   let warmupEnabled = defInitial.warmupEnabled;
   let isUnilateral = defInitial.isUnilateral;
+  // v2.6.0: 운동 태그 시스템(탐색 전용). judge.js/gain.js와 무관한 필드입니다.
+  let primaryBodyPart = defInitial.primaryBodyPart ?? null;
+  let secondaryTags = new Set(defInitial.secondaryTags || []);
 
   const isEdit = !!exerciseId;
 
@@ -66,6 +70,41 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
     el("div", { class: "field-label", text: "목표 유형" }),
     el("div", { class: "type-toggle" }, [goalTypeOpts.reps, goalTypeOpts.time]),
   ]);
+
+  // ---- v2.6.0: 운동 부위(필수, 단일 선택) ----
+  const bodyPartOpts = Object.fromEntries(
+    BODY_PARTS.map((part) => [part, el("div", { class: "type-opt", text: part, onclick: () => selectBodyPart(part) })])
+  );
+  const bodyPartGroup = el("div", { class: "field-group" }, [
+    el("div", { class: "field-label", text: "운동 부위" }),
+    el("div", { class: "type-toggle" }, BODY_PARTS.map((part) => bodyPartOpts[part])),
+  ]);
+
+  // ---- v2.6.0: 상체 태그(선택, 복수 선택) - 운동 부위가 "상체"일 때만 표시 ----
+  const secondaryTagOpts = Object.fromEntries(
+    SECONDARY_TAGS.map((tag) => [tag, el("div", { class: "type-opt", text: tag, onclick: () => toggleSecondaryTag(tag) })])
+  );
+  const secondaryTagGroup = el("div", { class: "field-group" }, [
+    el("div", { class: "field-label", text: "상체 태그" }),
+    el("div", { class: "type-toggle" }, SECONDARY_TAGS.map((tag) => secondaryTagOpts[tag])),
+  ]);
+
+  function refreshBodyPartUI() {
+    BODY_PARTS.forEach((part) => bodyPartOpts[part].classList.toggle("selected", part === primaryBodyPart));
+    SECONDARY_TAGS.forEach((tag) => secondaryTagOpts[tag].classList.toggle("selected", secondaryTags.has(tag)));
+    secondaryTagGroup.style.display = primaryBodyPart === "상체" ? "block" : "none";
+  }
+  function selectBodyPart(part) {
+    primaryBodyPart = primaryBodyPart === part ? null : part;
+    // 상체가 아닌 부위로 바뀌면(또는 선택 해제되면) 상체 전용 태그 선택값은 초기화합니다.
+    if (primaryBodyPart !== "상체") secondaryTags = new Set();
+    refreshBodyPartUI();
+  }
+  function toggleSecondaryTag(tag) {
+    if (secondaryTags.has(tag)) secondaryTags.delete(tag);
+    else secondaryTags.add(tag);
+    refreshBodyPartUI();
+  }
 
   function refreshMethodUI() {
     Object.entries(methodOpts).forEach(([key, node]) => node.classList.toggle("selected", key === gainMethod));
@@ -166,6 +205,8 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
       el("div", { class: "field-label", text: "증량 방식" }),
       el("div", { class: "type-toggle" }, [methodOpts.machine, methodOpts.freeweight, methodOpts.high_rep, methodOpts.bodyweight]),
     ]),
+    bodyPartGroup,
+    secondaryTagGroup,
     goalTypeGroup,
     el("div", { class: "field-group" }, [el("div", { class: "field-label", text: "기본 세트 수" }), setsStepper.node]),
     repsField.group,
@@ -182,6 +223,12 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
         onclick: () => {
           if (!name.trim()) {
             alert("운동명을 입력해 주세요.");
+            return;
+          }
+          // v2.6.0: 운동 부위 선택은 신규 생성뿐 아니라 기존 종목 수정 저장 시에도 필수입니다.
+          // 마이그레이션으로 primaryBodyPart가 null인 기존 종목도, 수정 화면에서 저장하려면 부위를 지정해야 합니다.
+          if (!primaryBodyPart) {
+            alert("운동 부위를 선택해 주세요.");
             return;
           }
           // v2.3.2: 목표 중량 미입력 시 조용히 currentWeight:0으로 저장되던 기존 공백을 막습니다.
@@ -218,6 +265,10 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
             bodyweightGoalType: gainMethod === "bodyweight" ? bodyweightGoalType : null,
             targetSeconds: gainMethod === "bodyweight" && bodyweightGoalType === "time" ? targetSecondsField.get() : null,
             isUnilateral,
+            // v2.6.0: 운동 태그 시스템(탐색 전용). secondaryTags는 상체가 아니면 UI에서 이미 비워지지만,
+            // 저장 시점에도 한 번 더 방어적으로 정리합니다.
+            primaryBodyPart,
+            secondaryTags: primaryBodyPart === "상체" ? Array.from(secondaryTags) : [],
           };
 
           if (isEdit) {
@@ -260,6 +311,7 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
   ]);
 
   refreshMethodUI();
+  refreshBodyPartUI();
   mount(root, screen);
 }
 
@@ -282,6 +334,8 @@ export function renderExerciseForm(root, params) {
       bodyweightGoalType: "reps",
       targetSeconds: null,
       isUnilateral: false,
+      primaryBodyPart: null,
+      secondaryTags: [],
     },
     stateInitial: null,
     onBack: () => history.back(),

@@ -2,7 +2,7 @@
 import { el, mount } from "../dom.js";
 import { navigate } from "../router.js";
 import * as state from "../../core/state.js";
-import { formatExerciseMeta, GAIN_METHODS } from "../../core/models.js";
+import { formatExerciseMeta, GAIN_METHODS, BODY_PARTS, SECONDARY_TAGS } from "../../core/models.js";
 import { openModal } from "../components/modal.js";
 import { openCueNoteEditor } from "../components/cueNoteEditor.js";
 
@@ -13,22 +13,13 @@ function nameCompare(a, b) {
 }
 
 const GAIN_METHOD_ORDER = [GAIN_METHODS.MACHINE, GAIN_METHODS.FREEWEIGHT, GAIN_METHODS.HIGH_REP, GAIN_METHODS.BODYWEIGHT];
+// v2.6.0: 정렬 버튼(이름순/최근사용순)을 제거했습니다. 목록은 항상 "운동 유형 순(머신 → 프리웨이트 →
+// 고반복 → 맨몸) → 각 유형 내부 가나다순"으로 고정 정렬합니다(유형 필터를 적용해도 동일한 정렬 기준 유지).
 function methodCompare(a, b) {
   const diff = GAIN_METHOD_ORDER.indexOf(a.gainMethod) - GAIN_METHOD_ORDER.indexOf(b.gainMethod);
   return diff !== 0 ? diff : nameCompare(a, b);
 }
-
-function recentCompare(a, b) {
-  const da = state.getExerciseLastUsedDate(a.id);
-  const db = state.getExerciseLastUsedDate(b.id);
-  if (da === db) return nameCompare(a, b);
-  if (!da) return 1; // 사용 기록 없는 종목은 뒤로
-  if (!db) return -1;
-  return da < db ? 1 : -1; // 최신 날짜가 앞으로
-}
-
-const SORTERS = { name: nameCompare, gainMethod: methodCompare, recent: recentCompare };
-const SORT_LABELS = { name: "이름순", gainMethod: "유형순", recent: "최근 사용순" };
+const GAIN_METHOD_LABELS = { machine: "머신", freeweight: "프리웨이트", high_rep: "고반복", bodyweight: "맨몸" };
 
 export function renderExerciseManage(root) {
   let tab = "active"; // "active" | "inactive"
@@ -37,19 +28,37 @@ export function renderExerciseManage(root) {
   // 스위치는 항상 "현재/저장 시 반영될 active 상태"를 그대로 보여줍니다(on = 활성 유지, off = 비활성 전환 예정).
   let deactivateIds = new Set();
   let searchQuery = "";
-  let sortKey = "gainMethod"; // "name" | "gainMethod" | "recent" — v2.3.2: 기본값을 유형순으로 변경(저장되지 않는 화면 진입 시 기본값)
+  // v2.6.0: 정렬 버튼(이름순/최근사용순) 대신 유형/부위 탐색 필터로 대체합니다.
+  // 필터 상태는 화면 진입 시(렌더 함수 재호출 시) 항상 초기 상태에서 시작합니다.
+  let filterMode = null; // null | "type" | "bodyPart" — 운동 유형/운동 부위는 동시에 사용하지 않습니다(상호 배타).
+  let typeFilter = null; // GAIN_METHODS 값 중 하나
+  let bodyPartFilter = null; // BODY_PARTS 값 중 하나
+  let tagFilter = new Set(); // SECONDARY_TAGS 중 복수 선택(OR)
 
   function matchesSearch(ex) {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return true;
     return ex.name.toLowerCase().includes(q);
   }
+  function matchesType(ex) {
+    return !typeFilter || ex.gainMethod === typeFilter;
+  }
+  function matchesBodyPart(ex) {
+    return !bodyPartFilter || ex.primaryBodyPart === bodyPartFilter;
+  }
+  function matchesTags(ex) {
+    if (tagFilter.size === 0) return true;
+    return (ex.secondaryTags || []).some((t) => tagFilter.has(t));
+  }
+  function matchesFilters(ex) {
+    return matchesSearch(ex) && matchesType(ex) && matchesBodyPart(ex) && matchesTags(ex);
+  }
 
   function activeList() {
-    return state.getData().exercises.filter((e) => e.active !== false && matchesSearch(e)).sort(SORTERS[sortKey]);
+    return state.getData().exercises.filter((e) => e.active !== false && matchesFilters(e)).sort(methodCompare);
   }
   function inactiveList() {
-    return state.getData().exercises.filter((e) => e.active === false && matchesSearch(e)).sort(SORTERS[sortKey]);
+    return state.getData().exercises.filter((e) => e.active === false && matchesFilters(e)).sort(methodCompare);
   }
 
   /* ---------------- 활성 탭 ---------------- */
@@ -95,6 +104,7 @@ export function renderExerciseManage(root) {
           }),
         ];
 
+    // v2.6.0: 부위/태그는 formatExerciseMeta 한 줄 안에 이미 포함되어 표시됩니다(카드 세로 길이 유지).
     return el("div", { class: "list-row", style: { alignItems: "center" } }, [
       el("div", {}, [
         el("span", { class: "name", text: ex.name }),
@@ -191,8 +201,10 @@ export function renderExerciseManage(root) {
     deactivateIds = new Set();
     searchQuery = ""; // 2-5: 탭 전환 시 검색어 초기화
     searchInput.value = "";
+    resetFilters(); // v2.6.0: 탭 전환 시에도 항상 초기 탐색 상태로 되돌립니다.
     refreshTabUI();
     refreshEditBtn();
+    refreshFilterUI();
     rerenderList();
   }
 
@@ -209,20 +221,78 @@ export function renderExerciseManage(root) {
     },
   });
 
-  /* ---------------- 정렬 (2-6) ---------------- */
+  /* ---------------- v2.6.0: 운동 유형/부위 탐색 필터 ---------------- */
 
-  const sortOpts = {
-    name: el("div", { class: "type-opt", text: SORT_LABELS.name, onclick: () => setSortKey("name") }),
-    gainMethod: el("div", { class: "type-opt", text: SORT_LABELS.gainMethod, onclick: () => setSortKey("gainMethod") }),
-    recent: el("div", { class: "type-opt", text: SORT_LABELS.recent, onclick: () => setSortKey("recent") }),
+  // 1행: "운동 유형" / "운동 부위" 카테고리 선택(1:1, 상호 배타)
+  const modeOpts = {
+    type: el("div", { class: "type-opt", text: "운동 유형", onclick: () => selectMode("type") }),
+    bodyPart: el("div", { class: "type-opt", text: "운동 부위", onclick: () => selectMode("bodyPart") }),
   };
-  function refreshSortUI() {
-    Object.entries(sortOpts).forEach(([key, node]) => node.classList.toggle("selected", key === sortKey));
+  const modeRow = el("div", { class: "type-toggle", style: { marginBottom: "8px" } }, [modeOpts.type, modeOpts.bodyPart]);
+
+  // 2행: 운동 유형 상세(머신/프리웨이트/고반복/맨몸)
+  const typeOptKeys = [GAIN_METHODS.MACHINE, GAIN_METHODS.FREEWEIGHT, GAIN_METHODS.HIGH_REP, GAIN_METHODS.BODYWEIGHT];
+  const typeOpts = Object.fromEntries(
+    typeOptKeys.map((key) => [key, el("div", { class: "type-opt", text: GAIN_METHOD_LABELS[key], onclick: () => selectTypeFilter(key) })])
+  );
+  const typeRow = el("div", { class: "type-toggle", style: { marginBottom: "8px" } }, typeOptKeys.map((k) => typeOpts[k]));
+
+  // 2행(대체): 운동 부위 상세(상체/하체/코어)
+  const bodyPartOpts = Object.fromEntries(
+    BODY_PARTS.map((part) => [part, el("div", { class: "type-opt", text: part, onclick: () => selectBodyPartFilter(part) })])
+  );
+  const bodyPartRow = el("div", { class: "type-toggle", style: { marginBottom: "8px" } }, BODY_PARTS.map((p) => bodyPartOpts[p]));
+
+  // 3행: 상체 태그(운동 부위=상체일 때만), 복수 선택 OR
+  const tagOpts = Object.fromEntries(
+    SECONDARY_TAGS.map((tag) => [tag, el("div", { class: "type-opt", text: tag, onclick: () => toggleTagFilter(tag) })])
+  );
+  const tagRow = el("div", { class: "type-toggle", style: { marginBottom: "8px" } }, SECONDARY_TAGS.map((t) => tagOpts[t]));
+
+  function resetFilters() {
+    filterMode = null;
+    typeFilter = null;
+    bodyPartFilter = null;
+    tagFilter = new Set();
   }
-  function setSortKey(key) {
-    if (sortKey === key) return;
-    sortKey = key;
-    refreshSortUI();
+
+  function refreshFilterUI() {
+    modeOpts.type.classList.toggle("selected", filterMode === "type");
+    modeOpts.bodyPart.classList.toggle("selected", filterMode === "bodyPart");
+    typeOptKeys.forEach((k) => typeOpts[k].classList.toggle("selected", typeFilter === k));
+    BODY_PARTS.forEach((p) => bodyPartOpts[p].classList.toggle("selected", bodyPartFilter === p));
+    SECONDARY_TAGS.forEach((t) => tagOpts[t].classList.toggle("selected", tagFilter.has(t)));
+
+    typeRow.style.display = filterMode === "type" ? "flex" : "none";
+    bodyPartRow.style.display = filterMode === "bodyPart" ? "flex" : "none";
+    tagRow.style.display = filterMode === "bodyPart" && bodyPartFilter === "상체" ? "flex" : "none";
+  }
+
+  // 운동 유형/운동 부위는 동시에 사용하지 않습니다 — 한쪽을 선택하면 다른 쪽 선택은 자동 해제됩니다.
+  function selectMode(mode) {
+    filterMode = filterMode === mode ? null : mode;
+    typeFilter = null;
+    bodyPartFilter = null;
+    tagFilter = new Set();
+    refreshFilterUI();
+    rerenderList();
+  }
+  function selectTypeFilter(key) {
+    typeFilter = typeFilter === key ? null : key;
+    refreshFilterUI();
+    rerenderList();
+  }
+  function selectBodyPartFilter(part) {
+    bodyPartFilter = bodyPartFilter === part ? null : part;
+    // 상체가 아니면(또는 선택 해제되면) 상체 태그 선택값은 자동 초기화합니다.
+    if (bodyPartFilter !== "상체") tagFilter = new Set();
+    refreshFilterUI();
+    rerenderList();
+  }
+  function toggleTagFilter(tag) {
+    if (tagFilter.has(tag)) tagFilter.delete(tag);
+    else tagFilter.add(tag);
+    refreshFilterUI();
     rerenderList();
   }
 
@@ -273,7 +343,7 @@ export function renderExerciseManage(root) {
   }
 
   refreshTabUI();
-  refreshSortUI();
+  refreshFilterUI();
 
   const screen = el("div", { id: "exercise-manage-screen", class: "screen-content" }, [
     el("div", { class: "topbar" }, [
@@ -283,7 +353,10 @@ export function renderExerciseManage(root) {
     ]),
     el("div", { class: "type-toggle", style: { marginBottom: "12px" } }, [tabActiveOpt, tabInactiveOpt]),
     el("div", { class: "field-group" }, [searchInput]),
-    el("div", { class: "type-toggle", style: { marginBottom: "12px" } }, [sortOpts.name, sortOpts.gainMethod, sortOpts.recent]),
+    modeRow,
+    typeRow,
+    bodyPartRow,
+    tagRow,
     el("div", {
       class: "helper-text",
       text: "비활성화한 운동은 루틴/오늘의 운동에서 숨겨지지만 기존 기록과 그래프는 그대로 남습니다. 완전 삭제는 비활성 탭에서만 가능합니다.",
