@@ -13,8 +13,6 @@
 }
 .icon-btn.gear::before { content: "⚙"; }
 .opacity-50 { opacity: .5; }
-/* v2.4.3: 표시 전용 아이콘(클릭 불가). icon-btn과 달리 테두리 박스가 없어 버튼처럼 보이지 않습니다. */
-.readonly-icon { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 30px; font-size: 13px; flex-shrink: 0; cursor: default; }
 
 /* 버튼 */
 .btn {
@@ -211,6 +209,11 @@
 .stepper { display: flex; align-items: center; justify-content: space-between; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; padding: 8px 14px; }
 .stepper .sval { font-family: var(--font-mono); font-weight: 700; font-size: 16px; }
 .step-btn { width: 30px; height: 30px; border-radius: 8px; background: var(--color-primary-soft); color: var(--color-primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; border: none; }
+/* v2.4.3: 큐노트(💡)/종목수정(✏️)/미설정중량(⚠️) 통일 아이콘. .step-btn과 동일한 하이라이트 배경 패턴 재사용.
+   기존 .icon-btn(테두리 있는 버튼, 앱 전역 11곳 이상에서 공유)은 건드리지 않습니다. */
+.icon-chip { width: 30px; height: 30px; border-radius: 9px; background: var(--color-primary-soft); border: none; display: flex; align-items: center; justify-content: center; color: var(--color-text-secondary); font-size: 14px; flex-shrink: 0; }
+/* 표시 전용(예: 미설정 중량 <span>): 클릭 가능한 버튼처럼 보이지 않도록 커서만 구분. 상태/이벤트는 건드리지 않음. */
+.icon-chip.readonly { cursor: default; }
 
 /* 설정 화면: 테마 목록 */
 .theme-row { display: flex; align-items: center; justify-content: space-between; padding: 13px; border: 1px solid var(--color-border); border-radius: 12px; margin-bottom: var(--sp-2); background: var(--color-surface); }
