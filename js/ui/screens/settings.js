@@ -107,15 +107,53 @@ export function renderSettings(root) {
     ]);
   }
 
+  // v2.5.1: 복원 완료 안내. 시스템 alert() 대신 confirmResetGeneration()/confirmRestore()와 동일한
+  // openModal 패턴을 재사용해 앱 내부 UI 스타일로 통일합니다. 확인 후 홈 화면 이동 흐름은 기존과 동일합니다.
+  function showRestoreComplete() {
+    const content = el("div", { class: "duration-modal" }, [
+      el("div", { class: "duration-title", text: "복원 완료" }),
+      el("div", {}, [
+        el("p", {
+          class: "detail",
+          style: { textAlign: "center", margin: "0 0 3px" },
+          text: "백업 데이터 복원이 완료되었습니다.",
+        }),
+        el("p", {
+          class: "detail",
+          style: { textAlign: "center", margin: "0 0 16px" },
+          text: "최신 데이터를 적용하기 위해 앱을 다시 실행해주세요.",
+        }),
+      ]),
+      el("div", { class: "btn-row-h" }, [
+        el("button", {
+          class: "btn btn-primary",
+          text: "확인",
+          onclick: () => {
+            close();
+            navigate("#/home", { replace: true });
+          },
+        }),
+      ]),
+    ]);
+    const close = openModal(content);
+  }
+
   // v2.5.0: 복원 전 확인 모달. confirmResetGeneration()과 동일한 openModal 패턴을 재사용합니다.
+  // v2.5.1: 확인 문구가 한 문장으로 길게 이어지며 임의 지점에서 줄바꿈되던 문제를, 기존
+  // confirmResetGeneration()과 동일하게 "무엇을 하는지"/"계속할지"를 별도 문단으로 분리해 개선합니다.
   function confirmRestore(parsedData) {
     const content = el("div", { class: "duration-modal" }, [
       el("div", { class: "duration-title", text: "백업 복원" }),
       el("div", {}, [
         el("p", {
           class: "detail",
+          style: { textAlign: "center", margin: "0 0 3px" },
+          text: "기존 운동 데이터를 백업 파일 기준으로 덮어씁니다.",
+        }),
+        el("p", {
+          class: "detail",
           style: { textAlign: "center", margin: "0 0 16px" },
-          text: "기존 운동 데이터를 백업 파일 기준으로 덮어씁니다. 계속하시겠습니까?",
+          text: "계속하시겠습니까?",
         }),
       ]),
       el("div", { class: "btn-row-h" }, [
@@ -127,8 +165,7 @@ export function renderSettings(root) {
             state.restoreFromData(parsedData);
             applyTheme(state.getData().settings.themeId);
             close();
-            alert("복원이 완료되었습니다.\n최신 데이터를 적용하기 위해 앱을 다시 실행해주세요.");
-            navigate("#/home", { replace: true });
+            showRestoreComplete();
           },
         }),
       ]),
