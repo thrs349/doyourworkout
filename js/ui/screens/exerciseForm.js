@@ -223,28 +223,31 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
           if (isEdit) {
             state.updateExercise(exerciseId, defFields);
             const newWeight = targetWeightField.get();
-            if (newWeight !== null && newWeight !== stateInitial.currentWeight) {
+            const weightChanged = newWeight !== null && newWeight !== stateInitial.currentWeight;
+            if (weightChanged) {
               state.setExerciseWeight(exerciseId, newWeight);
             }
 
-            // 맨몸 종목의 "목표 난이도 증가"로 볼 수 있는 변경이 있었을 때만 pending을 해제합니다.
-            // 대상: 목표 유형 변경, 목표 반복수 "증가", 목표 시간 "증가", 세트 수 "증가".
-            // 감소(반복수/시간/세트 수를 줄이는 것)나 종목명·메모·워밍업 등 비목표 변경은 pending을 그대로 유지합니다.
+            // v2.4.0: 맨몸 종목의 목표 기준 데이터가 "어느 방향으로든" 바뀌면, 그 기준으로 생성된 기존
+            // Pending/Notification은 더 이상 유효하지 않은 것으로 판단해 함께 초기화합니다(증가만 보던 v1.7~v2.3
+            // 방식에서 변경). bodyweightGoalType이 reps<->time으로 전환되는 경우도 defFields.targetReps/targetSeconds
+            // 값이 null <-> 숫자로 바뀌면서 아래 두 비교에 자연히 포함되므로 별도 조건이 필요 없습니다.
+            // 종목명/메모/워밍업 등 목표와 무관한 변경은 여기 해당하지 않아 pending을 그대로 유지합니다.
             if (gainMethod === "bodyweight") {
-              const setsIncreased = setsStepper.get() > defInitial.baseSets;
-              const targetRepsIncreased =
-                bodyweightGoalType === "reps" &&
-                defFields.targetReps != null &&
-                defInitial.targetReps != null &&
-                defFields.targetReps > defInitial.targetReps;
-              const targetSecondsIncreased =
-                bodyweightGoalType === "time" &&
-                defFields.targetSeconds != null &&
-                defInitial.targetSeconds != null &&
-                defFields.targetSeconds > defInitial.targetSeconds;
-              const goalTypeChanged = bodyweightGoalType !== defInitial.bodyweightGoalType;
-              const goalChanged = goalTypeChanged || targetRepsIncreased || targetSecondsIncreased || setsIncreased;
+              const setsChanged = setsStepper.get() !== defInitial.baseSets;
+              const targetRepsChanged = defFields.targetReps !== defInitial.targetReps;
+              const targetSecondsChanged = defFields.targetSeconds !== defInitial.targetSeconds;
+              const goalChanged = setsChanged || targetRepsChanged || targetSecondsChanged;
               if (goalChanged) state.clearBodyweightGoalPending(exerciseId);
+            }
+
+            // v2.4.0: 고반복 종목은 "증량 검토" 알림이 근거했던 기준 데이터(중량/하단/상단 반복수) 중
+            // 하나라도 바뀌면 그 알림은 더 이상 유효하지 않은 것으로 판단해 삭제합니다(증가/감소 방향 무관,
+            // 세 가지 모두 바뀔 필요 없이 OR 조건). ExerciseState는 건드리지 않으므로 Pending으로 바뀌는 것은 아닙니다.
+            if (gainMethod === "high_rep") {
+              const lowerChanged = defFields.highRepLower !== defInitial.highRepLower;
+              const upperChanged = defFields.highRepUpper !== defInitial.highRepUpper;
+              if (weightChanged || lowerChanged || upperChanged) state.clearHighRepReviewAlert(exerciseId);
             }
           } else {
             state.addExercise({ ...defFields, startWeight: targetWeightField.get() ?? 0 });
@@ -288,8 +291,16 @@ export function renderExerciseForm(root, params) {
   });
 }
 
-// 기존 종목 수정 (종목 관리 화면에서 진입)
+// 기존 종목 수정 (종목 관리 화면 또는 Notification Center에서 진입)
 export function renderExerciseEdit(root, params) {
+  // v2.4.1: Notification Center(고반복/맨몸 카드의 "목표 수정")에서 진입한 경우, 저장 후 그 화면으로
+  // 돌아가야 합니다. notificationCenter.js가 navigate 직전에 세팅해두는 임시 플래그를 여기서 한 번만
+  // 읽고 즉시 비웁니다 — router.js(쿼리스트링 파싱 등)는 전혀 건드리지 않는 최소 변경입니다.
+  // 플래그가 없으면(종목 관리 등 다른 경로로 진입) 기존과 동일하게 #/exercise-manage로 돌아갑니다.
+  // 아래의 "종목을 찾을 수 없음" 조기 반환보다 반드시 먼저 읽고 비워야, 그 경우에도 플래그가 남지 않습니다.
+  const returnHash = window.__exerciseEditReturnHash || "#/exercise-manage";
+  window.__exerciseEditReturnHash = null;
+
   const ex = state.getExercise(params.id);
   if (!ex) {
     navigate("#/exercise-manage", { replace: true });
@@ -302,6 +313,6 @@ export function renderExerciseEdit(root, params) {
     defInitial: ex,
     stateInitial: exState,
     onBack: () => history.back(),
-    afterSaveHash: "#/exercise-manage",
+    afterSaveHash: returnHash,
   });
 }

@@ -164,6 +164,23 @@ function migrate(data) {
     merged.sessions = (merged.sessions || []).map((session) => ({ generation: 1, ...session }));
   }
 
+  // v12 -> v13: Exercise Notification Center를 위한 고반복(high_rep) "목표 검토" 알림 저장소가 추가됨.
+  // 과거 데이터에는 이 개념 자체가 없었으므로 "보관 중인 알림 없음"을 뜻하는 빈 객체({})로 채웁니다.
+  // ExerciseState/세션 기록에는 아무 필드도 추가하지 않으므로 이 블록 외에는 영향이 없습니다.
+  if (fromVersion < 13) {
+    merged.highRepReviewAlerts = merged.highRepReviewAlerts || {};
+  }
+
+  // v13 -> v14: bodyweight의 Notification(알림 표시 여부)과 Pending(성장 사이클 상태)을 분리하기 위해
+  // bodyweightGoalAdjustNotificationDismissed 필드가 추가됨. 과거 데이터는 이 알림을 아직 아무도 처리하지 않은 것과
+  // 동등하므로 false로 채웁니다(참고: 과거에 pending===true였던 종목은 이 migration 이후 다시 Notification Center에
+  // 노출되는데, 이는 v13까지는 pending===Notification이었으므로 실질적으로 이전과 동일한 노출 결과입니다).
+  if (fromVersion < 14) {
+    merged.exerciseStates = Object.fromEntries(
+      Object.entries(merged.exerciseStates || {}).map(([id, st]) => [id, { bodyweightGoalAdjustNotificationDismissed: false, ...st }])
+    );
+  }
+
   merged.schemaVersion = SCHEMA_VERSION;
   return merged;
 }

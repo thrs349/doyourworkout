@@ -96,7 +96,7 @@ export function openCueNoteEditor(exerciseId) {
   function buildRow(note, index) {
     if (editingIndex === index) {
       return el("div", { class: "cue-edit-row editing" }, [
-        el("span", { class: "cue-bullet", text: "☑" }),
+        el("span", { class: "cue-bullet", text: "✅" }),
         buildEditingInput(note, (value) => commitEdit(index, value)),
       ]);
     }
@@ -110,7 +110,7 @@ export function openCueNoteEditor(exerciseId) {
         },
       },
       [
-        el("span", { class: "cue-bullet", text: "☑" }),
+        el("span", { class: "cue-bullet", text: "✅" }),
         el("span", { class: "cue-edit-text", text: note }),
         el("button", {
           class: "cue-trash-btn",
@@ -126,7 +126,7 @@ export function openCueNoteEditor(exerciseId) {
 
   function buildNewRow() {
     return el("div", { class: "cue-edit-row editing" }, [
-      el("span", { class: "cue-bullet", text: "☑" }),
+      el("span", { class: "cue-bullet", text: "✅" }),
       buildEditingInput("", (value) => commitEdit("new", value)),
     ]);
   }

@@ -1,11 +1,17 @@
 /* components.css - 화면에 걸쳐 재사용되는 컴포넌트 스타일 */
 
 /* 상단바 */
-.topbar { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-2) 0 var(--sp-2); flex-shrink: 0; }
-.topbar .title { font-family: var(--font-display); font-weight: 700; font-size: 17px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-2) 0 var(--sp-2); flex-shrink: 0; position: relative; }
+/* v2.4.6: 타이틀을 절대 위치로 빼내어 좌우 버튼 존재 여부/폭과 무관하게 항상 화면(topbar) 정중앙에 고정합니다.
+   .screen-content의 좌우 패딩이 대칭이라(css/base.css) 이는 실질적으로 viewport 기준 중앙과 동일합니다. */
+.topbar .title { font-family: var(--font-display); font-weight: 700; font-size: 17px; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
 /* v2.1.2: 운동 실행 화면 타이틀만 소폭 위로 이동 (2.3). #workout-screen으로 스코프를 좁혀 전역 .topbar .title과
-   다른 10개 화면에는 영향을 주지 않습니다. 뒤로가기 버튼(icon-btn)은 이 선택자에 포함되지 않아 위치 그대로입니다. */
-#workout-screen .topbar .title { position: relative; top: -2px; }
+   다른 화면에는 영향을 주지 않습니다. 뒤로가기 버튼(icon-btn)은 이 선택자에 포함되지 않아 위치 그대로입니다.
+   v2.4.6: position은 위 공통 규칙(absolute)을 그대로 쓰고, transform에 -2px만 더합니다. */
+#workout-screen .topbar .title { transform: translate(-50%, calc(-50% - 2px)); }
+/* v2.4.6: 루틴 설정 화면은 뒤로가기 버튼이 없어 "운동 관리" 버튼 하나만 정상 flex 흐름에 남습니다.
+   justify-content:space-between은 자식이 1개면 좌측에 붙이므로, 우측 정렬을 명시적으로 유지합니다. */
+#routine-list-screen .topbar { justify-content: flex-end; }
 .icon-btn {
   width: 30px; height: 30px; border-radius: 9px; background: transparent;
   border: 1.5px solid var(--color-text-secondary); display: flex; align-items: center; justify-content: center;
@@ -128,6 +134,9 @@
 .modal .cond { font-family: var(--font-mono); font-size: 10.5px; color: var(--color-text-muted); margin-bottom: 14px; }
 
 .duration-modal { text-align: center; padding: 8px 4px; }
+.checklist-wrap { display: inline-block; text-align: left; margin: 0 auto 16px; }
+.checklist-item { display: flex; align-items: flex-start; gap: 8px; padding: 3px 0; font-size: 12px; color: var(--color-text-secondary); }
+.checklist-item .checklist-box { flex-shrink: 0; }
 .duration-title { font-family: var(--font-display); font-weight: 700; font-size: 18px; margin-bottom: 6px; }
 .duration-big { font-family: var(--font-mono); font-size: 24px; font-weight: 700; color: var(--color-primary); margin: 4px 0 10px; }
 .time-detail { font-family: var(--font-mono); font-size: 12px; color: var(--color-text-secondary); margin-bottom: 18px; }
@@ -206,6 +215,11 @@
 .stepper { display: flex; align-items: center; justify-content: space-between; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; padding: 8px 14px; }
 .stepper .sval { font-family: var(--font-mono); font-weight: 700; font-size: 16px; }
 .step-btn { width: 30px; height: 30px; border-radius: 8px; background: var(--color-primary-soft); color: var(--color-primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; border: none; }
+/* v2.4.3: 큐노트(💡)/종목수정(✏️)/미설정중량(⚠️) 통일 아이콘. .step-btn과 동일한 하이라이트 배경 패턴 재사용.
+   기존 .icon-btn(테두리 있는 버튼, 앱 전역 11곳 이상에서 공유)은 건드리지 않습니다. */
+.icon-chip { width: 30px; height: 30px; border-radius: 9px; background: var(--color-primary-soft); border: none; display: flex; align-items: center; justify-content: center; color: var(--color-text-secondary); font-size: 14px; flex-shrink: 0; }
+/* 표시 전용(예: 미설정 중량 <span>): 클릭 가능한 버튼처럼 보이지 않도록 커서만 구분. 상태/이벤트는 건드리지 않음. */
+.icon-chip.readonly { cursor: default; }
 
 /* 설정 화면: 테마 목록 */
 .theme-row { display: flex; align-items: center; justify-content: space-between; padding: 13px; border: 1px solid var(--color-border); border-radius: 12px; margin-bottom: var(--sp-2); background: var(--color-surface); }
@@ -233,6 +247,29 @@
 .exercise-card .ec-max small { color: var(--color-text-muted); font-weight: 400; margin-right: 3px; }
 .trend-chart { display: block; width: 100%; height: auto; margin: var(--sp-2) 0; }
 .chart-empty { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-muted); padding: 20px 0; text-align: center; }
+
+/* v2.4.0: Exercise Notification Center */
+.notif-card-title { font-family: var(--font-display); font-weight: 700; font-size: 15px; margin-bottom: var(--sp-2); }
+.notif-card { padding: var(--sp-3); } /* v2.4.3: 고반복/맨몸 카드 여백 축소(기존 exercise-card 기본 padding var(--sp-4)보다 좁게) */
+.notif-group:not(:first-of-type) { margin-top: var(--sp-2); }
+/* v2.4.3: 요일/루틴 텍스트를 종목명보다 눈에 띄게 강조(기존 muted/uppercase 스타일 대신 진한 색상+굵게) */
+.notif-group .section-label {
+  margin: 0 0 var(--sp-1);
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  text-transform: none;
+  letter-spacing: normal;
+}
+/* 도전세트 후보: Read Only, 가로 나열(v2.4.5). 종목명은 항상 전체 표시(ellipsis 미사용). */
+.notif-candidate-row { display: flex; flex-wrap: wrap; column-gap: 4px; row-gap: 4px; padding: 4px 10px; }
+.notif-candidate-chip { font-size: 12.5px; color: var(--color-text-secondary); white-space: nowrap; }
+.notif-candidate-chip:not(:last-child)::after { content: " | "; color: var(--color-text-muted); }
+/* 고반복/맨몸 액션 행: 종목명 + 버튼 2개를 한 줄에 배치하고, 공간이 부족하면 종목명만 줄어들며 버튼은 유지됩니다. */
+/* v2.4.3: 카드 폭/여백 축소 요청에 맞춰 행 자체의 좌우 패딩과 아래 여백도 줄임(기존 .list-row 기본값보다 좁게) */
+.notif-action-row { padding: 10px 10px; margin-bottom: var(--sp-1); }
+.notif-action-row .notif-action-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; margin-right: var(--sp-2); }
 .ec-recent { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-secondary); border-top: 1px dashed var(--color-border); padding-top: 8px; margin-top: 4px; }
 .ec-recent b { color: var(--color-text-primary); }
 
@@ -268,7 +305,7 @@
   border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface);
 }
 .cue-edit-row.editing { border-color: var(--color-primary); }
-.cue-bullet { color: var(--color-primary); font-weight: 700; flex-shrink: 0; font-size: 13px; }
+.cue-bullet { flex-shrink: 0; font-size: 13px; }
 .cue-edit-text { flex: 1; font-size: 14px; color: var(--color-text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cue-edit-input {
   flex: 1; border: none; outline: none; background: transparent; padding: 0;
@@ -276,14 +313,6 @@
 }
 .cue-trash-btn { background: none; border: none; color: var(--color-x); font-size: 15px; padding: 4px; flex-shrink: 0; line-height: 1; }
 .cue-add-btn { margin-top: 2px; }
-
-/* ⚠️ 임시 디버그 표시 (v1.8, debugBodyweightStatus.js 전용) - 정식 UI가 생기면 이 블록도 함께 제거하세요. */
-.debug-tag {
-  margin-top: 6px; padding: 4px 8px; border: 1px dashed #b08900; border-radius: 6px;
-  background: repeating-linear-gradient(45deg, rgba(176,137,0,.08), rgba(176,137,0,.08) 6px, rgba(176,137,0,.14) 6px, rgba(176,137,0,.14) 12px);
-  font-family: var(--font-mono); font-size: 10px; color: #8a6d00; display: inline-block;
-}
-.debug-tag-warn { color: var(--color-x); font-weight: 700; }
 
 
 

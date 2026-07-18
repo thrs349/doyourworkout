@@ -3,7 +3,6 @@ import { el, mount } from "../dom.js";
 import { navigate } from "../router.js";
 import * as state from "../../core/state.js";
 import { formatExerciseMeta, GAIN_METHODS } from "../../core/models.js";
-import { renderBodyweightDebugTag } from "../components/debugBodyweightStatus.js"; // ⚠️ 임시 디버그용 (v1.8) - 정식 UI 생기면 이 줄과 컴포넌트 파일을 함께 제거
 import { openModal } from "../components/modal.js";
 import { openCueNoteEditor } from "../components/cueNoteEditor.js";
 
@@ -56,15 +55,25 @@ export function renderExerciseManage(root) {
   /* ---------------- 활성 탭 ---------------- */
 
   function activeRow(ex) {
+    const exState = state.getExerciseState(ex.id);
     const willDeactivate = deactivateIds.has(ex.id);
     // v2.1.0: 큐노트(💡) 버튼은 editMode 여부와 무관하게 항상 노출합니다(숨김 처리하지 않음).
+    // v2.4.3: 종목수정/미설정중량 아이콘과 디자인을 통일하기 위해 .icon-btn 대신 .icon-chip 사용(클릭 동작은 그대로).
     const cueBtn = el("button", {
-      class: "icon-btn",
+      class: "icon-chip",
       text: "💡",
       onclick: () => openCueNoteEditor(ex.id),
     });
+    // v2.4.3: 중량 미설정(currentWeight === null) 종목에 표시하는 읽기 전용 아이콘. 클릭 핸들러가 없는
+    // <span>이라 상태를 전혀 바꾸지 않습니다(순수 표시용). bodyweight는 중량 개념 자체가 없어 대상에서 제외.
+    // 큐노트/종목수정과 디자인 통일을 위해 .icon-chip.readonly 사용(표시 전용 특성은 동일하게 유지).
+    const missingWeightIcon =
+      ex.gainMethod !== "bodyweight" && exState.currentWeight == null
+        ? el("span", { class: "icon-chip readonly", text: "⚠️", title: "중량 미설정" })
+        : null;
     const rightControls = editMode
       ? [
+          missingWeightIcon,
           cueBtn,
           el("button", {
             class: `switch${willDeactivate ? "" : " on"}`,
@@ -77,10 +86,11 @@ export function renderExerciseManage(root) {
           }),
         ]
       : [
+          missingWeightIcon,
           cueBtn,
           el("button", {
-            class: "icon-btn",
-            text: "✎",
+            class: "icon-chip",
+            text: "✏️",
             onclick: () => navigate(`#/exercise-edit/${ex.id}`),
           }),
         ];
@@ -89,7 +99,6 @@ export function renderExerciseManage(root) {
       el("div", {}, [
         el("span", { class: "name", text: ex.name }),
         el("div", { class: "meta", text: formatExerciseMeta(ex) }),
-        renderBodyweightDebugTag(ex, state.getExerciseState(ex.id)),
       ]),
       el("div", { style: { display: "flex", alignItems: "center", gap: "10px" } }, rightControls),
     ]);
@@ -112,7 +121,7 @@ export function renderExerciseManage(root) {
         // v2.1.0: 비활성 카드에서도 큐노트(💡) 버튼은 동일하게 노출하되, 기존 비활성 카드 스타일(회색 처리)에
         // 맞춰 opacity만 낮춰 표시합니다. 카드 전체 스타일(취소선 등)에는 영향을 주지 않습니다.
         el("button", {
-          class: "icon-btn",
+          class: "icon-chip",
           text: "💡",
           style: { opacity: 0.6 },
           onclick: () => openCueNoteEditor(ex.id),
@@ -239,7 +248,11 @@ export function renderExerciseManage(root) {
   });
 
   function refreshEditBtn() {
-    editToggleBtn.style.display = tab === "active" ? "flex" : "none";
+    // v2.4.3: display:none이면 topbar(justify-content:space-between)의 우측 슬롯이 사라져 타이틀이
+    // 좌측으로 쏠려 보였습니다. visibility:hidden은 레이아웃 공간은 유지한 채 시각적으로만 숨겨서
+    // 활성 탭과 동일하게 타이틀이 중앙 정렬됩니다. 클릭/포커스도 함께 막히므로 버튼 기능도 비활성화됩니다.
+    editToggleBtn.style.display = "flex";
+    editToggleBtn.style.visibility = tab === "active" ? "visible" : "hidden";
     editToggleBtn.textContent = editMode ? "저장" : "수정";
   }
 

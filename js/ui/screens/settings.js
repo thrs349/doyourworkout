@@ -5,6 +5,7 @@ import * as state from "../../core/state.js";
 import { THEMES, getThemeName, applyTheme } from "../../core/theme.js";
 import { openModal } from "../components/modal.js";
 import { getGenerationSummaries } from "../../core/stats.js";
+import { APP_VERSION } from "../../core/appConfig.js";
 
 // v2.3.0: "YYYY-MM-DD" -> "YYYY.MM.DD" 표시용 포맷터(순수 텍스트 변환, 데이터 자체는 건드리지 않음)
 function fmtDot(dateStr) {
@@ -140,6 +141,11 @@ export function renderSettings(root) {
       el("button", { class: "btn btn-ghost", text: "백업 파일 불러오기", onclick: () => fileInput.click() }),
       fileInput,
     ]),
+    el("div", {
+      class: "helper-text",
+      style: { textAlign: "center", margin: "var(--sp-5) 0 0" },
+      text: APP_VERSION,
+    }),
   ]);
   mount(root, screen);
 }
