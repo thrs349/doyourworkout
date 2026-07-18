@@ -314,13 +314,5 @@
 .cue-trash-btn { background: none; border: none; color: var(--color-x); font-size: 15px; padding: 4px; flex-shrink: 0; line-height: 1; }
 .cue-add-btn { margin-top: 2px; }
 
-/* ⚠️ 임시 디버그 표시 (v1.8, debugBodyweightStatus.js 전용) - 정식 UI가 생기면 이 블록도 함께 제거하세요. */
-.debug-tag {
-  margin-top: 6px; padding: 4px 8px; border: 1px dashed #b08900; border-radius: 6px;
-  background: repeating-linear-gradient(45deg, rgba(176,137,0,.08), rgba(176,137,0,.08) 6px, rgba(176,137,0,.14) 6px, rgba(176,137,0,.14) 12px);
-  font-family: var(--font-mono); font-size: 10px; color: #8a6d00; display: inline-block;
-}
-.debug-tag-warn { color: var(--color-x); font-weight: 700; }
-
 
 

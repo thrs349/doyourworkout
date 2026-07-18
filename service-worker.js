@@ -2,8 +2,8 @@
 // 오프라인에서도 앱 자체(껍데기)는 항상 열리도록 하는 최소한의 캐시 전략입니다.
 // 데이터는 여기서 다루지 않습니다(전부 Local Storage에 있음).
 
-const CACHE_NAME = "doyourworkout-v2.4.7"; // v2.4.7: 이번 릴리즈(종목 선택 화면 유형별+가나다순 표시 정렬)를
-// 새 캐시로 확실히 반영하기 위해 버전을 올립니다. 신규 JS 파일 추가는 없어 CORE_ASSETS 목록은 변경하지 않았습니다.
+const CACHE_NAME = "doyourworkout-v2.4.8"; // v2.4.8: 개발용 Pending 디버그 태그 제거(debugBodyweightStatus.js
+// 삭제)를 새 캐시로 확실히 반영하기 위해 버전을 올립니다. 삭제된 파일은 CORE_ASSETS에서도 제거했습니다.
 const CORE_ASSETS = [
   "./",
   "./index.html",
@@ -30,7 +30,6 @@ const CORE_ASSETS = [
   "./js/ui/components/bottomNav.js",
   "./js/ui/components/toast.js",
   "./js/ui/components/lineChart.js",
-  "./js/ui/components/debugBodyweightStatus.js",
   "./js/ui/components/cueNoteEditor.js",
   "./js/ui/components/cueNoteViewer.js",
   "./js/ui/screens/home.js",

@@ -3,7 +3,6 @@ import { el, mount } from "../dom.js";
 import { navigate } from "../router.js";
 import * as state from "../../core/state.js";
 import { formatExerciseMeta, GAIN_METHODS } from "../../core/models.js";
-import { renderBodyweightDebugTag } from "../components/debugBodyweightStatus.js"; // ⚠️ 임시 디버그용 (v1.8) - 정식 UI 생기면 이 줄과 컴포넌트 파일을 함께 제거
 import { openModal } from "../components/modal.js";
 import { openCueNoteEditor } from "../components/cueNoteEditor.js";
 
@@ -100,7 +99,6 @@ export function renderExerciseManage(root) {
       el("div", {}, [
         el("span", { class: "name", text: ex.name }),
         el("div", { class: "meta", text: formatExerciseMeta(ex) }),
-        renderBodyweightDebugTag(ex, state.getExerciseState(ex.id)),
       ]),
       el("div", { style: { display: "flex", alignItems: "center", gap: "10px" } }, rightControls),
     ]);
