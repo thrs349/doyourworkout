@@ -84,9 +84,9 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
   // ---- v2.6.3: 보조 태그(선택, 복수 선택) - 선택된 운동 부위에 맞는 태그 목록으로 매번 다시 그립니다.
   // (상체: 가슴/등/어깨/팔, 하체: 대퇴사두/둔근/햄스트링, 코어: 없음 - secondaryTagsFor()가 빈 배열 반환) ----
   let secondaryTagOpts = {};
-  const secondaryTagLabel = el("div", { class: "field-label", text: "보조 태그" });
+  // v2.6.5: 실기기 테스트 반영 - "보조 태그" 텍스트 라벨을 제거합니다(버튼 기능/저장 구조는 그대로 유지).
   const secondaryTagButtons = el("div", { class: "type-toggle" });
-  const secondaryTagGroup = el("div", { class: "field-group" }, [secondaryTagLabel, secondaryTagButtons]);
+  const secondaryTagGroup = el("div", { class: "field-group" }, [secondaryTagButtons]);
 
   function rebuildSecondaryTagButtons() {
     const tags = secondaryTagsFor(primaryBodyPart);

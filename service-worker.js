@@ -2,7 +2,7 @@
 // 오프라인에서도 앱 자체(껍데기)는 항상 열리도록 하는 최소한의 캐시 전략입니다.
 // 데이터는 여기서 다루지 않습니다(전부 Local Storage에 있음).
 
-const CACHE_NAME = "doyourworkout-v2.6.4"; // v2.6.4: 운동 기록 탭 루틴 이름 반영 버그 수정 + UI 마감 릴리즈.
+const CACHE_NAME = "doyourworkout-v2.6.5"; // v2.6.5: 실기기 테스트 반영 UI 레이아웃/표시 수정 릴리즈.
 // APP_VERSION과 동일한 라벨로 캐시를 새로 무효화합니다(activate 핸들러가 다른 캐시 키를 전부 삭제).
 const CORE_ASSETS = [
   "./",

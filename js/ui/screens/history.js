@@ -59,8 +59,10 @@ export function renderHistory(root) {
   // v2.6.4: 홈 화면(home.js)과 동일하게 오늘 요일에 설정된 루틴 이름을 그대로 반영합니다. 이 화면은 항상
   // "오늘" 기준으로 현재 루틴 상태를 조회해 매번 새로 그리므로(과거 세션 기록 자체는 건드리지 않음),
   // 데이터 구조 변경이나 migration 없이 표시 문구만 수정하면 됩니다.
+  // v2.6.5: 실기기 테스트 반영 - "기록 · 루틴명" 형태 대신 "요일 + 루틴명"으로 변경(예: "월요일 상체A").
+  // 홈 화면(home.js)의 fallback 문구("${dayLabel}요일 루틴")와 동일한 패턴을 씁니다.
   const version = state.getDefaultVersion(dayKey);
-  const routineTitle = version.title || `오늘의 루틴(${dayLabel})`;
+  const routineTitle = version.title || "루틴";
 
   const cards = exercises.length
     ? exercises.map(buildExerciseCard)
@@ -68,7 +70,7 @@ export function renderHistory(root) {
 
   const screen = el("div", { id: "history-screen", class: "screen-content" }, [
     el("div", { class: "topbar" }, [
-      el("div", { class: "title", text: `기록 · ${routineTitle}` }),
+      el("div", { class: "title", text: `${dayLabel}요일 ${routineTitle}` }),
       el("span", { style: { opacity: 0 } }, "·"),
     ]),
     el("div", { class: "table-area" }, cards),

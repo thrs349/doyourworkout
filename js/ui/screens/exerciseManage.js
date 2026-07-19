@@ -114,12 +114,16 @@ export function renderExerciseManage(root) {
         ];
 
     // v2.6.1: 부위/편측/반복수×세트수를 Chip으로 분리 표시(카드 세로 길이 증가 최소화, 줄바꿈은 허용).
-    return el("div", { class: "list-row", style: { alignItems: "center" } }, [
-      el("div", {}, [
+    // v2.6.5: 실기기 테스트 반영 - 기존에는 list-row 자체가 (이름+칩 2줄짜리 왼쪽 블록) vs (버튼 영역)을
+    // 카드 전체 높이 기준으로 세로 중앙 정렬해서, 버튼이 이름 텍스트와 어긋나 보였습니다. list-row를
+    // 세로로 쌓는 컨테이너로 바꾸고, "이름+버튼"을 별도의 1행 flex(자체적으로 Y축 중앙 정렬)로 분리해
+    // 2행(칩)과 무관하게 1행 내부에서만 정렬이 맞도록 구조를 변경했습니다.
+    return el("div", { class: "list-row", style: { flexDirection: "column", alignItems: "stretch" } }, [
+      el("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" } }, [
         el("span", { class: "name", text: ex.name }),
-        buildMetaChipsRow(ex),
+        el("div", { style: { display: "flex", alignItems: "center", gap: "10px" } }, rightControls),
       ]),
-      el("div", { style: { display: "flex", alignItems: "center", gap: "10px" } }, rightControls),
+      buildMetaChipsRow(ex),
     ]);
   }
 
@@ -127,38 +131,39 @@ export function renderExerciseManage(root) {
   // 비활성 탭은 "복구(재활성화)" 또는 "제거(완전 삭제)" 목적만 제공합니다(종목 수정 진입 없음).
 
   function inactiveRow(ex) {
-    return el("div", { class: "list-row", style: { alignItems: "center" } }, [
-      el("div", { style: { flex: "1 1 auto", minWidth: "0", overflow: "hidden" } }, [
+    // v2.6.5: activeRow와 동일하게 "이름+버튼" 1행을 별도 flex로 분리해 Y축 정렬을 맞춥니다.
+    return el("div", { class: "list-row", style: { flexDirection: "column", alignItems: "stretch" } }, [
+      el("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" } }, [
         el("span", {
           class: "name",
           text: ex.name,
-          style: { opacity: 0.6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" },
+          style: { opacity: 0.6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: "1 1 auto", minWidth: "0" },
         }),
-        el("div", { style: { opacity: 0.6 } }, [buildMetaChipsRow(ex)]),
+        el("div", { class: "btn-row-h compact", style: { flexShrink: 0 } }, [
+          // v2.1.0: 비활성 카드에서도 큐노트(💡) 버튼은 동일하게 노출하되, 기존 비활성 카드 스타일(회색 처리)에
+          // 맞춰 opacity만 낮춰 표시합니다. 카드 전체 스타일(취소선 등)에는 영향을 주지 않습니다.
+          el("button", {
+            class: "icon-chip",
+            text: "💡",
+            style: { opacity: 0.6 },
+            onclick: () => openCueNoteEditor(ex.id),
+          }),
+          el("button", {
+            class: "btn btn-ghost btn-compact",
+            text: "재활성화",
+            onclick: () => {
+              state.setExerciseActive(ex.id, true);
+              rerenderList();
+            },
+          }),
+          el("button", {
+            class: "btn btn-danger-mute btn-compact",
+            text: "완전 삭제",
+            onclick: () => confirmDelete(ex),
+          }),
+        ]),
       ]),
-      el("div", { class: "btn-row-h compact", style: { flexShrink: 0 } }, [
-        // v2.1.0: 비활성 카드에서도 큐노트(💡) 버튼은 동일하게 노출하되, 기존 비활성 카드 스타일(회색 처리)에
-        // 맞춰 opacity만 낮춰 표시합니다. 카드 전체 스타일(취소선 등)에는 영향을 주지 않습니다.
-        el("button", {
-          class: "icon-chip",
-          text: "💡",
-          style: { opacity: 0.6 },
-          onclick: () => openCueNoteEditor(ex.id),
-        }),
-        el("button", {
-          class: "btn btn-ghost btn-compact",
-          text: "재활성화",
-          onclick: () => {
-            state.setExerciseActive(ex.id, true);
-            rerenderList();
-          },
-        }),
-        el("button", {
-          class: "btn btn-danger-mute btn-compact",
-          text: "완전 삭제",
-          onclick: () => confirmDelete(ex),
-        }),
-      ]),
+      el("div", { style: { opacity: 0.6 } }, [buildMetaChipsRow(ex)]),
     ]);
   }
 

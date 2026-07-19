@@ -63,21 +63,22 @@ export function renderExercisePicker(root, params) {
 
   function row(ex) {
     const already = inRoutine.has(ex.id);
-    return el("div", { class: "list-row" }, [
-      el("div", {}, [
+    // v2.6.5: exerciseManage.js와 동일하게 "이름+버튼" 1행을 별도 flex로 분리해 Y축 정렬을 맞춥니다.
+    return el("div", { class: "list-row", style: { flexDirection: "column", alignItems: "stretch" } }, [
+      el("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" } }, [
         el("div", { class: "name", text: ex.name }),
-        buildMetaChipsRow(ex),
+        el("button", {
+          class: "btn btn-ghost",
+          style: { width: "auto", height: "36px", padding: "0 14px", fontSize: "12.5px", flexShrink: 0 },
+          text: already ? "추가됨" : "추가",
+          disabled: already,
+          onclick: () => {
+            state.addExerciseToRoutine(dayKey, version.id, ex.id);
+            navigate(`#/routine/${dayKey}`, { replace: true });
+          },
+        }),
       ]),
-      el("button", {
-        class: "btn btn-ghost",
-        style: { width: "auto", height: "36px", padding: "0 14px", fontSize: "12.5px" },
-        text: already ? "추가됨" : "추가",
-        disabled: already,
-        onclick: () => {
-          state.addExerciseToRoutine(dayKey, version.id, ex.id);
-          navigate(`#/routine/${dayKey}`, { replace: true });
-        },
-      }),
+      buildMetaChipsRow(ex),
     ]);
   }
 
