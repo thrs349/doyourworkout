@@ -3,7 +3,7 @@ import { el, mount, onLongPress } from "../dom.js";
 import { navigate } from "../router.js";
 import * as state from "../../core/state.js";
 import { THEMES, getThemeName, applyTheme } from "../../core/theme.js";
-import { openModal } from "../components/modal.js";
+import { openModal, showAlert } from "../components/modal.js";
 import { getGenerationSummaries } from "../../core/stats.js";
 import { APP_VERSION } from "../../core/appConfig.js";
 
@@ -185,7 +185,7 @@ export function renderSettings(root) {
         const parsed = await state.readBackupFile(file);
         confirmRestore(parsed);
       } catch (err) {
-        alert("올바른 Do Your Workout 백업 파일이 아닙니다.");
+        showAlert("올바른 Do Your Workout 백업 파일이 아닙니다."); // v2.6.1: 네이티브 alert() 대신 앱 통일 팝업 스타일 사용
       }
     },
   });

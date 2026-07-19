@@ -137,7 +137,7 @@ export function renderRoutineEditor(root, params) {
   }
 
   function renameTitle() {
-    const next = window.prompt("루틴 제목을 입력하세요 (이모지 사용 가능)", version.title);
+    const next = window.prompt("루틴 제목을 입력하세요", version.title); // v2.6.1: "(이모지 사용 가능)" 문구 제거(기능은 그대로 이모지 입력 가능)
     if (next && next.trim()) {
       state.renameRoutineVersion(dayKey, version.id, next.trim());
       titleEl.textContent = next.trim();

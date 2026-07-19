@@ -234,6 +234,25 @@
 .list-row { display: flex; align-items: center; justify-content: space-between; padding: 13px 14px; border: 1px solid var(--color-border); border-radius: 12px; margin-bottom: var(--sp-2); background: var(--color-surface); }
 .list-row .name { font-size: 14px; font-weight: 600; }
 .list-row .meta { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-muted); margin-top: 2px; }
+
+/* v2.6.1: 운동 카드 메타 Chip 표시(ExerciseManage/ExercisePicker 공용). 실기기 테스트 반영 - 유형/부위+보조태그/
+   편측/반복수×세트수를 한 줄 안에서 개별 Chip으로 분리하되, 줄바꿈은 허용해 카드 높이 증가를 최소화합니다. */
+.ex-meta-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 4px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+/* 부위+보조태그 Chip: 내부 항목 사이 간격을 Chip 간 간격보다 좁게(가운뎃점만) 표시합니다. */
+.chip-tag { letter-spacing: 0; }
+
 .list-row .arrow { color: var(--color-text-muted); }
 
 .result-summary { display: flex; align-items: center; justify-content: space-between; padding: 12px 4px; border-top: 1px solid var(--color-border); }

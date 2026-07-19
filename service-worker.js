@@ -2,7 +2,7 @@
 // 오프라인에서도 앱 자체(껍데기)는 항상 열리도록 하는 최소한의 캐시 전략입니다.
 // 데이터는 여기서 다루지 않습니다(전부 Local Storage에 있음).
 
-const CACHE_NAME = "doyourworkout-v2.6.0"; // v2.6.0: Exercise Tag System 릴리즈. APP_VERSION과 동일한 라벨로
+const CACHE_NAME = "doyourworkout-v2.6.1"; // v2.6.1: 실기기 테스트 반영 UI 마감 릴리즈. APP_VERSION과 동일한 라벨로
 // 캐시를 새로 무효화합니다(activate 핸들러가 이 값과 다른 기존 캐시 키를 전부 삭제하므로, 기존 설치 사용자도
 // 다음 방문 시 자동으로 새 캐시로 전환됩니다). 캐시 전략 로직 자체는 무변경.
 const CORE_ASSETS = [

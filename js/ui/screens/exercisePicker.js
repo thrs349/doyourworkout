@@ -2,7 +2,7 @@
 import { el, mount } from "../dom.js";
 import { navigate } from "../router.js";
 import * as state from "../../core/state.js";
-import { formatExerciseMeta, GAIN_METHODS, BODY_PARTS, SECONDARY_TAGS } from "../../core/models.js";
+import { formatExerciseMetaChips, GAIN_METHODS, BODY_PARTS, SECONDARY_TAGS } from "../../core/models.js";
 
 // v2.4.7: 종목 선택 화면 전용 표시 순서. 실제 데이터(등록 순서)나 다른 화면의 정렬에는 전혀 영향을 주지 않습니다.
 // v2.6.0: 기존 그룹 헤더(section-label) + 유형별 그룹 렌더링을 제거했습니다. 대신 "운동 유형 버튼을 선택하면
@@ -14,6 +14,15 @@ const GAIN_METHOD_LABELS = { machine: "머신", freeweight: "프리웨이트", h
 function methodCompare(a, b) {
   const diff = PICKER_GAIN_METHOD_ORDER.indexOf(a.gainMethod) - PICKER_GAIN_METHOD_ORDER.indexOf(b.gainMethod);
   return diff !== 0 ? diff : a.name.localeCompare(b.name, "ko");
+}
+
+// v2.6.1: 카드 메타 Chip 행. ExerciseManage와 동일한 순서/스타일(운동 유형 → 부위+보조태그 → 편측 → 반복수×세트수).
+function buildMetaChipsRow(ex) {
+  return el(
+    "div",
+    { class: "ex-meta-chips" },
+    formatExerciseMetaChips(ex).map((c) => el("span", { class: `chip chip-${c.kind}`, text: c.text }))
+  );
 }
 
 export function renderExercisePicker(root, params) {
@@ -57,7 +66,7 @@ export function renderExercisePicker(root, params) {
     return el("div", { class: "list-row" }, [
       el("div", {}, [
         el("div", { class: "name", text: ex.name }),
-        el("div", { class: "meta", text: formatExerciseMeta(ex) }),
+        buildMetaChipsRow(ex),
       ]),
       el("button", {
         class: "btn btn-ghost",

@@ -4,6 +4,7 @@ import { el, mount } from "../dom.js";
 import { navigate } from "../router.js";
 import * as state from "../../core/state.js";
 import { BODY_PARTS, SECONDARY_TAGS } from "../../core/models.js";
+import { showAlert } from "../components/modal.js";
 
 function stepper(initial, min, max) {
   let value = initial;
@@ -222,27 +223,27 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
         text: "저장",
         onclick: () => {
           if (!name.trim()) {
-            alert("운동명을 입력해 주세요.");
+            showAlert("운동명을 입력해 주세요.");
             return;
           }
           // v2.6.0: 운동 부위 선택은 신규 생성뿐 아니라 기존 종목 수정 저장 시에도 필수입니다.
           // 마이그레이션으로 primaryBodyPart가 null인 기존 종목도, 수정 화면에서 저장하려면 부위를 지정해야 합니다.
           if (!primaryBodyPart) {
-            alert("운동 부위를 선택해 주세요.");
+            showAlert("운동 부위를 선택하세요."); // v2.6.1: 문구 수정(실기기 테스트 반영)
             return;
           }
           // v2.3.2: 목표 중량 미입력 시 조용히 currentWeight:0으로 저장되던 기존 공백을 막습니다.
           // bodyweight는 이 필드 자체가 화면에 없으므로(gainMethod !== "bodyweight" 조건으로) 자동 제외됩니다.
           if (gainMethod !== "bodyweight" && targetWeightField.get() == null) {
-            alert("목표 중량을 입력해 주세요.");
+            showAlert("목표 중량을 입력하세요."); // v2.6.1: 문구 수정(실기기 테스트 반영)
             return;
           }
           if (gainMethod === "high_rep" && (highRepLowerField.get() == null || highRepUpperField.get() == null)) {
-            alert("고반복 방식은 하한/상한 반복수를 입력해야 합니다.");
+            showAlert("고반복 방식은 하한/상한 반복수를 입력해야 합니다.");
             return;
           }
           if (gainMethod === "bodyweight" && bodyweightGoalType === "time" && targetSecondsField.get() == null) {
-            alert("시간 기반 맨몸 운동은 목표 시간(초)을 입력해야 합니다.");
+            showAlert("시간 기반 맨몸 운동은 목표 시간(초)을 입력해야 합니다.");
             return;
           }
 

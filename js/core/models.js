@@ -52,7 +52,9 @@ export function gainMethodLabel(gainMethod) {
 
 // 종목의 부가 정보(목표치×세트수, 편측 여부)만 담은 문자열입니다. gainMethod 라벨은 포함하지 않습니다.
 // (칩 등으로 gainMethod를 별도 표시하는 화면에서 재사용하기 위해 formatExerciseMeta에서 분리했습니다.)
-export function formatExerciseSubMeta(ex) {
+// v2.6.1: includeUnilateral=false로 호출하면 "편측" 표시를 뺀 순수 "목표치×세트수"만 반환합니다.
+// (Chip 표시에서는 편측을 별도 Chip으로 분리하기 때문에 필요합니다. 기본값은 기존 동작과 동일합니다.)
+export function formatExerciseSubMeta(ex, { includeUnilateral = true } = {}) {
   let targetPart;
   if (ex.gainMethod === "high_rep") {
     // 설정 화면(운동 관리/운동 선택) 카드는 "판정 조건"이 아니라 "운동 설정 정보"를 보여주는 자리라
@@ -64,7 +66,7 @@ export function formatExerciseSubMeta(ex) {
   } else {
     targetPart = `${ex.targetReps}회`;
   }
-  const unilateralPart = ex.isUnilateral ? " · 편측" : "";
+  const unilateralPart = includeUnilateral && ex.isUnilateral ? " · 편측" : "";
   return `${targetPart}×${ex.baseSets}세트${unilateralPart}`;
 }
 
@@ -79,6 +81,23 @@ export function formatExerciseMeta(ex) {
   if (!ex.primaryBodyPart) return `${typeLabel} · ${subMeta}`;
   const tagParts = [ex.primaryBodyPart, ...(ex.secondaryTags || [])];
   return `${typeLabel} · ${tagParts.join(" · ")} · ${subMeta}`;
+}
+
+// v2.6.1: 실기기 테스트 반영 - 위 formatExerciseMeta()의 한 줄 문자열 대신, ExerciseManage/ExercisePicker
+// 카드에서 각 정보를 개별 Chip으로 분리 표시하기 위한 구조화된 버전입니다. 정보 순서는 formatExerciseMeta와
+// 동일합니다: ① 운동 유형 → ② 부위+보조태그(있을 때만) → ③ 편측 여부(있을 때만) → ④ 반복수×세트수(항상).
+// 판정/증량 계산과는 무관한 탐색 전용 표시입니다.
+export function formatExerciseMetaChips(ex) {
+  const chips = [{ kind: "type", text: gainMethodLabel(ex.gainMethod) }];
+  if (ex.primaryBodyPart) {
+    const tagParts = [ex.primaryBodyPart, ...(ex.secondaryTags || [])];
+    chips.push({ kind: "tag", text: tagParts.join("·") }); // Chip 내부는 간격을 좁혀 표시(가운뎃점만, 공백 없음)
+  }
+  if (ex.isUnilateral) {
+    chips.push({ kind: "unilateral", text: "편측" });
+  }
+  chips.push({ kind: "submeta", text: formatExerciseSubMeta(ex, { includeUnilateral: false }) });
+  return chips;
 }
 
 export function uid(prefix = "id") {

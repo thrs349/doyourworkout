@@ -2,7 +2,7 @@
 import { el, mount } from "../dom.js";
 import { navigate } from "../router.js";
 import * as state from "../../core/state.js";
-import { formatExerciseMeta, GAIN_METHODS, BODY_PARTS, SECONDARY_TAGS } from "../../core/models.js";
+import { formatExerciseMetaChips, GAIN_METHODS, BODY_PARTS, SECONDARY_TAGS } from "../../core/models.js";
 import { openModal } from "../components/modal.js";
 import { openCueNoteEditor } from "../components/cueNoteEditor.js";
 
@@ -20,6 +20,15 @@ function methodCompare(a, b) {
   return diff !== 0 ? diff : nameCompare(a, b);
 }
 const GAIN_METHOD_LABELS = { machine: "머신", freeweight: "프리웨이트", high_rep: "고반복", bodyweight: "맨몸" };
+
+// v2.6.1: 카드 메타 Chip 행(운동 유형 → 부위+보조태그 → 편측 → 반복수×세트수). ExercisePicker와 동일 렌더링.
+function buildMetaChipsRow(ex) {
+  return el(
+    "div",
+    { class: "ex-meta-chips" },
+    formatExerciseMetaChips(ex).map((c) => el("span", { class: `chip chip-${c.kind}`, text: c.text }))
+  );
+}
 
 export function renderExerciseManage(root) {
   let tab = "active"; // "active" | "inactive"
@@ -104,11 +113,11 @@ export function renderExerciseManage(root) {
           }),
         ];
 
-    // v2.6.0: 부위/태그는 formatExerciseMeta 한 줄 안에 이미 포함되어 표시됩니다(카드 세로 길이 유지).
+    // v2.6.1: 부위/편측/반복수×세트수를 Chip으로 분리 표시(카드 세로 길이 증가 최소화, 줄바꿈은 허용).
     return el("div", { class: "list-row", style: { alignItems: "center" } }, [
       el("div", {}, [
         el("span", { class: "name", text: ex.name }),
-        el("div", { class: "meta", text: formatExerciseMeta(ex) }),
+        buildMetaChipsRow(ex),
       ]),
       el("div", { style: { display: "flex", alignItems: "center", gap: "10px" } }, rightControls),
     ]);
@@ -125,7 +134,7 @@ export function renderExerciseManage(root) {
           text: ex.name,
           style: { opacity: 0.6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" },
         }),
-        el("div", { class: "meta", text: formatExerciseMeta(ex) }),
+        el("div", { style: { opacity: 0.6 } }, [buildMetaChipsRow(ex)]),
       ]),
       el("div", { class: "btn-row-h compact", style: { flexShrink: 0 } }, [
         // v2.1.0: 비활성 카드에서도 큐노트(💡) 버튼은 동일하게 노출하되, 기존 비활성 카드 스타일(회색 처리)에
