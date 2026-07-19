@@ -236,22 +236,28 @@
 .list-row .meta { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-muted); margin-top: 2px; }
 
 /* v2.6.1: 운동 카드 메타 Chip 표시(ExerciseManage/ExercisePicker 공용). 실기기 테스트 반영 - 유형/부위+보조태그/
-   편측/반복수×세트수를 한 줄 안에서 개별 Chip으로 분리하되, 줄바꿈은 허용해 카드 높이 증가를 최소화합니다. */
-.ex-meta-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 4px; }
-.chip {
+   편측/반복수×세트수를 4개의 독립된 박스로 분리 표시하되, 줄바꿈은 허용해 카드 높이 증가를 최소화합니다.
+   v2.6.2 버그 수정: 클래스명이 기존 .chip(테마 색상 스와치, 16px 원형 - .theme-row-left에서 사용)과 겹쳐
+   그 스타일(width/height:16px, border-radius:50%)이 함께 적용되는 바람에 칩이 원형으로 찌그러지고 텍스트가
+   왼쪽으로 몰려 겹쳐 보이던 문제가 있었습니다. 클래스명을 .ex-chip으로 분리하고, 박스 구분이 잘 보이도록
+   테두리를 추가하고 그룹 간 간격도 넓혔습니다(실기기 테스트 반영). */
+.ex-meta-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+.ex-chip {
   display: inline-flex;
   align-items: center;
   font-family: var(--font-mono);
-  font-size: 10.5px;
-  line-height: 1.5;
-  padding: 2px 8px;
-  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.6;
+  padding: 3px 10px;
+  border-radius: 8px;
   background: var(--color-primary-soft);
+  border: 1px solid var(--color-primary);
   color: var(--color-primary);
   white-space: nowrap;
 }
-/* 부위+보조태그 Chip: 내부 항목 사이 간격을 Chip 간 간격보다 좁게(가운뎃점만) 표시합니다. */
-.chip-tag { letter-spacing: 0; }
+/* 부위+보조태그 그룹 내부(상체·가슴·어깨)는 그룹 간 간격(8px)보다 좁게 표시합니다(가운뎃점만, 공백 없음 - JS에서 처리). */
+.ex-chip-tag { letter-spacing: 0; }
 
 .list-row .arrow { color: var(--color-text-muted); }
 

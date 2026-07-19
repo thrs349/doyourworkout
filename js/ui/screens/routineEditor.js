@@ -5,6 +5,7 @@ import { navigate } from "../router.js";
 import * as state from "../../core/state.js";
 import { DAYS } from "../../core/models.js";
 import { openCueNoteEditor } from "../components/cueNoteEditor.js";
+import { openModal } from "../components/modal.js";
 
 export function renderRoutineEditor(root, params) {
   const dayKey = params.day;
@@ -136,12 +137,40 @@ export function renderRoutineEditor(root, params) {
     listEl.replaceWith(renderList());
   }
 
+  // v2.6.2: 네이티브 window.prompt() 대신 앱 modal 시스템 사용(다른 팝업과 디자인 통일). 이모지 입력은
+  // 일반 텍스트 input이라 기존과 동일하게 그대로 가능합니다. 안내 문구는 제목이 아니라 입력창 placeholder로 표시합니다.
   function renameTitle() {
-    const next = window.prompt("루틴 제목을 입력하세요", version.title); // v2.6.1: "(이모지 사용 가능)" 문구 제거(기능은 그대로 이모지 입력 가능)
-    if (next && next.trim()) {
-      state.renameRoutineVersion(dayKey, version.id, next.trim());
-      titleEl.textContent = next.trim();
-    }
+    const input = el("input", {
+      class: "text-input",
+      type: "text",
+      value: version.title || "",
+      placeholder: "루틴 제목을 입력하세요.",
+    });
+    const content = el("div", { class: "duration-modal" }, [
+      el("div", { class: "duration-title", text: "루틴 제목 수정" }),
+      el("div", { style: { margin: "0 0 16px" } }, [input]),
+      el("div", { class: "btn-row-h" }, [
+        el("button", { class: "btn btn-ghost", text: "취소", onclick: () => close() }),
+        el("button", {
+          class: "btn btn-primary",
+          text: "저장",
+          onclick: () => {
+            const next = input.value.trim();
+            if (next) {
+              state.renameRoutineVersion(dayKey, version.id, next);
+              titleEl.textContent = next;
+            }
+            close();
+          },
+        }),
+      ]),
+    ]);
+    const close = openModal(content, { dismissible: true });
+    // 모달이 DOM에 붙은 뒤 포커스를 줘야 안전합니다(cueNoteEditor.js와 동일 패턴).
+    queueMicrotask(() => {
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    });
   }
 
   const titleEl = el("div", { class: "title", text: `${version.title}` });

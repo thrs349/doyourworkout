@@ -21,7 +21,7 @@ function buildMetaChipsRow(ex) {
   return el(
     "div",
     { class: "ex-meta-chips" },
-    formatExerciseMetaChips(ex).map((c) => el("span", { class: `chip chip-${c.kind}`, text: c.text }))
+    formatExerciseMetaChips(ex).map((c) => el("span", { class: `ex-chip ex-chip-${c.kind}`, text: c.text }))
   );
 }
 
