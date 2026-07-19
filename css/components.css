@@ -130,7 +130,7 @@
 .backdrop { position: fixed; inset: 0; background: rgba(20, 20, 10, .42); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 50; }
 .modal { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 20px; width: 100%; max-width: 340px; }
 .modal h3 { font-family: var(--font-display); font-size: 19px; margin: 0 0 6px; font-weight: 700; }
-.modal p.detail { color: var(--color-text-secondary); font-size: 12px; margin: 0 0 3px; }
+.modal p.detail { color: var(--color-text-secondary); font-size: 15px; margin: 0 0 3px; line-height: 1.5; } /* v2.6.4: 확인 버튼(15px)과 같은 크기로 - 이전 12px는 너무 작다는 실기기 피드백 반영 */
 .modal .cond { font-family: var(--font-mono); font-size: 10.5px; color: var(--color-text-muted); margin-bottom: 14px; }
 
 .duration-modal { text-align: center; padding: 8px 4px; }
@@ -244,8 +244,11 @@
    따라, 워밍업 행(.set-row.warmup)과 동일한 --color-surface-alt(연한 색)로 배경을 낮추고, font-weight를
    normal로, 텍스트 색도 강조색(--color-primary)이 아닌 일반 메타 색(--color-text-secondary)으로 낮췄습니다.
    "강조"가 아니라 "구분" 목적입니다. 그룹 간 간격도 8px -> 6px로 줄였습니다(그룹 내부 간격은 JS에서 이미
-   공백 없는 가운뎃점("·")으로 처리되어 있어 그대로 유지). */
-.ex-meta-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; }
+   공백 없는 가운뎃점("·")으로 처리되어 있어 그대로 유지).
+   v2.6.4 실기기 테스트 반영: 그룹 간 여백을 6px -> 4px로 추가 축소하고 패딩도 살짝 줄였습니다. 각 칩은
+   white-space:nowrap(칩 내부 텍스트 중간 잘림 없음) + 컨테이너 flex-wrap(칩 단위로만 줄바꿈, 내용 손실
+   없음) 조합으로 "한 줄 우선, 불가피하면 칩 단위로만 줄바꿈"을 이미 만족합니다. */
+.ex-meta-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 4px; }
 .ex-chip {
   display: inline-flex;
   align-items: center;
@@ -253,7 +256,7 @@
   font-size: 11px;
   font-weight: 400;
   line-height: 1.6;
-  padding: 2px 9px;
+  padding: 2px 8px;
   border-radius: 7px;
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border);

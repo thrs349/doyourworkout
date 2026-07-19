@@ -139,17 +139,20 @@ export function renderRoutineEditor(root, params) {
 
   // v2.6.2: 네이티브 window.prompt() 대신 앱 modal 시스템 사용(다른 팝업과 디자인 통일). 이모지 입력은
   // 일반 텍스트 input이라 기존과 동일하게 그대로 가능합니다.
-  // v2.6.3: 실기기 테스트 반영 - 제목 영역("루틴 제목 수정")을 제거하고, 안내 문구를 content 영역의
-  // 문단으로 표시합니다(showAlert()와 동일하게 "내용 중심" 팝업으로 통일).
+  // v2.6.3: 실기기 테스트 반영 - 제목 영역을 제거하고, 안내 문구를 content 영역의 문단으로 표시합니다
+  // (showAlert()와 동일하게 "내용 중심" 팝업으로 통일).
+  // v2.6.4: 실기기 테스트 반영 - 문구를 "루틴 이름을 수정하세요."로 변경. 이 문단은 공용 .detail(15px,
+  // v2.6.4에서 알림 팝업 가독성을 위해 확대)보다 작게, 입력칸(.text-input, 14px)과 같거나 작게 유지해야
+  // 해서 인라인으로 폰트 크기를 14px로 지정합니다(공용 클래스를 올리면 이 모달만 다시 커져버리므로).
   function renameTitle() {
     const input = el("input", {
       class: "text-input",
       type: "text",
       value: version.title || "",
-      placeholder: "루틴 제목을 입력하세요.",
+      placeholder: "루틴 이름을 수정하세요.",
     });
     const content = el("div", { class: "duration-modal" }, [
-      el("p", { class: "detail", style: { textAlign: "center", margin: "0 0 10px" }, text: "루틴 제목을 입력하세요." }),
+      el("p", { class: "detail", style: { textAlign: "center", margin: "0 0 10px", fontSize: "14px" }, text: "루틴 이름을 수정하세요." }),
       el("div", { style: { margin: "0 0 16px" } }, [input]),
       el("div", { class: "btn-row-h" }, [
         el("button", { class: "btn btn-ghost", text: "취소", onclick: () => close() }),
