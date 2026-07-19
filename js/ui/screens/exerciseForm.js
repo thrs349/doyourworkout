@@ -3,6 +3,8 @@
 import { el, mount } from "../dom.js";
 import { navigate } from "../router.js";
 import * as state from "../../core/state.js";
+import { BODY_PARTS, secondaryTagsFor } from "../../core/models.js";
+import { showAlert } from "../components/modal.js";
 
 function stepper(initial, min, max) {
   let value = initial;
@@ -38,6 +40,9 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
   let bodyweightGoalType = defInitial.bodyweightGoalType || "reps";
   let warmupEnabled = defInitial.warmupEnabled;
   let isUnilateral = defInitial.isUnilateral;
+  // v2.6.0: 운동 태그 시스템(탐색 전용). judge.js/gain.js와 무관한 필드입니다.
+  let primaryBodyPart = defInitial.primaryBodyPart ?? null;
+  let secondaryTags = new Set(defInitial.secondaryTags || []);
 
   const isEdit = !!exerciseId;
 
@@ -66,6 +71,51 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
     el("div", { class: "field-label", text: "목표 유형" }),
     el("div", { class: "type-toggle" }, [goalTypeOpts.reps, goalTypeOpts.time]),
   ]);
+
+  // ---- v2.6.0: 운동 부위(필수, 단일 선택) ----
+  const bodyPartOpts = Object.fromEntries(
+    BODY_PARTS.map((part) => [part, el("div", { class: "type-opt", text: part, onclick: () => selectBodyPart(part) })])
+  );
+  // v2.6.6: 실기기 테스트 반영 - 운동 부위 행과 바로 아래 보조 태그 행 사이 간격만 좁힙니다(기본
+  // .field-group 하단 여백 16px -> 6px). 다른 필드 그룹(운동명/증량방식/목표유형 등)의 간격에는 영향 없도록
+  // 공용 .field-group 클래스는 그대로 두고 이 요소에만 인라인 스타일로 덮어씁니다.
+  const bodyPartGroup = el("div", { class: "field-group", style: { marginBottom: "6px" } }, [
+    el("div", { class: "field-label", text: "운동 부위" }),
+    el("div", { class: "type-toggle" }, BODY_PARTS.map((part) => bodyPartOpts[part])),
+  ]);
+
+  // ---- v2.6.3: 보조 태그(선택, 복수 선택) - 선택된 운동 부위에 맞는 태그 목록으로 매번 다시 그립니다.
+  // (상체: 가슴/등/어깨/팔, 하체: 대퇴사두/둔근/햄스트링, 코어: 없음 - secondaryTagsFor()가 빈 배열 반환) ----
+  let secondaryTagOpts = {};
+  // v2.6.5: 실기기 테스트 반영 - "보조 태그" 텍스트 라벨을 제거합니다(버튼 기능/저장 구조는 그대로 유지).
+  const secondaryTagButtons = el("div", { class: "type-toggle" });
+  const secondaryTagGroup = el("div", { class: "field-group" }, [secondaryTagButtons]);
+
+  function rebuildSecondaryTagButtons() {
+    const tags = secondaryTagsFor(primaryBodyPart);
+    secondaryTagOpts = Object.fromEntries(
+      tags.map((tag) => [tag, el("div", { class: "type-opt", text: tag, onclick: () => toggleSecondaryTag(tag) })])
+    );
+    secondaryTagButtons.replaceChildren(...tags.map((tag) => secondaryTagOpts[tag]));
+    secondaryTagGroup.style.display = tags.length > 0 ? "block" : "none";
+  }
+
+  function refreshBodyPartUI() {
+    BODY_PARTS.forEach((part) => bodyPartOpts[part].classList.toggle("selected", part === primaryBodyPart));
+    Object.keys(secondaryTagOpts).forEach((tag) => secondaryTagOpts[tag].classList.toggle("selected", secondaryTags.has(tag)));
+  }
+  function selectBodyPart(part) {
+    primaryBodyPart = primaryBodyPart === part ? null : part;
+    // 부위가 바뀌면(또는 선택 해제되면) 보조 태그 선택값을 초기화합니다(부위마다 태그 목록 자체가 다르므로).
+    secondaryTags = new Set();
+    rebuildSecondaryTagButtons();
+    refreshBodyPartUI();
+  }
+  function toggleSecondaryTag(tag) {
+    if (secondaryTags.has(tag)) secondaryTags.delete(tag);
+    else secondaryTags.add(tag);
+    refreshBodyPartUI();
+  }
 
   function refreshMethodUI() {
     Object.entries(methodOpts).forEach(([key, node]) => node.classList.toggle("selected", key === gainMethod));
@@ -166,6 +216,8 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
       el("div", { class: "field-label", text: "증량 방식" }),
       el("div", { class: "type-toggle" }, [methodOpts.machine, methodOpts.freeweight, methodOpts.high_rep, methodOpts.bodyweight]),
     ]),
+    bodyPartGroup,
+    secondaryTagGroup,
     goalTypeGroup,
     el("div", { class: "field-group" }, [el("div", { class: "field-label", text: "기본 세트 수" }), setsStepper.node]),
     repsField.group,
@@ -181,21 +233,27 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
         text: "저장",
         onclick: () => {
           if (!name.trim()) {
-            alert("운동명을 입력해 주세요.");
+            showAlert("운동명을 입력해 주세요.");
+            return;
+          }
+          // v2.6.0: 운동 부위 선택은 신규 생성뿐 아니라 기존 종목 수정 저장 시에도 필수입니다.
+          // 마이그레이션으로 primaryBodyPart가 null인 기존 종목도, 수정 화면에서 저장하려면 부위를 지정해야 합니다.
+          if (!primaryBodyPart) {
+            showAlert("운동 부위를 선택하세요."); // v2.6.1: 문구 수정(실기기 테스트 반영)
             return;
           }
           // v2.3.2: 목표 중량 미입력 시 조용히 currentWeight:0으로 저장되던 기존 공백을 막습니다.
           // bodyweight는 이 필드 자체가 화면에 없으므로(gainMethod !== "bodyweight" 조건으로) 자동 제외됩니다.
           if (gainMethod !== "bodyweight" && targetWeightField.get() == null) {
-            alert("목표 중량을 입력해 주세요.");
+            showAlert("목표 중량을 입력하세요."); // v2.6.1: 문구 수정(실기기 테스트 반영)
             return;
           }
           if (gainMethod === "high_rep" && (highRepLowerField.get() == null || highRepUpperField.get() == null)) {
-            alert("고반복 방식은 하한/상한 반복수를 입력해야 합니다.");
+            showAlert("고반복 방식은 하한/상한 반복수를 입력해야 합니다.");
             return;
           }
           if (gainMethod === "bodyweight" && bodyweightGoalType === "time" && targetSecondsField.get() == null) {
-            alert("시간 기반 맨몸 운동은 목표 시간(초)을 입력해야 합니다.");
+            showAlert("시간 기반 맨몸 운동은 목표 시간(초)을 입력해야 합니다.");
             return;
           }
 
@@ -218,6 +276,12 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
             bodyweightGoalType: gainMethod === "bodyweight" ? bodyweightGoalType : null,
             targetSeconds: gainMethod === "bodyweight" && bodyweightGoalType === "time" ? targetSecondsField.get() : null,
             isUnilateral,
+            // v2.6.0: 운동 태그 시스템(탐색 전용). secondaryTags는 상체가 아니면 UI에서 이미 비워지지만,
+            // 저장 시점에도 한 번 더 방어적으로 정리합니다.
+            primaryBodyPart,
+            // v2.6.3: 부위 변경 시 secondaryTags를 항상 초기화하고 버튼도 해당 부위 목록으로만 다시 그리므로,
+            // 이 시점의 secondaryTags Set은 이미 현재 primaryBodyPart에 유효한 태그만 담고 있습니다.
+            secondaryTags: Array.from(secondaryTags),
           };
 
           if (isEdit) {
@@ -260,6 +324,8 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
   ]);
 
   refreshMethodUI();
+  rebuildSecondaryTagButtons(); // v2.6.3: 초기(수정 진입 시 기존 부위) 태그 버튼을 먼저 그린 뒤 선택 상태를 반영
+  refreshBodyPartUI();
   mount(root, screen);
 }
 
@@ -282,6 +348,8 @@ export function renderExerciseForm(root, params) {
       bodyweightGoalType: "reps",
       targetSeconds: null,
       isUnilateral: false,
+      primaryBodyPart: null,
+      secondaryTags: [],
     },
     stateInitial: null,
     onBack: () => history.back(),

@@ -5,6 +5,7 @@ import { navigate } from "../router.js";
 import * as state from "../../core/state.js";
 import { DAYS } from "../../core/models.js";
 import { openCueNoteEditor } from "../components/cueNoteEditor.js";
+import { openModal } from "../components/modal.js";
 
 export function renderRoutineEditor(root, params) {
   const dayKey = params.day;
@@ -136,12 +137,45 @@ export function renderRoutineEditor(root, params) {
     listEl.replaceWith(renderList());
   }
 
+  // v2.6.2: 네이티브 window.prompt() 대신 앱 modal 시스템 사용(다른 팝업과 디자인 통일). 이모지 입력은
+  // 일반 텍스트 input이라 기존과 동일하게 그대로 가능합니다.
+  // v2.6.3: 실기기 테스트 반영 - 제목 영역을 제거하고, 안내 문구를 content 영역의 문단으로 표시합니다
+  // (showAlert()와 동일하게 "내용 중심" 팝업으로 통일).
+  // v2.6.4: 실기기 테스트 반영 - 문구를 "루틴 이름을 수정하세요."로 변경. 이 문단은 공용 .detail(15px,
+  // v2.6.4에서 알림 팝업 가독성을 위해 확대)보다 작게, 입력칸(.text-input, 14px)과 같거나 작게 유지해야
+  // 해서 인라인으로 폰트 크기를 14px로 지정합니다(공용 클래스를 올리면 이 모달만 다시 커져버리므로).
   function renameTitle() {
-    const next = window.prompt("루틴 제목을 입력하세요 (이모지 사용 가능)", version.title);
-    if (next && next.trim()) {
-      state.renameRoutineVersion(dayKey, version.id, next.trim());
-      titleEl.textContent = next.trim();
-    }
+    const input = el("input", {
+      class: "text-input",
+      type: "text",
+      value: version.title || "",
+      placeholder: "루틴 이름을 수정하세요.",
+    });
+    const content = el("div", { class: "duration-modal" }, [
+      el("p", { class: "detail", style: { textAlign: "center", margin: "0 0 10px", fontSize: "14px" }, text: "루틴 이름을 수정하세요." }),
+      el("div", { style: { margin: "0 0 16px" } }, [input]),
+      el("div", { class: "btn-row-h" }, [
+        el("button", { class: "btn btn-ghost", text: "취소", onclick: () => close() }),
+        el("button", {
+          class: "btn btn-primary",
+          text: "저장",
+          onclick: () => {
+            const next = input.value.trim();
+            if (next) {
+              state.renameRoutineVersion(dayKey, version.id, next);
+              titleEl.textContent = next;
+            }
+            close();
+          },
+        }),
+      ]),
+    ]);
+    const close = openModal(content, { dismissible: true });
+    // 모달이 DOM에 붙은 뒤 포커스를 줘야 안전합니다(cueNoteEditor.js와 동일 패턴).
+    queueMicrotask(() => {
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    });
   }
 
   const titleEl = el("div", { class: "title", text: `${version.title}` });

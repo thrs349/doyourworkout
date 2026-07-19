@@ -2,8 +2,8 @@
 // 오프라인에서도 앱 자체(껍데기)는 항상 열리도록 하는 최소한의 캐시 전략입니다.
 // 데이터는 여기서 다루지 않습니다(전부 Local Storage에 있음).
 
-const CACHE_NAME = "doyourworkout-v2.5"; // v2.5 Stable: v2.5.0(Backup & Restore)~v2.5.1(버그수정)까지의
-// 누적 변경사항을 하나의 안정화 릴리즈로 묶어 "v2.5" 라벨로 캐시를 새로 무효화합니다. 캐시 전략 로직은 무변경.
+const CACHE_NAME = "doyourworkout-v2.6"; // v2.6 정식 릴리즈: v2.6.0~v2.6.6 누적 개발분을 하나의 릴리즈로 묶어
+// APP_VERSION과 동일한 "v2.6" 라벨로 캐시를 무효화합니다(activate 핸들러가 다른 캐시 키를 전부 삭제).
 const CORE_ASSETS = [
   "./",
   "./index.html",

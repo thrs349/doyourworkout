@@ -2,9 +2,8 @@
 // 앱이 다루는 데이터의 "형태"만 정의하는 순수 모듈입니다.
 // UI나 저장소에 의존하지 않으므로, 이후 다른 프레임워크로 옮기더라도 그대로 재사용할 수 있습니다.
 
-export const SCHEMA_VERSION = 14; // v2.4.0: bodyweight의 Notification(알림 표시 여부)과 Pending(성장 사이클 상태)을 분리하기 위해
-// ExerciseState에 bodyweightGoalAdjustNotificationDismissed 필드 추가. bodyweightGoalAdjustPending의 의미/생성 조건은 무변경이며,
-// 판정/증량 계산식과는 무관합니다.
+export const SCHEMA_VERSION = 15; // v2.6.0: Exercise Tag System. ExerciseDefinition에 primaryBodyPart/secondaryTags 필드 추가.
+// 탐색(검색/필터) 전용 데이터이며 judge.js/gain.js는 이 필드를 전혀 참조하지 않습니다(판정/증량/상태전이와 무관).
 
 // 증량 방식(gainMethod) 목록입니다. 새 방식을 추가하려면 여기 하나만 더 넣고,
 // judge.js/gain.js의 해당 분기만 채우면 됩니다.
@@ -17,6 +16,23 @@ export const GAIN_METHODS = {
 
 // 맨몸 운동: 세션 최종 판정 A가 이 횟수만큼 연속되면 "목표 조정 검토" 알림을 띄웁니다.
 export const BODYWEIGHT_GOAL_ALERT_STREAK = 3;
+
+// v2.6.0: 운동 태그 시스템(탐색 전용). judge.js/gain.js는 이 상수들을 참조하지 않습니다.
+// primaryBodyPart 선택지 - 종목마다 반드시 하나만 저장합니다(복합 운동도 주 타겟 기준 하나).
+export const BODY_PARTS = ["상체", "하체", "코어"];
+// v2.6.3: secondaryTags 선택지를 부위별로 분리합니다(하체 세부 태그 추가). 코어는 아직 세부 태그가 없어
+// 빈 배열입니다. secondaryTags 자체는 primaryBodyPart와 무관하게 저장 가능한 일반 문자열 배열이라
+// (예: 데드리프트 - 하체/등) 이 맵은 어디까지나 "종목 생성/수정 UI에서 어떤 버튼을 보여줄지"를 위한
+// 선택지 목록일 뿐, 저장 데이터 구조나 검증 로직에는 영향이 없습니다.
+export const SECONDARY_TAGS_BY_BODY_PART = {
+  상체: ["가슴", "등", "어깨", "팔"],
+  하체: ["대퇴사두", "둔근", "햄스트링"],
+  코어: [],
+};
+// 특정 부위의 보조 태그 선택지를 반환합니다. 정의되지 않은 부위(null 등)는 빈 배열을 반환합니다.
+export function secondaryTagsFor(bodyPart) {
+  return SECONDARY_TAGS_BY_BODY_PART[bodyPart] || [];
+}
 
 export const DAYS = [
   { key: "sun", label: "일" },
@@ -46,7 +62,9 @@ export function gainMethodLabel(gainMethod) {
 
 // 종목의 부가 정보(목표치×세트수, 편측 여부)만 담은 문자열입니다. gainMethod 라벨은 포함하지 않습니다.
 // (칩 등으로 gainMethod를 별도 표시하는 화면에서 재사용하기 위해 formatExerciseMeta에서 분리했습니다.)
-export function formatExerciseSubMeta(ex) {
+// v2.6.1: includeUnilateral=false로 호출하면 "편측" 표시를 뺀 순수 "목표치×세트수"만 반환합니다.
+// (Chip 표시에서는 편측을 별도 Chip으로 분리하기 때문에 필요합니다. 기본값은 기존 동작과 동일합니다.)
+export function formatExerciseSubMeta(ex, { includeUnilateral = true } = {}) {
   let targetPart;
   if (ex.gainMethod === "high_rep") {
     // 설정 화면(운동 관리/운동 선택) 카드는 "판정 조건"이 아니라 "운동 설정 정보"를 보여주는 자리라
@@ -58,13 +76,38 @@ export function formatExerciseSubMeta(ex) {
   } else {
     targetPart = `${ex.targetReps}회`;
   }
-  const unilateralPart = ex.isUnilateral ? " · 편측" : "";
+  const unilateralPart = includeUnilateral && ex.isUnilateral ? " · 편측" : "";
   return `${targetPart}×${ex.baseSets}세트${unilateralPart}`;
 }
 
 // 종목 목록(관리/선택 화면)에 쓰는 공통 요약 문자열입니다.
+// v2.6.0: 카드를 세로로 늘리지 않기 위해 한 줄 안에서 "유형 · 부위 · (상체면) 보조태그 · 반복수×세트수"
+// 순서로 표시합니다(예: "머신 · 상체 · 가슴 · 12회×3세트"). 기존 메타(반복수×세트수)는 항상 유지되고,
+// 태그가 있으면 그 앞에 덧붙는 방식입니다. 판정/증량 계산과는 무관한 탐색 전용 표시입니다.
+// primaryBodyPart가 아직 없는(마이그레이션된 기존) 종목은 태그 없이 기존 방식 그대로 표시합니다.
 export function formatExerciseMeta(ex) {
-  return `${gainMethodLabel(ex.gainMethod)} · ${formatExerciseSubMeta(ex)}`;
+  const typeLabel = gainMethodLabel(ex.gainMethod);
+  const subMeta = formatExerciseSubMeta(ex);
+  if (!ex.primaryBodyPart) return `${typeLabel} · ${subMeta}`;
+  const tagParts = [ex.primaryBodyPart, ...(ex.secondaryTags || [])];
+  return `${typeLabel} · ${tagParts.join(" · ")} · ${subMeta}`;
+}
+
+// v2.6.1: 실기기 테스트 반영 - 위 formatExerciseMeta()의 한 줄 문자열 대신, ExerciseManage/ExercisePicker
+// 카드에서 각 정보를 개별 Chip으로 분리 표시하기 위한 구조화된 버전입니다. 정보 순서는 formatExerciseMeta와
+// 동일합니다: ① 운동 유형 → ② 부위+보조태그(있을 때만) → ③ 편측 여부(있을 때만) → ④ 반복수×세트수(항상).
+// 판정/증량 계산과는 무관한 탐색 전용 표시입니다.
+export function formatExerciseMetaChips(ex) {
+  const chips = [{ kind: "type", text: gainMethodLabel(ex.gainMethod) }];
+  if (ex.primaryBodyPart) {
+    const tagParts = [ex.primaryBodyPart, ...(ex.secondaryTags || [])];
+    chips.push({ kind: "tag", text: tagParts.join("·") }); // Chip 내부는 간격을 좁혀 표시(가운뎃점만, 공백 없음)
+  }
+  if (ex.isUnilateral) {
+    chips.push({ kind: "unilateral", text: "편측" });
+  }
+  chips.push({ kind: "submeta", text: formatExerciseSubMeta(ex, { includeUnilateral: false }) });
+  return chips;
 }
 
 export function uid(prefix = "id") {
@@ -94,6 +137,11 @@ export function makeExerciseDefinition({
   // 체크리스트 형태의 문자열 배열로, 최대 3개까지만 유지합니다(UI에서 강제 + 저장 직전 방어).
   // null이 아닌 빈 배열([])을 기본값으로 사용합니다.
   cueNotes = [],
+  // v2.6.0: 운동 태그 시스템(탐색/검색 전용). judge.js/gain.js는 이 두 필드를 전혀 참조하지 않습니다.
+  // primaryBodyPart: "상체" | "하체" | "코어" | null. 신규 종목은 필수 선택, 기존(마이그레이션) 종목은 null 허용.
+  primaryBodyPart = null,
+  // secondaryTags: SECONDARY_TAGS(상체 태그) 중 복수 선택. primaryBodyPart와 무관하게 저장 가능(보조 자극 표현용).
+  secondaryTags = [],
 } = {}) {
   return {
     id,
@@ -111,6 +159,8 @@ export function makeExerciseDefinition({
     targetSeconds,
     isUnilateral,
     cueNotes,
+    primaryBodyPart,
+    secondaryTags,
   };
 }
 
