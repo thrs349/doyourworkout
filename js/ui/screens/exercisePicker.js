@@ -2,7 +2,7 @@
 import { el, mount } from "../dom.js";
 import { navigate } from "../router.js";
 import * as state from "../../core/state.js";
-import { formatExerciseMetaChips, GAIN_METHODS, BODY_PARTS, SECONDARY_TAGS } from "../../core/models.js";
+import { formatExerciseMetaChips, GAIN_METHODS, BODY_PARTS, secondaryTagsFor } from "../../core/models.js";
 
 // v2.4.7: 종목 선택 화면 전용 표시 순서. 실제 데이터(등록 순서)나 다른 화면의 정렬에는 전혀 영향을 주지 않습니다.
 // v2.6.0: 기존 그룹 헤더(section-label) + 유형별 그룹 렌더링을 제거했습니다. 대신 "운동 유형 버튼을 선택하면
@@ -112,21 +112,27 @@ export function renderExercisePicker(root, params) {
   );
   const bodyPartRow = el("div", { class: "type-toggle", style: { marginBottom: "8px" } }, BODY_PARTS.map((p) => bodyPartOpts[p]));
 
-  const tagOpts = Object.fromEntries(
-    SECONDARY_TAGS.map((tag) => [tag, el("div", { class: "type-opt", text: tag, onclick: () => toggleTagFilter(tag) })])
-  );
-  const tagRow = el("div", { class: "type-toggle", style: { marginBottom: "8px" } }, SECONDARY_TAGS.map((t) => tagOpts[t]));
+  let tagOpts = {};
+  const tagRow = el("div", { class: "type-toggle", style: { marginBottom: "8px" } });
+
+  function rebuildTagRow() {
+    const tags = secondaryTagsFor(bodyPartFilter);
+    tagOpts = Object.fromEntries(
+      tags.map((tag) => [tag, el("div", { class: "type-opt", text: tag, onclick: () => toggleTagFilter(tag) })])
+    );
+    tagRow.replaceChildren(...tags.map((t) => tagOpts[t]));
+  }
 
   function refreshFilterUI() {
     modeOpts.type.classList.toggle("selected", filterMode === "type");
     modeOpts.bodyPart.classList.toggle("selected", filterMode === "bodyPart");
     PICKER_GAIN_METHOD_ORDER.forEach((k) => typeOpts[k].classList.toggle("selected", typeFilter === k));
     BODY_PARTS.forEach((p) => bodyPartOpts[p].classList.toggle("selected", bodyPartFilter === p));
-    SECONDARY_TAGS.forEach((t) => tagOpts[t].classList.toggle("selected", tagFilter.has(t)));
+    Object.keys(tagOpts).forEach((t) => tagOpts[t].classList.toggle("selected", tagFilter.has(t)));
 
     typeRow.style.display = filterMode === "type" ? "flex" : "none";
     bodyPartRow.style.display = filterMode === "bodyPart" ? "flex" : "none";
-    tagRow.style.display = filterMode === "bodyPart" && bodyPartFilter === "상체" ? "flex" : "none";
+    tagRow.style.display = filterMode === "bodyPart" && secondaryTagsFor(bodyPartFilter).length > 0 ? "flex" : "none";
   }
 
   function selectMode(mode) {
@@ -134,6 +140,7 @@ export function renderExercisePicker(root, params) {
     typeFilter = null;
     bodyPartFilter = null;
     tagFilter = new Set();
+    rebuildTagRow();
     refreshFilterUI();
     rerenderList();
   }
@@ -144,7 +151,9 @@ export function renderExercisePicker(root, params) {
   }
   function selectBodyPartFilter(part) {
     bodyPartFilter = bodyPartFilter === part ? null : part;
-    if (bodyPartFilter !== "상체") tagFilter = new Set();
+    // 부위가 바뀌면(또는 선택 해제되면) 보조 태그 선택값을 초기화합니다(부위마다 태그 목록 자체가 다르므로).
+    tagFilter = new Set();
+    rebuildTagRow();
     refreshFilterUI();
     rerenderList();
   }
@@ -169,6 +178,7 @@ export function renderExercisePicker(root, params) {
     listEl.replaceWith(buildList());
   }
 
+  rebuildTagRow();
   refreshFilterUI();
 
   const screen = el("div", { id: "exercise-picker-screen", class: "screen-content" }, [

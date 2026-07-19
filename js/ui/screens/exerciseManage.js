@@ -2,7 +2,7 @@
 import { el, mount } from "../dom.js";
 import { navigate } from "../router.js";
 import * as state from "../../core/state.js";
-import { formatExerciseMetaChips, GAIN_METHODS, BODY_PARTS, SECONDARY_TAGS } from "../../core/models.js";
+import { formatExerciseMetaChips, GAIN_METHODS, BODY_PARTS, secondaryTagsFor } from "../../core/models.js";
 import { openModal } from "../components/modal.js";
 import { openCueNoteEditor } from "../components/cueNoteEditor.js";
 
@@ -42,7 +42,7 @@ export function renderExerciseManage(root) {
   let filterMode = null; // null | "type" | "bodyPart" — 운동 유형/운동 부위는 동시에 사용하지 않습니다(상호 배타).
   let typeFilter = null; // GAIN_METHODS 값 중 하나
   let bodyPartFilter = null; // BODY_PARTS 값 중 하나
-  let tagFilter = new Set(); // SECONDARY_TAGS 중 복수 선택(OR)
+  let tagFilter = new Set(); // 선택된 부위의 보조 태그 중 복수 선택(OR) - v2.6.3: 부위별 태그 목록으로 분리
 
   function matchesSearch(ex) {
     const q = searchQuery.trim().toLowerCase();
@@ -252,17 +252,24 @@ export function renderExerciseManage(root) {
   );
   const bodyPartRow = el("div", { class: "type-toggle", style: { marginBottom: "8px" } }, BODY_PARTS.map((p) => bodyPartOpts[p]));
 
-  // 3행: 상체 태그(운동 부위=상체일 때만), 복수 선택 OR
-  const tagOpts = Object.fromEntries(
-    SECONDARY_TAGS.map((tag) => [tag, el("div", { class: "type-opt", text: tag, onclick: () => toggleTagFilter(tag) })])
-  );
-  const tagRow = el("div", { class: "type-toggle", style: { marginBottom: "8px" } }, SECONDARY_TAGS.map((t) => tagOpts[t]));
+  // 3행: 보조 태그(운동 부위 선택 시, 해당 부위의 태그 목록으로 매번 다시 그림), 복수 선택 OR
+  let tagOpts = {};
+  const tagRow = el("div", { class: "type-toggle", style: { marginBottom: "8px" } });
+
+  function rebuildTagRow() {
+    const tags = secondaryTagsFor(bodyPartFilter);
+    tagOpts = Object.fromEntries(
+      tags.map((tag) => [tag, el("div", { class: "type-opt", text: tag, onclick: () => toggleTagFilter(tag) })])
+    );
+    tagRow.replaceChildren(...tags.map((t) => tagOpts[t]));
+  }
 
   function resetFilters() {
     filterMode = null;
     typeFilter = null;
     bodyPartFilter = null;
     tagFilter = new Set();
+    rebuildTagRow();
   }
 
   function refreshFilterUI() {
@@ -270,11 +277,11 @@ export function renderExerciseManage(root) {
     modeOpts.bodyPart.classList.toggle("selected", filterMode === "bodyPart");
     typeOptKeys.forEach((k) => typeOpts[k].classList.toggle("selected", typeFilter === k));
     BODY_PARTS.forEach((p) => bodyPartOpts[p].classList.toggle("selected", bodyPartFilter === p));
-    SECONDARY_TAGS.forEach((t) => tagOpts[t].classList.toggle("selected", tagFilter.has(t)));
+    Object.keys(tagOpts).forEach((t) => tagOpts[t].classList.toggle("selected", tagFilter.has(t)));
 
     typeRow.style.display = filterMode === "type" ? "flex" : "none";
     bodyPartRow.style.display = filterMode === "bodyPart" ? "flex" : "none";
-    tagRow.style.display = filterMode === "bodyPart" && bodyPartFilter === "상체" ? "flex" : "none";
+    tagRow.style.display = filterMode === "bodyPart" && secondaryTagsFor(bodyPartFilter).length > 0 ? "flex" : "none";
   }
 
   // 운동 유형/운동 부위는 동시에 사용하지 않습니다 — 한쪽을 선택하면 다른 쪽 선택은 자동 해제됩니다.
@@ -283,6 +290,7 @@ export function renderExerciseManage(root) {
     typeFilter = null;
     bodyPartFilter = null;
     tagFilter = new Set();
+    rebuildTagRow();
     refreshFilterUI();
     rerenderList();
   }
@@ -293,8 +301,9 @@ export function renderExerciseManage(root) {
   }
   function selectBodyPartFilter(part) {
     bodyPartFilter = bodyPartFilter === part ? null : part;
-    // 상체가 아니면(또는 선택 해제되면) 상체 태그 선택값은 자동 초기화합니다.
-    if (bodyPartFilter !== "상체") tagFilter = new Set();
+    // 부위가 바뀌면(또는 선택 해제되면) 보조 태그 선택값을 초기화합니다(부위마다 태그 목록 자체가 다르므로).
+    tagFilter = new Set();
+    rebuildTagRow();
     refreshFilterUI();
     rerenderList();
   }
@@ -352,6 +361,7 @@ export function renderExerciseManage(root) {
   }
 
   refreshTabUI();
+  rebuildTagRow();
   refreshFilterUI();
 
   const screen = el("div", { id: "exercise-manage-screen", class: "screen-content" }, [

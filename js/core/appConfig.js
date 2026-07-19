@@ -9,4 +9,6 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // v2.6.1: 실기기 테스트 반영 UI 마감(카드 메타 Chip 표시, 시스템 팝업 디자인 통일, 문구 수정). 데이터 구조/판정·증량 로직 변경 없음.
 // v2.6.2: 실기기(Galaxy S25) 테스트 반영 UI 버그 수정 - 카드 메타 Chip 클래스명 충돌 수정, 팝업 메시지를
 // title에서 content 영역으로 이동, 루틴 제목 수정 native prompt를 앱 modal로 교체. 데이터 구조/로직 변경 없음.
-export const APP_VERSION = "v2.6.2";
+// v2.6.3: 실기기 테스트 반영 - Chip 디자인(폰트/배경/간격) 재조정, 하체 보조 태그(대퇴사두/둔근/햄스트링)
+// 추가, 팝업 제목 영역 제거(내용 중심). secondaryTags는 기존과 동일한 문자열 배열이라 데이터 구조 변경 없음.
+export const APP_VERSION = "v2.6.3";

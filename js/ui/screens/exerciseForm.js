@@ -3,7 +3,7 @@
 import { el, mount } from "../dom.js";
 import { navigate } from "../router.js";
 import * as state from "../../core/state.js";
-import { BODY_PARTS, SECONDARY_TAGS } from "../../core/models.js";
+import { BODY_PARTS, secondaryTagsFor } from "../../core/models.js";
 import { showAlert } from "../components/modal.js";
 
 function stepper(initial, min, max) {
@@ -81,24 +81,31 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
     el("div", { class: "type-toggle" }, BODY_PARTS.map((part) => bodyPartOpts[part])),
   ]);
 
-  // ---- v2.6.0: 상체 태그(선택, 복수 선택) - 운동 부위가 "상체"일 때만 표시 ----
-  const secondaryTagOpts = Object.fromEntries(
-    SECONDARY_TAGS.map((tag) => [tag, el("div", { class: "type-opt", text: tag, onclick: () => toggleSecondaryTag(tag) })])
-  );
-  const secondaryTagGroup = el("div", { class: "field-group" }, [
-    el("div", { class: "field-label", text: "상체 태그" }),
-    el("div", { class: "type-toggle" }, SECONDARY_TAGS.map((tag) => secondaryTagOpts[tag])),
-  ]);
+  // ---- v2.6.3: 보조 태그(선택, 복수 선택) - 선택된 운동 부위에 맞는 태그 목록으로 매번 다시 그립니다.
+  // (상체: 가슴/등/어깨/팔, 하체: 대퇴사두/둔근/햄스트링, 코어: 없음 - secondaryTagsFor()가 빈 배열 반환) ----
+  let secondaryTagOpts = {};
+  const secondaryTagLabel = el("div", { class: "field-label", text: "보조 태그" });
+  const secondaryTagButtons = el("div", { class: "type-toggle" });
+  const secondaryTagGroup = el("div", { class: "field-group" }, [secondaryTagLabel, secondaryTagButtons]);
+
+  function rebuildSecondaryTagButtons() {
+    const tags = secondaryTagsFor(primaryBodyPart);
+    secondaryTagOpts = Object.fromEntries(
+      tags.map((tag) => [tag, el("div", { class: "type-opt", text: tag, onclick: () => toggleSecondaryTag(tag) })])
+    );
+    secondaryTagButtons.replaceChildren(...tags.map((tag) => secondaryTagOpts[tag]));
+    secondaryTagGroup.style.display = tags.length > 0 ? "block" : "none";
+  }
 
   function refreshBodyPartUI() {
     BODY_PARTS.forEach((part) => bodyPartOpts[part].classList.toggle("selected", part === primaryBodyPart));
-    SECONDARY_TAGS.forEach((tag) => secondaryTagOpts[tag].classList.toggle("selected", secondaryTags.has(tag)));
-    secondaryTagGroup.style.display = primaryBodyPart === "상체" ? "block" : "none";
+    Object.keys(secondaryTagOpts).forEach((tag) => secondaryTagOpts[tag].classList.toggle("selected", secondaryTags.has(tag)));
   }
   function selectBodyPart(part) {
     primaryBodyPart = primaryBodyPart === part ? null : part;
-    // 상체가 아닌 부위로 바뀌면(또는 선택 해제되면) 상체 전용 태그 선택값은 초기화합니다.
-    if (primaryBodyPart !== "상체") secondaryTags = new Set();
+    // 부위가 바뀌면(또는 선택 해제되면) 보조 태그 선택값을 초기화합니다(부위마다 태그 목록 자체가 다르므로).
+    secondaryTags = new Set();
+    rebuildSecondaryTagButtons();
     refreshBodyPartUI();
   }
   function toggleSecondaryTag(tag) {
@@ -269,7 +276,9 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
             // v2.6.0: 운동 태그 시스템(탐색 전용). secondaryTags는 상체가 아니면 UI에서 이미 비워지지만,
             // 저장 시점에도 한 번 더 방어적으로 정리합니다.
             primaryBodyPart,
-            secondaryTags: primaryBodyPart === "상체" ? Array.from(secondaryTags) : [],
+            // v2.6.3: 부위 변경 시 secondaryTags를 항상 초기화하고 버튼도 해당 부위 목록으로만 다시 그리므로,
+            // 이 시점의 secondaryTags Set은 이미 현재 primaryBodyPart에 유효한 태그만 담고 있습니다.
+            secondaryTags: Array.from(secondaryTags),
           };
 
           if (isEdit) {
@@ -312,6 +321,7 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
   ]);
 
   refreshMethodUI();
+  rebuildSecondaryTagButtons(); // v2.6.3: 초기(수정 진입 시 기존 부위) 태그 버튼을 먼저 그린 뒤 선택 상태를 반영
   refreshBodyPartUI();
   mount(root, screen);
 }

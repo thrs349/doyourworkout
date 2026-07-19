@@ -20,9 +20,19 @@ export const BODYWEIGHT_GOAL_ALERT_STREAK = 3;
 // v2.6.0: 운동 태그 시스템(탐색 전용). judge.js/gain.js는 이 상수들을 참조하지 않습니다.
 // primaryBodyPart 선택지 - 종목마다 반드시 하나만 저장합니다(복합 운동도 주 타겟 기준 하나).
 export const BODY_PARTS = ["상체", "하체", "코어"];
-// secondaryTags 선택지 - 초기 운영은 상체 태그만 제공합니다(하체/코어 세부 태그는 미도입).
-// primaryBodyPart가 하체/코어여도 보조 자극 표현용으로 이 태그들을 저장할 수 있습니다(예: 데드리프트 - 하체/등).
-export const SECONDARY_TAGS = ["가슴", "등", "어깨", "팔"];
+// v2.6.3: secondaryTags 선택지를 부위별로 분리합니다(하체 세부 태그 추가). 코어는 아직 세부 태그가 없어
+// 빈 배열입니다. secondaryTags 자체는 primaryBodyPart와 무관하게 저장 가능한 일반 문자열 배열이라
+// (예: 데드리프트 - 하체/등) 이 맵은 어디까지나 "종목 생성/수정 UI에서 어떤 버튼을 보여줄지"를 위한
+// 선택지 목록일 뿐, 저장 데이터 구조나 검증 로직에는 영향이 없습니다.
+export const SECONDARY_TAGS_BY_BODY_PART = {
+  상체: ["가슴", "등", "어깨", "팔"],
+  하체: ["대퇴사두", "둔근", "햄스트링"],
+  코어: [],
+};
+// 특정 부위의 보조 태그 선택지를 반환합니다. 정의되지 않은 부위(null 등)는 빈 배열을 반환합니다.
+export function secondaryTagsFor(bodyPart) {
+  return SECONDARY_TAGS_BY_BODY_PART[bodyPart] || [];
+}
 
 export const DAYS = [
   { key: "sun", label: "일" },

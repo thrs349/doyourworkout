@@ -239,24 +239,28 @@
    편측/반복수×세트수를 4개의 독립된 박스로 분리 표시하되, 줄바꿈은 허용해 카드 높이 증가를 최소화합니다.
    v2.6.2 버그 수정: 클래스명이 기존 .chip(테마 색상 스와치, 16px 원형 - .theme-row-left에서 사용)과 겹쳐
    그 스타일(width/height:16px, border-radius:50%)이 함께 적용되는 바람에 칩이 원형으로 찌그러지고 텍스트가
-   왼쪽으로 몰려 겹쳐 보이던 문제가 있었습니다. 클래스명을 .ex-chip으로 분리하고, 박스 구분이 잘 보이도록
-   테두리를 추가하고 그룹 간 간격도 넓혔습니다(실기기 테스트 반영). */
-.ex-meta-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+   왼쪽으로 몰려 겹쳐 보이던 문제가 있었습니다. 클래스명을 .ex-chip으로 분리했습니다.
+   v2.6.3 실기기 테스트 반영: 폰트가 너무 굵고 배경(--color-primary-soft)이 너무 강조되어 보인다는 피드백에
+   따라, 워밍업 행(.set-row.warmup)과 동일한 --color-surface-alt(연한 색)로 배경을 낮추고, font-weight를
+   normal로, 텍스트 색도 강조색(--color-primary)이 아닌 일반 메타 색(--color-text-secondary)으로 낮췄습니다.
+   "강조"가 아니라 "구분" 목적입니다. 그룹 간 간격도 8px -> 6px로 줄였습니다(그룹 내부 간격은 JS에서 이미
+   공백 없는 가운뎃점("·")으로 처리되어 있어 그대로 유지). */
+.ex-meta-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; }
 .ex-chip {
   display: inline-flex;
   align-items: center;
   font-family: var(--font-mono);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 400;
   line-height: 1.6;
-  padding: 3px 10px;
-  border-radius: 8px;
-  background: var(--color-primary-soft);
-  border: 1px solid var(--color-primary);
-  color: var(--color-primary);
+  padding: 2px 9px;
+  border-radius: 7px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
   white-space: nowrap;
 }
-/* 부위+보조태그 그룹 내부(상체·가슴·어깨)는 그룹 간 간격(8px)보다 좁게 표시합니다(가운뎃점만, 공백 없음 - JS에서 처리). */
+/* 부위+보조태그 그룹 내부(하체·대퇴사두·둔근)는 그룹 간 간격보다 좁게 표시합니다(가운뎃점만, 공백 없음 - JS에서 처리). */
 .ex-chip-tag { letter-spacing: 0; }
 
 .list-row .arrow { color: var(--color-text-muted); }
