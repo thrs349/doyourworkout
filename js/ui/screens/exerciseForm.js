@@ -76,7 +76,10 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
   const bodyPartOpts = Object.fromEntries(
     BODY_PARTS.map((part) => [part, el("div", { class: "type-opt", text: part, onclick: () => selectBodyPart(part) })])
   );
-  const bodyPartGroup = el("div", { class: "field-group" }, [
+  // v2.6.6: 실기기 테스트 반영 - 운동 부위 행과 바로 아래 보조 태그 행 사이 간격만 좁힙니다(기본
+  // .field-group 하단 여백 16px -> 6px). 다른 필드 그룹(운동명/증량방식/목표유형 등)의 간격에는 영향 없도록
+  // 공용 .field-group 클래스는 그대로 두고 이 요소에만 인라인 스타일로 덮어씁니다.
+  const bodyPartGroup = el("div", { class: "field-group", style: { marginBottom: "6px" } }, [
     el("div", { class: "field-label", text: "운동 부위" }),
     el("div", { class: "type-toggle" }, BODY_PARTS.map((part) => bodyPartOpts[part])),
   ]);

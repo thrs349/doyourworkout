@@ -188,7 +188,7 @@ export function renderExercisePicker(root, params) {
       el("div", { class: "title", text: "운동 선택" }),
       el("span", { style: { opacity: 0 } }, "·"),
     ]),
-    el("div", { class: "field-group" }, [searchInput]),
+    el("div", { class: "field-group", style: { marginBottom: "6px" } }, [searchInput]), // v2.6.6: 검색창-필터 간격 축소(16px->6px)
     modeRow,
     typeRow,
     bodyPartRow,

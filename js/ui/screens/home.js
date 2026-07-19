@@ -12,7 +12,9 @@ export function renderHome(root) {
   const dayLabel = DAYS.find((d) => d.key === dayKey).label;
   const version = state.getDefaultVersion(dayKey);
   const exercises = state.getRoutineExercises(dayKey);
-  const dateStr = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" });
+  // v2.6.6: 실기기 테스트 반영 - "2026. 07. 19." 대신 "2026. 7. 19."로 월/일 앞자리 0을 제거합니다.
+  // (year는 "numeric" 그대로라 자릿수 변화 없음. 요일 표기는 이 문자열과 별도로 아래에서 조합됩니다.)
+  const dateStr = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "numeric", day: "numeric" });
 
   const routineCard = el("div", { class: "routine-card-lg" }, [
     el("div", { class: "card-bg" }),

@@ -130,7 +130,10 @@
 .backdrop { position: fixed; inset: 0; background: rgba(20, 20, 10, .42); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 50; }
 .modal { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 20px; width: 100%; max-width: 340px; }
 .modal h3 { font-family: var(--font-display); font-size: 19px; margin: 0 0 6px; font-weight: 700; }
-.modal p.detail { color: var(--color-text-secondary); font-size: 15px; margin: 0 0 3px; line-height: 1.5; } /* v2.6.4: 확인 버튼(15px)과 같은 크기로 - 이전 12px는 너무 작다는 실기기 피드백 반영 */
+.modal p.detail { color: var(--color-text-secondary); font-size: 13px; margin: 0 0 3px; line-height: 1.5; } /* v2.6.4: 확인 버튼(15px)과 비슷한 크기로 올렸었으나(12px->15px), 문장이 긴 팝업(운동 기준 초기화/
+백업 복원/복원 완료 등)에서 모달 폭(최대 340px, 내부 여백 20px 제외 시 약 300px)을 넘어 줄바꿈이 발생한다는
+실기기 피드백으로 v2.6.6에서 13px로 재조정. 확인 버튼(15px)보다 살짝 작은 수준을 유지하면서 대부분의 문장이
+한 줄에 들어가도록 함. 모달 자체 크기(.modal max-width)는 키우지 않고 폰트만 조정. */
 .modal .cond { font-family: var(--font-mono); font-size: 10.5px; color: var(--color-text-muted); margin-bottom: 14px; }
 
 .duration-modal { text-align: center; padding: 8px 4px; }

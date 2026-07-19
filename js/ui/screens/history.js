@@ -60,9 +60,13 @@ export function renderHistory(root) {
   // "오늘" 기준으로 현재 루틴 상태를 조회해 매번 새로 그리므로(과거 세션 기록 자체는 건드리지 않음),
   // 데이터 구조 변경이나 migration 없이 표시 문구만 수정하면 됩니다.
   // v2.6.5: 실기기 테스트 반영 - "기록 · 루틴명" 형태 대신 "요일 + 루틴명"으로 변경(예: "월요일 상체A").
-  // 홈 화면(home.js)의 fallback 문구("${dayLabel}요일 루틴")와 동일한 패턴을 씁니다.
+  // v2.6.6: 실기기 테스트 반영 - "요일 + 루틴명" 대신 "오늘 날짜(요일) + 루틴명"으로 변경(예: "7.18(일) · 상체A").
+  // toLocaleDateString은 "7. 18."처럼 공백/마침표가 붙어 요청 형식과 달라 getMonth()/getDate()로 직접 조합합니다.
+  // 이 값도 매 렌더마다 "지금 이 순간"을 새로 읽어 표시하는 것뿐이라 과거 세션 기록에는 전혀 영향이 없습니다.
   const version = state.getDefaultVersion(dayKey);
   const routineTitle = version.title || "루틴";
+  const now = new Date();
+  const dateLabel = `${now.getMonth() + 1}.${now.getDate()}`;
 
   const cards = exercises.length
     ? exercises.map(buildExerciseCard)
@@ -70,7 +74,7 @@ export function renderHistory(root) {
 
   const screen = el("div", { id: "history-screen", class: "screen-content" }, [
     el("div", { class: "topbar" }, [
-      el("div", { class: "title", text: `${dayLabel}요일 ${routineTitle}` }),
+      el("div", { class: "title", text: `${dateLabel}(${dayLabel}) · ${routineTitle}` }),
       el("span", { style: { opacity: 0 } }, "·"),
     ]),
     el("div", { class: "table-area" }, cards),
