@@ -39,14 +39,11 @@ export function renderRoutineEditor(root, params) {
     const isActive = !ex || ex.active !== false;
     // v2.7.0: 종목이 삭제된 경우(ex===null)는 역할을 알 수 없으므로 배지를 표시하지 않습니다.
     const roleBadge = ex ? el("span", { class: "role-badge", title: "역할(읽기 전용)", text: ROLE_BADGE_TEXT[effectiveRole(ex)] }) : null;
-    // v2.7.2 UI 개선: 순서 번호↔역할 아이콘 간격이 너무 좁다는 피드백에 따라, 종목명(.name)까지 이 묶음
-    // 안으로 옮겨 order-badge↔role-badge, role-badge↔name 간격이 서로 "동일한" 값(.drag-row-icons의 gap)이
-    // 되도록 했습니다(기존엔 전자가 2px, 후자는 .drag-row의 큰 gap이라 서로 달랐습니다). name은 flex:1로
-    // 남는 폭을 계속 가져가므로 종목명 표시 공간은 거의 그대로 유지됩니다(우측 버튼과의 간격만 .drag-row의
-    // 기존 gap을 그대로 사용). 전체 좌측 정렬은 유지됩니다.
+    // v2.7.3 UI 개선: ☰ 핸들 아이콘을 제거하고, 순서 번호(order-badge) 자체를 길게 눌러 드래그하는 방식으로
+    // 변경합니다. attachDrag()가 ".drag-handle" 클래스를 가진 요소에 pointerdown을 붙이므로, 별도 요소를
+    // 새로 만들지 않고 order-badge에 그 클래스를 함께 부여해 기존 드래그 로직을 그대로 재사용합니다.
     const iconCluster = el("span", { class: "drag-row-icons" }, [
-      el("span", { class: "drag-handle", text: "≡" }),
-      el("span", { class: "order-badge", text: String(index + 1).padStart(2, "0") }),
+      el("span", { class: "order-badge drag-handle", text: String(index + 1).padStart(2, "0") }),
       roleBadge,
       // v2.7.0 UI 개선: "(비활성)" 텍스트를 없애고, .drag-row.inactive의 opacity/취소선 스타일만으로 표현합니다.
       el("span", { class: "name", text: exerciseName(exId) }),
@@ -202,7 +199,7 @@ export function renderRoutineEditor(root, params) {
       titleEl,
       el("button", { class: "icon-btn", text: "✎", onclick: renameTitle }),
     ]),
-    el("div", { class: "helper-text", text: "≡ 핸들을 눌러 드래그하면 순서가 바뀝니다." }),
+    el("div", { class: "helper-text", text: "순서 번호를 길게 눌러 드래그하면 순서가 바뀝니다." }),
     renderList(),
     el("div", { class: "bottom-fixed" }, [
       el("button", { class: "btn btn-ghost", text: "+ 운동 추가", onclick: () => navigate(`#/exercise-picker/${dayKey}`) }),

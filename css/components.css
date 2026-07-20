@@ -160,13 +160,17 @@
   border: 1.5px dashed var(--color-primary); border-radius: 10px; background: var(--color-primary-soft);
   margin-bottom: var(--sp-2);
 }
-.drag-handle { color: var(--color-text-muted); font-size: 16px; letter-spacing: 2px; line-height: 1; cursor: grab; padding: 4px; }
+/* v2.7.3 UI 개선: ☰ 핸들 글리프 제거. order-badge가 드래그 핸들을 겸하므로, 이 클래스는 이제 order-badge와
+   함께(class="order-badge drag-handle") 붙어 커서 힌트만 추가하는 용도로 남깁니다(글리프 전용 스타일은 삭제). */
+.drag-handle { cursor: grab; }
 .order-badge { font-family: var(--font-mono); font-size: 10.5px; color: var(--color-primary); background: var(--color-primary-soft); width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 /* v2.7.2 UI 개선: 2px -> 6px로 늘려 순서 번호↔역할 아이콘 간격 부족 피드백을 반영. 종목명(.name)이 이제
    이 컨테이너 안에 함께 있어(order-badge↔role-badge와 role-badge↔name이 같은 gap 값을 공유) 두 간격이
    서로 동일해집니다. flex:1 + min-width:0으로 컨테이너 자체가 남는 폭을 가져가고, 그 안에서 name이
    다시 flex:1로 대부분의 폭을 차지합니다(전체 좌측 정렬 유지). */
-.drag-row-icons { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+/* v2.7.3 UI 개선: ☰ 핸들 제거로 아이콘이 2개(순서/역할)만 남아, 간격을 6px -> 4px로 살짝 더 좁혀도
+   답답해 보이지 않습니다. 확보된 공간은 flex:1인 종목명(.name)이 그대로 가져갑니다. */
+.drag-row-icons { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
 /* v2.7.0 UI 개선: 역할 배지의 Highlight Box(배경/테두리)를 제거하고 이모지 글리프만 남깁니다. */
 .role-badge { font-size: 14px; line-height: 1; min-width: 18px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .drag-row .name { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -218,9 +222,11 @@
 .name-role-headers { display: flex; align-items: baseline; gap: var(--sp-2); }
 .name-role-headers .field-label { margin-bottom: 6px; }
 .name-role-headers .field-label:first-child { flex: 1; }
-.name-role-headers .role-header-label { flex-shrink: 0; width: 42px; text-align: right; }
+/* v2.7.3: 42px -> 64px. "메인/보조" 헤더가 실기기(모노스페이스 폰트의 한글 폴백)에서 줄바꿈되는 문제가
+   확인되어, 헤더가 항상 한 줄로 표시되기에 충분한 폭을 우선 확보했습니다. 운동명 입력칸은 그만큼만 줄어듭니다. */
+.name-role-headers .role-header-label { flex-shrink: 0; width: 64px; text-align: right; }
 .name-role-fields { display: flex; align-items: center; gap: var(--sp-2); }
-.role-toggle-col { flex-shrink: 0; width: 42px; display: flex; justify-content: flex-start; }
+.role-toggle-col { flex-shrink: 0; width: 64px; display: flex; justify-content: flex-start; }
 .switch { width: 42px; height: 24px; border-radius: 14px; background: var(--color-border); position: relative; flex-shrink: 0; border: none; }
 .switch.small { width: 34px; height: 20px; border-radius: 12px; }
 .switch.small::after { width: 14px; height: 14px; top: 3px; left: 3px; }
@@ -304,18 +310,18 @@
 
 .volume-card { border: 1px solid var(--color-border); border-radius: 12px; padding: 12px 10px; margin-top: var(--sp-2); background: var(--color-surface); flex-shrink: 0; }
 .volume-card-headers { display: flex; margin-bottom: 6px; }
-/* v2.7.2: 헤더 폰트 크기 확대(10px -> 11px), 볼드 제거(font-weight normal 명시) */
-.volume-group-header { flex: 1; font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .03em; text-align: center; white-space: nowrap; }
-.volume-group-header:not(:last-child) { border-right: 1px solid var(--color-border); }
+/* v2.7.3: 구분선 삭제(3-2). 헤더 강조는 볼드가 아니라 색상 대비로(3-3) - color-text-muted(흐림) ->
+   color-text-primary(진하게)로 변경, font-weight는 그대로 normal 유지. */
+.volume-group-header { flex: 1; font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--color-text-primary); text-transform: uppercase; letter-spacing: .03em; text-align: center; white-space: nowrap; }
 .volume-card-grid { display: flex; align-items: stretch; }
-/* v2.7.2: justify-content space-between -> flex-start로 변경. 하체(3행)를 상체(4행)와 같은 y축 기준(위에서부터)으로
-   정렬하고, 남는 공간은 그룹 하단의 빈 공간으로 남깁니다(억지로 늘리거나 재정렬하지 않음). */
-.volume-group { flex: 1; display: flex; flex-direction: column; justify-content: flex-start; gap: 3px; min-width: 0; padding: 0 6px; }
+/* v2.7.3(3-4): v2.7.2에서 flex-start로 바꿨던 것을 v2.7.1 방식(space-between)으로 롤백합니다. */
+.volume-group { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 3px; min-width: 0; padding: 0 6px; }
 .volume-group:first-child { padding-left: 0; }
 .volume-group:last-child { padding-right: 0; }
 .volume-group:not(:last-child) { border-right: 1px solid var(--color-border); }
-/* v2.7.2: 부위명-숫자 사이 간격 축소(4px -> 2px), 2자리 숫자+"세트" 표시 기준 유지 */
-.volume-row { display: flex; justify-content: space-between; align-items: baseline; gap: 2px; white-space: nowrap; }
+/* v2.7.3(3-5): space-between은 짧은 라벨/값 사이에 큰 빈 공간을 남겨 "여백 과다"로 보였습니다. flex-start +
+   작은 고정 gap으로 바꿔 값이 라벨 바로 옆에 붙도록 했습니다(2자리 숫자+"세트" 표시 폭은 min-width로 유지). */
+.volume-row { display: flex; justify-content: flex-start; align-items: baseline; gap: 6px; white-space: nowrap; }
 /* v2.7.2: 내용 폰트 축소(12px -> 11px), 볼드 제거 */
 .volume-row-label { font-size: 11px; font-weight: 400; color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; }
 .volume-row-value { font-family: var(--font-mono); font-size: 11px; font-weight: 400; color: var(--color-primary); min-width: 2ch; text-align: right; flex-shrink: 0; }

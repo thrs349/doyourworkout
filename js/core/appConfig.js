@@ -33,4 +33,9 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // Weekly Volume Card 헤더 문구 변경("균형"->"밸런스") 및 폰트를 Space Mono로 앱 전체에 통일, 헤더/내용 폰트
 // 크기·볼드 조정, 하체 세부 항목 y축 정렬을 상체 기준에 맞춤. 데이터 구조·SCHEMA_VERSION·volume.js 계산
 // 로직·judge.js/gain.js 전부 무변경(UI 전용 패치).
-export const APP_VERSION = "v2.7.2";
+// v2.7.3: 폰트 최종 확정(A안 혼용) - Space Mono 전체 통일을 폐기하고, 사람이 읽는 텍스트(운동명/설명)는
+// Noto Sans KR, 숫자/데이터 표시는 Noto Sans Mono(한글 폴백 Noto Sans KR)로 분리. font-variant-numeric:
+// tabular-nums를 전역 적용해 숫자 자리맞춤 확보. v2.7.2의 다른 UI 수정(운동 수정 화면 같은 행 구조, 루틴
+// Editor ☰ 제거, 요일 카드 2행 구조, Weekly Volume Card 배열/여백)은 전부 그대로 유지. 데이터 구조·
+// SCHEMA_VERSION·volume.js 계산 로직·judge.js/gain.js 전부 무변경(폰트 전용 패치).
+export const APP_VERSION = "v2.7.3";
