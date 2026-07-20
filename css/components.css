@@ -162,11 +162,14 @@
 }
 .drag-handle { color: var(--color-text-muted); font-size: 16px; letter-spacing: 2px; line-height: 1; cursor: grab; padding: 4px; }
 .order-badge { font-family: var(--font-mono); font-size: 10.5px; color: var(--color-primary); background: var(--color-primary-soft); width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-/* v2.7.0 UI 개선: ☰/순서/역할 아이콘 3개를 좁은 간격으로 묶어(좌측 정렬) 종목명 표시 공간을 최대한 확보합니다. */
-.drag-row-icons { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+/* v2.7.2 UI 개선: 2px -> 6px로 늘려 순서 번호↔역할 아이콘 간격 부족 피드백을 반영. 종목명(.name)이 이제
+   이 컨테이너 안에 함께 있어(order-badge↔role-badge와 role-badge↔name이 같은 gap 값을 공유) 두 간격이
+   서로 동일해집니다. flex:1 + min-width:0으로 컨테이너 자체가 남는 폭을 가져가고, 그 안에서 name이
+   다시 flex:1로 대부분의 폭을 차지합니다(전체 좌측 정렬 유지). */
+.drag-row-icons { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
 /* v2.7.0 UI 개선: 역할 배지의 Highlight Box(배경/테두리)를 제거하고 이모지 글리프만 남깁니다. */
 .role-badge { font-size: 14px; line-height: 1; min-width: 18px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.drag-row .name { flex: 1; font-size: 13.5px; font-weight: 600; }
+.drag-row .name { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .drag-row.inactive { opacity: .55; }
 .drag-row.inactive .name { text-decoration: line-through; color: var(--color-text-muted); font-weight: 500; }
 .drag-row .remove-btn { color: var(--color-x); font-size: 13px; background: none; border: none; padding: 4px; }
@@ -209,6 +212,15 @@
   padding: 12px; font-size: 14px; color: var(--color-text-primary); font-family: var(--font-body);
 }
 .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; }
+/* v2.7.2 UI 개선: 운동명 입력칸과 메인/보조 역할 토글을 같은 행에 배치(세로 공간 절약). 역할 칸은 switch
+   자체 폭(42px)만 고정으로 차지해 여백을 최소화하고, 남는 폭은 전부 운동명 입력칸(flex:1)에 배분합니다.
+   헤더 줄도 동일한 폭 비율(운동명 flex:1 / 역할 42px)로 나눠 두 헤더가 같은 y축에서 정렬됩니다. */
+.name-role-headers { display: flex; align-items: baseline; gap: var(--sp-2); }
+.name-role-headers .field-label { margin-bottom: 6px; }
+.name-role-headers .field-label:first-child { flex: 1; }
+.name-role-headers .role-header-label { flex-shrink: 0; width: 42px; text-align: right; }
+.name-role-fields { display: flex; align-items: center; gap: var(--sp-2); }
+.role-toggle-col { flex-shrink: 0; width: 42px; display: flex; justify-content: flex-start; }
 .switch { width: 42px; height: 24px; border-radius: 14px; background: var(--color-border); position: relative; flex-shrink: 0; border: none; }
 .switch.small { width: 34px; height: 20px; border-radius: 12px; }
 .switch.small::after { width: 14px; height: 14px; top: 3px; left: 3px; }
@@ -239,6 +251,10 @@
 
 /* 목록형 화면 (종목 목록, 요일 목록, 기록 목록) */
 .list-row { display: flex; align-items: center; justify-content: space-between; padding: 13px 14px; border: 1px solid var(--color-border); border-radius: 12px; margin-bottom: var(--sp-2); background: var(--color-surface); text-align: left; }
+/* v2.7.2 UI 개선: 요일 카드 3행 -> 2행. 운동명과 Highlight Box를 같은 줄에 배치(1행), 메타 텍스트는 별도 줄(2행).
+   폭이 부족하면 chip만 다음 줄로 자연스럽게 넘어가되(flex-wrap), 운동명 자체는 항상 온전히 보이도록 줄이지 않습니다. */
+.list-row-title-line { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; row-gap: 2px; }
+.list-row-title-line .ex-meta-chips { margin-top: 0; }
 .list-row .name { font-size: 14px; font-weight: 600; }
 .list-row .meta { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-muted); margin-top: 2px; }
 
@@ -286,18 +302,23 @@
    overflow-y:auto는 그대로라 종목이 많아 화면을 넘치면 내부 스크롤은 계속 동작합니다. */
 #routine-list-screen .table-area { flex: 0 1 auto; }
 
-.volume-card { border: 1px solid var(--color-border); border-radius: 12px; padding: 10px; margin-top: var(--sp-2); background: var(--color-surface); flex-shrink: 0; }
+.volume-card { border: 1px solid var(--color-border); border-radius: 12px; padding: 12px 10px; margin-top: var(--sp-2); background: var(--color-surface); flex-shrink: 0; }
 .volume-card-headers { display: flex; margin-bottom: 6px; }
-.volume-group-header { flex: 1; font-family: var(--font-mono); font-size: 10px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .03em; text-align: center; white-space: nowrap; }
+/* v2.7.2: 헤더 폰트 크기 확대(10px -> 11px), 볼드 제거(font-weight normal 명시) */
+.volume-group-header { flex: 1; font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .03em; text-align: center; white-space: nowrap; }
 .volume-group-header:not(:last-child) { border-right: 1px solid var(--color-border); }
 .volume-card-grid { display: flex; align-items: stretch; }
-.volume-group { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 3px; min-width: 0; padding: 0 6px; }
+/* v2.7.2: justify-content space-between -> flex-start로 변경. 하체(3행)를 상체(4행)와 같은 y축 기준(위에서부터)으로
+   정렬하고, 남는 공간은 그룹 하단의 빈 공간으로 남깁니다(억지로 늘리거나 재정렬하지 않음). */
+.volume-group { flex: 1; display: flex; flex-direction: column; justify-content: flex-start; gap: 3px; min-width: 0; padding: 0 6px; }
 .volume-group:first-child { padding-left: 0; }
 .volume-group:last-child { padding-right: 0; }
 .volume-group:not(:last-child) { border-right: 1px solid var(--color-border); }
-.volume-row { display: flex; justify-content: space-between; align-items: baseline; gap: 4px; white-space: nowrap; }
-.volume-row-label { font-size: 12px; color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; }
-.volume-row-value { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--color-primary); min-width: 2ch; text-align: right; flex-shrink: 0; }
+/* v2.7.2: 부위명-숫자 사이 간격 축소(4px -> 2px), 2자리 숫자+"세트" 표시 기준 유지 */
+.volume-row { display: flex; justify-content: space-between; align-items: baseline; gap: 2px; white-space: nowrap; }
+/* v2.7.2: 내용 폰트 축소(12px -> 11px), 볼드 제거 */
+.volume-row-label { font-size: 11px; font-weight: 400; color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; }
+.volume-row-value { font-family: var(--font-mono); font-size: 11px; font-weight: 400; color: var(--color-primary); min-width: 2ch; text-align: right; flex-shrink: 0; }
 
 .result-summary { display: flex; align-items: center; justify-content: space-between; padding: 12px 4px; border-top: 1px solid var(--color-border); }
 .result-summary:first-child { border-top: none; }

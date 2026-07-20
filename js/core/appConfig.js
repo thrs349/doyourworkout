@@ -27,4 +27,10 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // 요일 카드 좌측 정렬 버그 수정(button 기본 text-align:center 상속 문제), 메타 텍스트 형식 수정 및 Secondary
 // Tag Highlight Box 재활용, Weekly Volume Card 헤더/간격 재배열, 기록 탭 헤더 날짜·요일 간격 조정. 데이터
 // 구조·SCHEMA_VERSION·volume.js 계산 로직·judge.js/gain.js 전부 무변경(UI 전용 패치).
-export const APP_VERSION = "v2.7.1";
+// v2.7.2: v2.7.1 사용자 테스트 반영 UI 패치 - 종목 수정 화면 운동명/역할 토글을 한 행으로 재배치(코어는 역할
+// 부분만 숨김), 루틴 Editor 순서-역할-종목명 간격 균일화, 요일 카드 3행->2행(운동명+Highlight Box 같은 줄),
+// Highlight Box를 Primary 기준 최대 3개 그룹으로 재구성(volume.js는 무수정, state.js에서 후처리만 추가),
+// Weekly Volume Card 헤더 문구 변경("균형"->"밸런스") 및 폰트를 Space Mono로 앱 전체에 통일, 헤더/내용 폰트
+// 크기·볼드 조정, 하체 세부 항목 y축 정렬을 상체 기준에 맞춤. 데이터 구조·SCHEMA_VERSION·volume.js 계산
+// 로직·judge.js/gain.js 전부 무변경(UI 전용 패치).
+export const APP_VERSION = "v2.7.2";

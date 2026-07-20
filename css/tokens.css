@@ -12,9 +12,12 @@
   --radius: 12px;
   --radius-lg: 16px;
 
-  /* 글꼴: 문학적인 톤(감성) 기본 적용 */
-  --font-display: "Gowun Batang", serif;
-  --font-body: "Gowun Batang", serif;
+  /* 글꼴: v2.7.2 - Weekly Volume Card 헤더에 쓰던 Space Mono를 앱 시스템 전반에 예외 없이 적용합니다.
+     --font-display/--font-body를 --font-mono와 동일한 스택으로 맞춰, 기존 컴포넌트 CSS(각 셀렉터가 이미
+     var(--font-body)/var(--font-display)/var(--font-mono)를 쓰고 있음)를 건드리지 않고도 전체가 한 번에
+     Space Mono로 전환되도록 했습니다(이전의 "Gowun Batang" 세리프는 더 이상 어디에서도 쓰이지 않습니다). */
+  --font-display: "Space Mono", monospace;
+  --font-body: "Space Mono", monospace;
   --font-mono: "Space Mono", monospace;
 
   /* 색상 기본값 (Theme B) - theme.js가 부팅 시 즉시 덮어씀 */

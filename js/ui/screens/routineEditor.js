@@ -39,17 +39,20 @@ export function renderRoutineEditor(root, params) {
     const isActive = !ex || ex.active !== false;
     // v2.7.0: 종목이 삭제된 경우(ex===null)는 역할을 알 수 없으므로 배지를 표시하지 않습니다.
     const roleBadge = ex ? el("span", { class: "role-badge", title: "역할(읽기 전용)", text: ROLE_BADGE_TEXT[effectiveRole(ex)] }) : null;
-    // v2.7.0 UI 개선: ☰/순서/역할 아이콘을 별도 묶음(.drag-row-icons)으로 감싸 그 안에서만 간격을 좁히고,
-    // 종목명(.name)에는 기존 행 간격을 그대로 둬서 Galaxy S25 기준 종목명이 최대한 길게 보이도록 합니다.
+    // v2.7.2 UI 개선: 순서 번호↔역할 아이콘 간격이 너무 좁다는 피드백에 따라, 종목명(.name)까지 이 묶음
+    // 안으로 옮겨 order-badge↔role-badge, role-badge↔name 간격이 서로 "동일한" 값(.drag-row-icons의 gap)이
+    // 되도록 했습니다(기존엔 전자가 2px, 후자는 .drag-row의 큰 gap이라 서로 달랐습니다). name은 flex:1로
+    // 남는 폭을 계속 가져가므로 종목명 표시 공간은 거의 그대로 유지됩니다(우측 버튼과의 간격만 .drag-row의
+    // 기존 gap을 그대로 사용). 전체 좌측 정렬은 유지됩니다.
     const iconCluster = el("span", { class: "drag-row-icons" }, [
       el("span", { class: "drag-handle", text: "≡" }),
       el("span", { class: "order-badge", text: String(index + 1).padStart(2, "0") }),
       roleBadge,
+      // v2.7.0 UI 개선: "(비활성)" 텍스트를 없애고, .drag-row.inactive의 opacity/취소선 스타일만으로 표현합니다.
+      el("span", { class: "name", text: exerciseName(exId) }),
     ]);
     const row = el("div", { class: `drag-row${isActive ? "" : " inactive"}`, "data-id": exId }, [
       iconCluster,
-      // v2.7.0 UI 개선: "(비활성)" 텍스트를 없애고, .drag-row.inactive의 opacity/취소선 스타일만으로 표현합니다.
-      el("span", { class: "name", text: exerciseName(exId) }),
       // v2.1.2(5): 종목 관리 화면과 동일한 순서로 큐 노트 버튼 추가. 기존 openCueNoteEditor()를 그대로 재사용합니다.
       // v2.3.0: 종목 수정(✎) 버튼은 제거했습니다(종목 관리 화면에서는 계속 가능). 종목명/큐노트/활성 스위치/삭제는 그대로 유지합니다.
       ex ? el("button", { class: "icon-chip", text: "💡", onclick: () => openCueNoteEditor(exId) }) : null,
