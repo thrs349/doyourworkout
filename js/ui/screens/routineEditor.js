@@ -39,11 +39,17 @@ export function renderRoutineEditor(root, params) {
     const isActive = !ex || ex.active !== false;
     // v2.7.0: 종목이 삭제된 경우(ex===null)는 역할을 알 수 없으므로 배지를 표시하지 않습니다.
     const roleBadge = ex ? el("span", { class: "role-badge", title: "역할(읽기 전용)", text: ROLE_BADGE_TEXT[effectiveRole(ex)] }) : null;
-    const row = el("div", { class: `drag-row${isActive ? "" : " inactive"}`, "data-id": exId }, [
+    // v2.7.0 UI 개선: ☰/순서/역할 아이콘을 별도 묶음(.drag-row-icons)으로 감싸 그 안에서만 간격을 좁히고,
+    // 종목명(.name)에는 기존 행 간격을 그대로 둬서 Galaxy S25 기준 종목명이 최대한 길게 보이도록 합니다.
+    const iconCluster = el("span", { class: "drag-row-icons" }, [
       el("span", { class: "drag-handle", text: "≡" }),
       el("span", { class: "order-badge", text: String(index + 1).padStart(2, "0") }),
       roleBadge,
-      el("span", { class: "name", text: exerciseName(exId) + (isActive ? "" : " (비활성)") }),
+    ]);
+    const row = el("div", { class: `drag-row${isActive ? "" : " inactive"}`, "data-id": exId }, [
+      iconCluster,
+      // v2.7.0 UI 개선: "(비활성)" 텍스트를 없애고, .drag-row.inactive의 opacity/취소선 스타일만으로 표현합니다.
+      el("span", { class: "name", text: exerciseName(exId) }),
       // v2.1.2(5): 종목 관리 화면과 동일한 순서로 큐 노트 버튼 추가. 기존 openCueNoteEditor()를 그대로 재사용합니다.
       // v2.3.0: 종목 수정(✎) 버튼은 제거했습니다(종목 관리 화면에서는 계속 가능). 종목명/큐노트/활성 스위치/삭제는 그대로 유지합니다.
       ex ? el("button", { class: "icon-chip", text: "💡", onclick: () => openCueNoteEditor(exId) }) : null,

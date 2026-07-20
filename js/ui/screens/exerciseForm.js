@@ -3,7 +3,7 @@
 import { el, mount } from "../dom.js";
 import { navigate } from "../router.js";
 import * as state from "../../core/state.js";
-import { BODY_PARTS, secondaryTagsFor, ROLES, ROLE_LABELS } from "../../core/models.js";
+import { BODY_PARTS, secondaryTagsFor, ROLES } from "../../core/models.js";
 import { showAlert } from "../components/modal.js";
 
 function stepper(initial, min, max) {
@@ -50,39 +50,32 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
 
   const isEdit = !!exerciseId;
 
-  // v2.7.0: 새 행을 추가하지 않고 "운동 이름" 입력창과 같은 행에 역할 토글을 배치하기 위해 flex:1로 폭을 나눠 씁니다.
   const nameInput = el("input", {
     class: "text-input",
     type: "text",
     placeholder: "예: 레그프레스",
     value: name,
-    style: { flex: "1", minWidth: "0" },
     oninput: (e) => (name = e.target.value),
   });
+  const nameGroup = el("div", { class: "field-group" }, [el("div", { class: "field-label", text: "운동명" }), nameInput]);
 
-  const roleOpts = {
-    main: el("div", { class: "role-opt", text: ROLE_LABELS.main, onclick: () => selectRole(ROLES.MAIN) }),
-    assist: el("div", { class: "role-opt", text: ROLE_LABELS.assist, onclick: () => selectRole(ROLES.ASSIST) }),
-  };
-  const roleToggle = el("div", { class: "role-toggle" }, [roleOpts.main, roleOpts.assist]);
-  function refreshRoleUI() {
-    roleOpts.main.classList.toggle("selected", role === ROLES.MAIN);
-    roleOpts.assist.classList.toggle("selected", role === ROLES.ASSIST);
-    // 코어를 선택하면 역할 토글은 숨김(항상 자동으로 코어 취급되므로 사용자가 고를 필요가 없음).
-    roleToggle.style.display = primaryBodyPart === "코어" ? "none" : "flex";
-  }
-  function selectRole(r) {
-    role = r;
-    refreshRoleUI();
-  }
-
-  const nameRoleRow = el("div", { class: "field-group" }, [
-    el("div", { class: "name-role-labels" }, [
-      el("div", { class: "field-label", text: "운동 이름" }),
-      el("div", { class: "field-label", text: "역할" }),
-    ]),
-    el("div", { class: "name-role-row" }, [nameInput, roleToggle]),
+  // v2.7.0 UI 개선: 별도 [메인][보조] 버튼을 새로 만들지 않고, 기존 활성/비활성 토글(.switch/.toggle-row)
+  // 스타일을 그대로 재활용합니다. off=메인(기본값) / on=보조로 표현하며, 다른 toggle-row 필드(편측성/워밍업)와
+  // 동일한 행 구조라 좌측 라벨·토글 시작 위치가 자동으로 y축 정렬됩니다.
+  const roleSwitch = el("button", {
+    class: `switch${role === ROLES.ASSIST ? " on" : ""}`,
+    onclick: () => {
+      role = role === ROLES.ASSIST ? ROLES.MAIN : ROLES.ASSIST;
+      roleSwitch.classList.toggle("on", role === ROLES.ASSIST);
+    },
+  });
+  const roleGroup = el("div", { class: "field-group" }, [
+    el("div", { class: "toggle-row" }, [el("span", { text: "메인/보조" }), roleSwitch]),
   ]);
+  function refreshRoleUI() {
+    // 코어(primaryBodyPart==="코어")는 항상 자동으로 코어 취급되므로, 역할 토글 행 자체(라벨+스위치)를 숨깁니다.
+    roleGroup.style.display = primaryBodyPart === "코어" ? "none" : "block";
+  }
 
   // ---- 증량 방식 4분기 토글 ----
   const methodOpts = {
@@ -242,7 +235,8 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
       el("div", { class: "title", text: title }),
       el("span", { style: { opacity: 0 } }, "·"),
     ]),
-    nameRoleRow,
+    nameGroup,
+    roleGroup,
     el("div", { class: "field-group" }, [
       el("div", { class: "field-label", text: "증량 방식" }),
       el("div", { class: "type-toggle" }, [methodOpts.machine, methodOpts.freeweight, methodOpts.high_rep, methodOpts.bodyweight]),

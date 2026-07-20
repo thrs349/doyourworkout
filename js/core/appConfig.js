@@ -22,4 +22,9 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // 하나의 정식 릴리즈로 묶어 "v2.6" 라벨로 배포합니다. 기능/데이터 구조 변경은 없으며 버전 표기만 정리합니다.
 // v2.7.0: Exercise Role System(종목 자체의 메인/보조 역할 저장) + Weekly Routine Volume Card(설정된 루틴 기준
 // 예상 주간 볼륨 표시) 추가. SCHEMA_VERSION 15->16(role 필드). judge.js/gain.js(판정/증량/상태전이)는 무변경.
-export const APP_VERSION = "v2.7.0";
+// v2.7.1: v2.7.0 사용자 테스트 반영 UI 패치 - 역할 토글을 기존 활성/비활성 switch 스타일로 교체, 루틴
+// Editor 역할 아이콘 Highlight Box 제거 및 간격 축소, 비활성 종목 "(비활성)" 텍스트 제거(opacity만 사용),
+// 요일 카드 좌측 정렬 버그 수정(button 기본 text-align:center 상속 문제), 메타 텍스트 형식 수정 및 Secondary
+// Tag Highlight Box 재활용, Weekly Volume Card 헤더/간격 재배열, 기록 탭 헤더 날짜·요일 간격 조정. 데이터
+// 구조·SCHEMA_VERSION·volume.js 계산 로직·judge.js/gain.js 전부 무변경(UI 전용 패치).
+export const APP_VERSION = "v2.7.1";
