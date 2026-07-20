@@ -189,6 +189,13 @@ export function migrate(data) {
     merged.exercises = (merged.exercises || []).map((ex) => ({ primaryBodyPart: null, secondaryTags: [], ...ex }));
   }
 
+  // v15 -> v16: 운동 역할 시스템(role)이 추가됨. 볼륨 계산(volume.js) 전용 필드이며 judge.js/gain.js
+  // 판정·증량 계산과는 무관합니다. 기존 종목은 모두 "main"(가중치 1.0)으로 채워, migration 직후에도
+  // 별도 재지정 없이 볼륨 계산이 바로 정상 동작하도록 합니다(신규 종목 기본값과 동일).
+  if (fromVersion < 16) {
+    merged.exercises = (merged.exercises || []).map((ex) => ({ role: "main", ...ex }));
+  }
+
   merged.schemaVersion = SCHEMA_VERSION;
   return merged;
 }

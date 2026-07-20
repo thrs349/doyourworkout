@@ -162,6 +162,9 @@
 }
 .drag-handle { color: var(--color-text-muted); font-size: 16px; letter-spacing: 2px; line-height: 1; cursor: grab; padding: 4px; }
 .order-badge { font-family: var(--font-mono); font-size: 10.5px; color: var(--color-primary); background: var(--color-primary-soft); width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+/* v2.7.0: 루틴 Editor의 읽기 전용 역할 배지(🅼/🅢/🅒). order-badge와 같은 자리에 배치하되, 이모지 스타일
+   글리프가 기기별로 폭이 달라질 수 있어 고정 width 대신 min-width + 여유 패딩으로 잘리지 않게 합니다. */
+.role-badge { font-size: 14px; line-height: 1; min-width: 20px; height: 20px; padding: 0 2px; border-radius: 6px; background: var(--color-surface-alt); border: 1px solid var(--color-border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .drag-row .name { flex: 1; font-size: 13.5px; font-weight: 600; }
 .drag-row.inactive { opacity: .55; }
 .drag-row.inactive .name { text-decoration: line-through; color: var(--color-text-muted); font-weight: 500; }
@@ -215,6 +218,20 @@
 .type-toggle { display: flex; gap: 6px; flex-wrap: wrap; }
 .type-opt { flex: 1; min-width: 60px; text-align: center; padding: 9px 2px; border-radius: 9px; border: 1px solid var(--color-border); font-size: 12px; font-family: var(--font-body); color: var(--color-text-secondary); background: var(--color-surface); }
 .type-opt.selected { border-color: var(--color-primary); background: var(--color-primary-soft); color: var(--color-primary); font-weight: 700; }
+
+/* v2.7.0: 운동 이름 입력창과 같은 행에 배치하는 역할(메인/보조) 토글. 새 행을 만들지 않기 위해
+   .field-label 두 개(운동 이름/역할)를 한 줄에 나란히 두고, 그 아래 입력창+토글도 한 줄에 나란히 둡니다.
+   역할 라벨/토글의 폭(72px)을 고정해 위아래 두 줄의 좌우 경계가 서로 맞도록 합니다. */
+.name-role-labels { display: flex; gap: 8px; }
+.name-role-labels .field-label:last-child { width: 72px; flex-shrink: 0; text-align: center; }
+.name-role-row { display: flex; gap: 8px; align-items: stretch; }
+.role-toggle { display: flex; gap: 4px; width: 72px; flex-shrink: 0; }
+.role-opt {
+  flex: 1; display: flex; align-items: center; justify-content: center; text-align: center;
+  padding: 0 2px; border-radius: 9px; border: 1px solid var(--color-border); font-size: 11px;
+  font-family: var(--font-body); color: var(--color-text-secondary); background: var(--color-surface);
+}
+.role-opt.selected { border-color: var(--color-primary); background: var(--color-primary-soft); color: var(--color-primary); font-weight: 700; }
 .stepper { display: flex; align-items: center; justify-content: space-between; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; padding: 8px 14px; }
 .stepper .sval { font-family: var(--font-mono); font-weight: 700; font-size: 16px; }
 .step-btn { width: 30px; height: 30px; border-radius: 8px; background: var(--color-primary-soft); color: var(--color-primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; border: none; }
@@ -270,6 +287,22 @@
 .ex-chip-tag { letter-spacing: 0; }
 
 .list-row .arrow { color: var(--color-text-muted); }
+
+/* v2.7.0: Weekly Routine Volume Card(루틴 설정 화면 하단). 확정 기준대로 상체(3) : 하체(3) : 코어(1)를
+   flex-grow 비율로 한 행에 나란히 배치합니다. 폭이 좁아지면 폰트/간격이 줄어들며 대응하도록 값을 작게 잡았고,
+   컬럼 자체를 세로로 재배치하지는 않습니다(확정안 유지, 실기기 확인 후 필요 시에만 조정 예정). */
+.volume-card { border: 1px solid var(--color-border); border-radius: 12px; padding: 12px 10px; margin-top: var(--sp-2); background: var(--color-surface); flex-shrink: 0; }
+.volume-card-title { font-family: var(--font-mono); font-size: 10px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; padding: 0 4px; }
+.volume-card-grid { display: flex; align-items: stretch; gap: 6px; }
+.volume-section { flex: 3; display: flex; gap: 4px; min-width: 0; }
+.volume-core-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; border-left: 1px solid var(--color-border); padding-left: 6px; }
+.volume-part-head { flex-shrink: 0; display: flex; flex-direction: column; gap: 2px; padding-top: 1px; }
+.volume-part-label { font-size: 11px; font-weight: 700; color: var(--color-text-primary); white-space: nowrap; }
+.volume-part-total { font-family: var(--font-mono); font-size: 9px; color: var(--color-primary); font-weight: 700; white-space: nowrap; }
+.volume-tag-list { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.volume-tag-row { display: flex; justify-content: space-between; align-items: baseline; gap: 3px; }
+.volume-tag-name { font-size: 10px; color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.volume-tag-value { font-family: var(--font-mono); font-size: 9px; color: var(--color-text-muted); white-space: nowrap; flex-shrink: 0; }
 
 .result-summary { display: flex; align-items: center; justify-content: space-between; padding: 12px 4px; border-top: 1px solid var(--color-border); }
 .result-summary:first-child { border-top: none; }

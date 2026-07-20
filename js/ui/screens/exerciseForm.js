@@ -3,7 +3,7 @@
 import { el, mount } from "../dom.js";
 import { navigate } from "../router.js";
 import * as state from "../../core/state.js";
-import { BODY_PARTS, secondaryTagsFor } from "../../core/models.js";
+import { BODY_PARTS, secondaryTagsFor, ROLES, ROLE_LABELS } from "../../core/models.js";
 import { showAlert } from "../components/modal.js";
 
 function stepper(initial, min, max) {
@@ -43,16 +43,46 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
   // v2.6.0: 운동 태그 시스템(탐색 전용). judge.js/gain.js와 무관한 필드입니다.
   let primaryBodyPart = defInitial.primaryBodyPart ?? null;
   let secondaryTags = new Set(defInitial.secondaryTags || []);
+  // v2.7.0: 운동 역할(볼륨 계산 전용, 루틴별이 아닌 종목 자체의 기본 역할). judge.js/gain.js와 무관합니다.
+  // 코어(primaryBodyPart==="코어")는 이 토글 자체를 숨기고 항상 "main"으로 저장합니다
+  // (effectiveRole()이 표시/계산 시 primaryBodyPart를 보고 "코어"로 자동 파생하므로, 저장값 자체는 의미가 없습니다).
+  let role = defInitial.role || ROLES.MAIN;
 
   const isEdit = !!exerciseId;
 
+  // v2.7.0: 새 행을 추가하지 않고 "운동 이름" 입력창과 같은 행에 역할 토글을 배치하기 위해 flex:1로 폭을 나눠 씁니다.
   const nameInput = el("input", {
     class: "text-input",
     type: "text",
     placeholder: "예: 레그프레스",
     value: name,
+    style: { flex: "1", minWidth: "0" },
     oninput: (e) => (name = e.target.value),
   });
+
+  const roleOpts = {
+    main: el("div", { class: "role-opt", text: ROLE_LABELS.main, onclick: () => selectRole(ROLES.MAIN) }),
+    assist: el("div", { class: "role-opt", text: ROLE_LABELS.assist, onclick: () => selectRole(ROLES.ASSIST) }),
+  };
+  const roleToggle = el("div", { class: "role-toggle" }, [roleOpts.main, roleOpts.assist]);
+  function refreshRoleUI() {
+    roleOpts.main.classList.toggle("selected", role === ROLES.MAIN);
+    roleOpts.assist.classList.toggle("selected", role === ROLES.ASSIST);
+    // 코어를 선택하면 역할 토글은 숨김(항상 자동으로 코어 취급되므로 사용자가 고를 필요가 없음).
+    roleToggle.style.display = primaryBodyPart === "코어" ? "none" : "flex";
+  }
+  function selectRole(r) {
+    role = r;
+    refreshRoleUI();
+  }
+
+  const nameRoleRow = el("div", { class: "field-group" }, [
+    el("div", { class: "name-role-labels" }, [
+      el("div", { class: "field-label", text: "운동 이름" }),
+      el("div", { class: "field-label", text: "역할" }),
+    ]),
+    el("div", { class: "name-role-row" }, [nameInput, roleToggle]),
+  ]);
 
   // ---- 증량 방식 4분기 토글 ----
   const methodOpts = {
@@ -110,6 +140,7 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
     secondaryTags = new Set();
     rebuildSecondaryTagButtons();
     refreshBodyPartUI();
+    refreshRoleUI(); // v2.7.0: 코어 선택/해제에 따라 역할 토글 표시 여부가 바뀝니다.
   }
   function toggleSecondaryTag(tag) {
     if (secondaryTags.has(tag)) secondaryTags.delete(tag);
@@ -211,7 +242,7 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
       el("div", { class: "title", text: title }),
       el("span", { style: { opacity: 0 } }, "·"),
     ]),
-    el("div", { class: "field-group" }, [el("div", { class: "field-label", text: "운동명" }), nameInput]),
+    nameRoleRow,
     el("div", { class: "field-group" }, [
       el("div", { class: "field-label", text: "증량 방식" }),
       el("div", { class: "type-toggle" }, [methodOpts.machine, methodOpts.freeweight, methodOpts.high_rep, methodOpts.bodyweight]),
@@ -282,6 +313,9 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
             // v2.6.3: 부위 변경 시 secondaryTags를 항상 초기화하고 버튼도 해당 부위 목록으로만 다시 그리므로,
             // 이 시점의 secondaryTags Set은 이미 현재 primaryBodyPart에 유효한 태그만 담고 있습니다.
             secondaryTags: Array.from(secondaryTags),
+            // v2.7.0: 코어는 역할 토글이 숨겨져 사용자가 고를 수 없으므로 항상 기본값("main")으로 저장합니다.
+            // 실제 "코어" 취급은 저장값이 아니라 models.js의 effectiveRole()이 primaryBodyPart를 보고 자동 판단합니다.
+            role: primaryBodyPart === "코어" ? ROLES.MAIN : role,
           };
 
           if (isEdit) {
@@ -326,6 +360,7 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
   refreshMethodUI();
   rebuildSecondaryTagButtons(); // v2.6.3: 초기(수정 진입 시 기존 부위) 태그 버튼을 먼저 그린 뒤 선택 상태를 반영
   refreshBodyPartUI();
+  refreshRoleUI(); // v2.7.0: 초기 진입 시(수정 화면 등) 코어 여부에 따라 역할 토글 표시 상태를 맞춥니다.
   mount(root, screen);
 }
 
@@ -350,6 +385,7 @@ export function renderExerciseForm(root, params) {
       isUnilateral: false,
       primaryBodyPart: null,
       secondaryTags: [],
+      role: ROLES.MAIN,
     },
     stateInitial: null,
     onBack: () => history.back(),

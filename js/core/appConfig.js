@@ -18,4 +18,8 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // v2.6.6: 실기기 테스트 반영 - 팝업 내용 텍스트 크기 조정(줄바꿈 방지), 홈 화면 날짜 월/일 앞자리 0 제거,
 // 운동 기록 탭 헤더를 "M.D(요일) · 루틴명" 형식으로 변경, 종목 폼/검색 화면 spacing 축소. 표시/레이아웃
 // 전용 수정으로 데이터 구조·판정/증량 로직 변경 없음.
-export const APP_VERSION = "v2.6.6";
+// v2.6 정식 릴리즈: v2.6.0~v2.6.6까지의 누적 개발/실기기 테스트 반영분(Exercise Tag System 및 UI 마감)을
+// 하나의 정식 릴리즈로 묶어 "v2.6" 라벨로 배포합니다. 기능/데이터 구조 변경은 없으며 버전 표기만 정리합니다.
+// v2.7.0: Exercise Role System(종목 자체의 메인/보조 역할 저장) + Weekly Routine Volume Card(설정된 루틴 기준
+// 예상 주간 볼륨 표시) 추가. SCHEMA_VERSION 15->16(role 필드). judge.js/gain.js(판정/증량/상태전이)는 무변경.
+export const APP_VERSION = "v2.7.0";

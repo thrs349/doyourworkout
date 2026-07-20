@@ -3,9 +3,13 @@
 import { el, mount } from "../dom.js";
 import { navigate } from "../router.js";
 import * as state from "../../core/state.js";
-import { DAYS } from "../../core/models.js";
+import { DAYS, effectiveRole } from "../../core/models.js";
 import { openCueNoteEditor } from "../components/cueNoteEditor.js";
 import { openModal } from "../components/modal.js";
+
+// v2.7.0: 루틴 Editor 전용 읽기 전용 역할 표시. 확정된 디자인(🅼 Main/🅢 Assist/🅒 Core)을 그대로 사용합니다.
+// OS별 이모지 렌더링 차이 가능성은 검토 단계에서 안내드렸으나, 이번 버전은 이 확정안을 유지하기로 결정되었습니다.
+const ROLE_BADGE_TEXT = { main: "🅼", assist: "🅢", core: "🅒" };
 
 export function renderRoutineEditor(root, params) {
   const dayKey = params.day;
@@ -33,9 +37,12 @@ export function renderRoutineEditor(root, params) {
   function renderRow(exId, index) {
     const ex = state.getExercise(exId);
     const isActive = !ex || ex.active !== false;
+    // v2.7.0: 종목이 삭제된 경우(ex===null)는 역할을 알 수 없으므로 배지를 표시하지 않습니다.
+    const roleBadge = ex ? el("span", { class: "role-badge", title: "역할(읽기 전용)", text: ROLE_BADGE_TEXT[effectiveRole(ex)] }) : null;
     const row = el("div", { class: `drag-row${isActive ? "" : " inactive"}`, "data-id": exId }, [
       el("span", { class: "drag-handle", text: "≡" }),
       el("span", { class: "order-badge", text: String(index + 1).padStart(2, "0") }),
+      roleBadge,
       el("span", { class: "name", text: exerciseName(exId) + (isActive ? "" : " (비활성)") }),
       // v2.1.2(5): 종목 관리 화면과 동일한 순서로 큐 노트 버튼 추가. 기존 openCueNoteEditor()를 그대로 재사용합니다.
       // v2.3.0: 종목 수정(✎) 버튼은 제거했습니다(종목 관리 화면에서는 계속 가능). 종목명/큐노트/활성 스위치/삭제는 그대로 유지합니다.
