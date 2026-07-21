@@ -87,12 +87,6 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
     roleToggleCol.style.display = hideRole ? "none" : "flex";
   }
 
-  function refreshRoleUI() {
-    // 코어(primaryBodyPart==="코어")는 항상 자동으로 코어 취급되므로, 역할 그룹 전체(헤더+토글)를 숨깁니다.
-    // 운동명은 이제 완전히 별개의 field-group이라 이 토글과 무관하게 항상 그대로 표시됩니다.
-    roleGroup.style.display = primaryBodyPart === "코어" ? "none" : "block";
-  }
-
   // ---- 증량 방식 4분기 토글 ----
   const methodOpts = {
     machine: el("div", { class: "type-opt", text: "머신", onclick: () => selectMethod("machine") }),

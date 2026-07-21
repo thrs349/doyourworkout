@@ -44,4 +44,13 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // 하체 세부(우) 2분할 3열 Grid(부위/세트/상태)로 재구성, 구분선 제거. 카드 세로 위치(마지막 루틴 카드와
 // 하단 탭 사이 정중앙) 유지 재확인. 데이터 구조·SCHEMA_VERSION·volume.js/state.js/models.js/storage.js·
 // judge.js/gain.js 전부 무변경(UI 전용 패치).
-export const APP_VERSION = "v2.7.5";
+// v2.7.5 긴급 패치: exerciseForm.js에 동일 이름 함수(refreshRoleUI)가 중복 선언되어 있어 구버전이 신규
+// 버전을 덮어쓰며 존재하지 않는 변수(roleGroup)를 참조 -> 운동 추가/수정 화면 진입 시 ReferenceError로
+// 화면이 열리지 않던 버그 수정(구버전 중복 함수 삭제, 다른 파일 무수정).
+// v2.7.6: v2.7.5 사용자 테스트 반영 UI 수정 - Weekly Volume Card가 하단 탭에 너무 붙어 보이는 문제의 실제
+// 원인(마지막 루틴 카드의 margin-bottom이 위쪽 스페이서 간격에만 추가로 더해져 위/아래가 비대칭이었음)을
+// 찾아 그 마지막 카드의 margin-bottom을 제거해 구조적으로 대칭을 맞춤(고정 margin 추가 아님). Weekly
+// Volume Card 내용 영역을 좌우 절반 3열 Grid에서, 카드 전체 폭을 쓰는 가로 나열(상체 밸런스 라벨+가로나열,
+// 하체 밸런스 라벨+가로나열)로 재구성 - 헤더 구조(상/하체 밸런스 한 줄)는 요청대로 변경 없이 그대로 유지.
+// 데이터 구조·SCHEMA_VERSION·volume.js/state.js/models.js/storage.js·judge.js/gain.js 전부 무변경.
+export const APP_VERSION = "v2.7.6";

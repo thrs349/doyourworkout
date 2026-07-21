@@ -38,25 +38,9 @@ function calcVolumeStatus(label, value) {
   return target.isCore ? "🟡" : "🔴";
 }
 
-// v2.7.0 UI 개선(v2.7.2 헤더 문구만 변경): Weekly Routine Volume Card 컬럼그룹 3개(상/하체 밸런스 |
-// 상체 밸런스 | 하체 밸런스)를 좌→우로 배치합니다. rows: [{label, value, status}].
-// v2.7.4: 각 그룹을 CSS Grid(3열: 부위명/세트/상태)로 재구성했습니다. 기존엔 행마다 "라벨 뒤에 gap만큼
-// 붙여서" 숫자를 배치해, 라벨 글자 수가 다르면 숫자 시작 x좌표도 행마다 달라져 "숫자가 흔들려 보이는"
-// 원인이었습니다(폰트가 아니라 레이아웃 문제). Grid는 그룹 안의 모든 라벨이 1열, 모든 세트가 2열, 모든
-// 상태 아이콘이 3열에 정렬되어 행과 무관하게 각 열의 시작 x좌표가 고정됩니다.
-function buildVolumeGroup(rows, extraClass) {
-  const children = [];
-  rows.forEach(({ label, value, status }) => {
-    children.push(el("span", { class: "volume-row-label", text: label }));
-    children.push(el("span", { class: "volume-row-value", text: `${value}세트` }));
-    children.push(el("span", { class: "volume-row-status", text: status }));
-  });
-  return el("div", { class: `volume-group${extraClass ? ` ${extraClass}` : ""}` }, children);
-}
-
-// v2.7.5: 상/하체 밸런스(상체·하체·코어 Primary total)를 더 이상 별도 좌측 컬럼으로 두지 않고, 기존
-// 헤더 행 자리를 재활용해 "라벨 + 3개 값(세트+상태)"을 한 줄로 표시합니다. 볼드는 쓰지 않고 라벨만 색상으로
-// 강조합니다(font-weight는 그대로 normal 유지).
+// v2.7.5: 상/하체 밸런스(상체·하체·코어 Primary total)를 별도 좌측 컬럼이 아니라 헤더 행에 "라벨 + 3개 값
+// (세트+상태)"으로 한 줄 표시합니다. 볼드는 쓰지 않고 라벨만 색상으로 강조합니다(font-weight 그대로 normal).
+// v2.7.6: 이 헤더 구조는 "절대 변경 금지"로 요청되어 그대로 유지합니다(내용 영역만 변경).
 function buildBalanceHeader(rows) {
   const children = [el("span", { class: "volume-balance-label", text: "상/하체 밸런스" })];
   rows.forEach(({ label, value, status }) => {
@@ -71,16 +55,36 @@ function buildBalanceHeader(rows) {
   return el("div", { class: "volume-card-headers" }, children);
 }
 
+// v2.7.6: 상체/하체 세부 부위를 카드 좌우 절반으로 나누지 않고, 카드 전체 폭을 쓰는 "가로 나열" 한 줄로
+// 표시합니다("가슴 12세트 🟢  등 15세트 🟢  ..."). 카드가 좌우로 넓은데 절반씩만 쓰면 정보 밀도가 떨어진다는
+// 피드백을 반영했습니다. 라벨(상체 밸런스/하체 밸런스)은 헤더의 "상/하체 밸런스"와 동일한 클래스
+// (.volume-balance-label)를 재사용해 폰트/색상/볼드 여부가 완전히 동일합니다.
+function buildDetailSection(label, rows) {
+  return el("div", { class: "volume-hgroup" }, [
+    el("div", { class: "volume-balance-label", text: label }),
+    el(
+      "div",
+      { class: "volume-hrow" },
+      rows.map(({ label: rowLabel, value, status }) =>
+        el("span", { class: "volume-balance-item" }, [
+          el("span", { class: "volume-balance-item-label", text: `${rowLabel} ` }),
+          el("span", { class: "volume-balance-item-value", text: `${value}세트 ` }),
+          el("span", { class: "volume-balance-item-status", text: status }),
+        ])
+      )
+    ),
+  ]);
+}
+
 function buildVolumeCard() {
   const volume = state.getWeeklyVolume();
-  // 상/하체 밸런스(상체·하체·코어 Primary total) - 이제 헤더 행에 표시(아래 buildBalanceHeader).
+  // 상/하체 밸런스(상체·하체·코어 Primary total) - 헤더 행에 표시(buildBalanceHeader, 변경 없음).
   const primaryRows = [
     { label: "상체", value: volume["상체"].total },
     { label: "하체", value: volume["하체"].total },
     { label: "코어", value: volume["코어"].total },
   ];
-  // 내용 영역: 좌(상체 세부, 4행) / 우(하체 세부, 3행) 절반 분할, 구분선 없음. 서로 억지로 맞추지 않고
-  // 위쪽부터 채우고 남는 공간은 아래 빈 공간으로 둡니다(.volume-group-tags 수정자).
+  // 내용 영역: 상체 세부(1행 라벨 + 1행 가로나열) / 하체 세부(1행 라벨 + 1행 가로나열).
   const upperRows = secondaryTagsFor("상체").map((tag) => ({ label: tag, value: volume["상체"].tags[tag] ?? 0 }));
   const lowerRows = secondaryTagsFor("하체").map((tag) => ({ label: tag, value: volume["하체"].tags[tag] ?? 0 }));
   [...primaryRows, ...upperRows, ...lowerRows].forEach((row) => {
@@ -89,10 +93,8 @@ function buildVolumeCard() {
 
   return el("div", { class: "volume-card" }, [
     buildBalanceHeader(primaryRows),
-    el("div", { class: "volume-card-grid" }, [
-      buildVolumeGroup(upperRows, "volume-group-tags"),
-      buildVolumeGroup(lowerRows, "volume-group-tags"),
-    ]),
+    buildDetailSection("상체 밸런스", upperRows),
+    buildDetailSection("하체 밸런스", lowerRows),
   ]);
 }
 

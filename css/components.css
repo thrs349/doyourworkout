@@ -306,6 +306,14 @@
    요일 카드 마지막 행과 볼륨 카드 사이 간격이, 요일 카드끼리의 간격과 동일해집니다(둘 다 var(--sp-2)).
    overflow-y:auto는 그대로라 종목이 많아 화면을 넘치면 내부 스크롤은 계속 동작합니다. */
 #routine-list-screen .table-area { flex: 0 1 auto; }
+/* v2.7.6: Weekly Volume Card가 "하단 탭에 너무 붙어 보인다"는 피드백의 실제 원인 - 마지막 요일 카드의
+   margin-bottom(var(--sp-2))이 table-area 내부 콘텐츠 높이에 그대로 포함되어, 위쪽 스페이서(spacer1)의
+   시각적 간격에 이 여백이 더해지는 반면 아래쪽 스페이서(spacer2)에는 그런 추가 여백이 없었습니다. 두
+   스페이서 자체는 항상 동일한 높이였지만(수학적으로는 정중앙), 이 여분의 margin 때문에 실제 화면에서는
+   "카드 위쪽 간격 > 카드 아래쪽 간격"으로 보였던 것입니다. 마지막 카드의 margin-bottom만 0으로 없애면
+   두 스페이서만으로 대칭이 맞춰집니다(고정 margin을 추가한 게 아니라 비대칭의 원인을 제거하는 방식).
+   -> 결과적으로 카드가 기존보다 위쪽으로 이동합니다(요청하신 방향과 일치). */
+#routine-list-screen .table-area .list-row:last-child { margin-bottom: 0; }
 
 .volume-card { border: 1px solid var(--color-border); border-radius: 12px; padding: 12px 10px; background: var(--color-surface); flex-shrink: 0; }
 /* v2.7.5: 마지막 루틴 카드(A)와 하단 탭바(B) 사이 남는 공간을 이 두 스페이서가 항상 동일한 높이로 나눠
@@ -314,34 +322,21 @@
 .volume-card-spacer { flex: 1 1 auto; min-height: var(--sp-2); }
 .volume-card-headers { display: flex; align-items: baseline; flex-wrap: wrap; column-gap: 10px; row-gap: 2px; margin-bottom: 8px; }
 /* v2.7.5: "상/하체 밸런스"를 헤더 행 자체로 옮기고, 그 옆에 상체/하체/코어 값을 인라인으로 표시합니다.
-   볼드는 쓰지 않고(font-weight 그대로 normal), 라벨만 색상(--color-primary)으로 강조합니다. */
+   볼드는 쓰지 않고(font-weight 그대로 normal), 라벨만 색상(--color-primary)으로 강조합니다.
+   v2.7.6: 이 스타일들은 내용 영역의 상체/하체 세부 가로 나열(.volume-hrow)에도 그대로 재사용됩니다
+   (동일한 폰트/색상/볼드 여부 보장 - "기존 헤더와 동일한 폰트" 요청). */
 .volume-balance-label { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--color-primary); text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
 .volume-balance-item { font-family: var(--font-mono); font-weight: 400; font-size: 11px; white-space: nowrap; }
 .volume-balance-item-label { color: var(--color-text-secondary); }
 .volume-balance-item-value { color: var(--color-text-primary); }
 .volume-balance-item-status { line-height: 1; }
-.volume-card-grid { display: flex; align-items: stretch; gap: 10px; }
-/* v2.7.4: 그룹을 flex 행 나열 대신 3열(부위명/세트/상태) CSS Grid로 재구성했습니다. 그룹 안의 모든 라벨이
-   1열, 모든 세트가 2열, 모든 상태 아이콘이 3열에 정렬되어 행마다 라벨 길이가 달라도 각 열의 시작 x좌표가
-   항상 고정됩니다("숫자 정렬 불안정" 문제의 실제 원인은 폰트가 아니라 이 부분의 레이아웃 구조였습니다).
-   v2.7.5: 내용 영역은 이제 상체 세부(좌) / 하체 세부(우) 절반 분할 2개뿐이며(상/하체 밸런스는 헤더로 이동),
-   서로 억지로 맞추지 않고 위쪽부터 채우고 남는 공간은 아래 빈 공간으로 둡니다(.volume-group-tags). */
-.volume-group {
-  flex: 1; display: grid; grid-template-columns: auto auto auto; column-gap: 5px; row-gap: 3px;
-  justify-content: start; justify-items: start; align-content: space-between; min-width: 0; padding: 0 8px;
-}
-.volume-group.volume-group-tags { align-content: start; }
-.volume-group:first-child { padding-left: 0; }
-.volume-group:last-child { padding-right: 0; }
-/* v2.7.5: "구분선 전부 제거" - border-right를 없애고, 좌우 여백(gap, 위에서 선언한 .volume-card-grid의
-   10px)만으로 두 영역을 자연스럽게 분리합니다. */
-/* v2.7.2: 내용 폰트 축소(12px -> 11px), 볼드 제거 */
-.volume-row-label { font-size: 11px; font-weight: 400; color: var(--color-text-secondary); white-space: nowrap; }
-/* v2.7.4: 우측 정렬 -> 좌측 정렬("모든 열 좌측 정렬" 요청). 열 폭 자체가 Grid로 고정되어 min-width는
-   더 이상 필요하지 않습니다(그룹 안에서 가장 긴 숫자 기준으로 열 폭이 자동으로 맞춰짐). */
-.volume-row-value { font-family: var(--font-mono); font-size: 11px; font-weight: 400; color: var(--color-primary); text-align: left; white-space: nowrap; }
-/* v2.7.4: MEV/MAV 상태 아이콘(3열). 이모지 자체 크기를 쓰되 줄 높이만 라벨/숫자와 맞춥니다. */
-.volume-row-status { font-size: 11px; line-height: 1; white-space: nowrap; }
+/* v2.7.6: 상체/하체 세부 부위를 카드 좌우 절반이 아니라 카드 전체 폭을 쓰는 "가로 나열" 한 줄로 표시합니다
+   (기존 3열 Grid는 카드가 넓은데 절반씩만 써서 정보 밀도가 낮다는 피드백으로 폐기). 좁은 화면에서 다 안
+   들어가면 flex-wrap으로 자연스럽게 다음 줄로 넘어가며(잘림/줄임표 없음), 항목 사이 간격은 라벨 텍스트
+   길이와 무관하게 항상 일정합니다. */
+.volume-hgroup { margin-top: 8px; }
+.volume-hgroup .volume-balance-label { display: block; margin-bottom: 4px; }
+.volume-hrow { display: flex; flex-wrap: wrap; column-gap: 14px; row-gap: 4px; }
 
 .result-summary { display: flex; align-items: center; justify-content: space-between; padding: 12px 4px; border-top: 1px solid var(--color-border); }
 .result-summary:first-child { border-top: none; }
