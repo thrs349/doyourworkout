@@ -53,4 +53,12 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // Volume Card 내용 영역을 좌우 절반 3열 Grid에서, 카드 전체 폭을 쓰는 가로 나열(상체 밸런스 라벨+가로나열,
 // 하체 밸런스 라벨+가로나열)로 재구성 - 헤더 구조(상/하체 밸런스 한 줄)는 요청대로 변경 없이 그대로 유지.
 // 데이터 구조·SCHEMA_VERSION·volume.js/state.js/models.js/storage.js·judge.js/gain.js 전부 무변경.
-export const APP_VERSION = "v2.7.6";
+// v2.7.7: v2.7.6 사용자 테스트 반영 UI 수정 - (1) #app의 min-height를 100vh(모바일 브라우저 주소창 상태에
+// 따라 새로고침 시마다 값이 달라져 Weekly Volume Card 위치가 흔들리던 원인)에서 100dvh로 교체(100vh는
+// 구형 브라우저 폴백으로 유지), (2) 운동 수정 화면의 역할 헤더(.role-header-label) text-align을
+// right->left로 변경해 역할 토글(.role-toggle-col, 왼쪽 정렬)과 시작점을 맞춤, (3) 편측성/워밍업 토글
+// 라벨(.toggle-row span)에 font-size:14px 명시(기존엔 지정이 없어 브라우저 기본값 16px로 저장 버튼(15px)
+// 보다 커 보였음), (4) Weekly Volume Card 내용 영역을 가로나열 flex에서 4행x8열 CSS Grid로 재구성 -
+// 상태 아이콘이 라벨 길이와 무관하게 항상 같은 열(4/8열)에 정렬됨. 헤더(상/하체 밸런스)는 무변경.
+// 데이터 구조·SCHEMA_VERSION·volume.js/state.js/models.js/storage.js·judge.js/gain.js 전부 무변경.
+export const APP_VERSION = "v2.7.7";

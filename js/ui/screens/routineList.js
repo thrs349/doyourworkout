@@ -55,24 +55,31 @@ function buildBalanceHeader(rows) {
   return el("div", { class: "volume-card-headers" }, children);
 }
 
-// v2.7.6: 상체/하체 세부 부위를 카드 좌우 절반으로 나누지 않고, 카드 전체 폭을 쓰는 "가로 나열" 한 줄로
-// 표시합니다("가슴 12세트 🟢  등 15세트 🟢  ..."). 카드가 좌우로 넓은데 절반씩만 쓰면 정보 밀도가 떨어진다는
-// 피드백을 반영했습니다. 라벨(상체 밸런스/하체 밸런스)은 헤더의 "상/하체 밸런스"와 동일한 클래스
-// (.volume-balance-label)를 재사용해 폰트/색상/볼드 여부가 완전히 동일합니다.
-function buildDetailSection(label, rows) {
-  return el("div", { class: "volume-hgroup" }, [
-    el("div", { class: "volume-balance-label", text: label }),
-    el(
-      "div",
-      { class: "volume-hrow" },
-      rows.map(({ label: rowLabel, value, status }) =>
-        el("span", { class: "volume-balance-item" }, [
-          el("span", { class: "volume-balance-item-label", text: `${rowLabel} ` }),
-          el("span", { class: "volume-balance-item-value", text: `${value}세트 ` }),
-          el("span", { class: "volume-balance-item-status", text: status }),
-        ])
-      )
-    ),
+// v2.7.7: 상체/하체 세부 부위를 "가로 나열"(flex, 라벨 길이만큼 다음 항목이 밀림) 대신 4행 Grid로 재구성합니다.
+// 각 항목(라벨/세트/상태)을 grid-column/grid-row로 명시적으로 배치해, 상태 아이콘이 항상 같은 열(4번째)에
+// 정렬되도록 합니다(행마다 라벨 길이가 달라도 흔들리지 않음 - 기존 flex 방식의 한계를 구조적으로 해결).
+// rows가 4개보다 적으면(하체는 3개) 남는 행은 그냥 비워둡니다(자동으로 공란 처리, 별도 코드 불필요).
+function buildDetailColumns(label, rows, colOffset) {
+  const cells = [
+    el("div", {
+      class: "volume-grid-title",
+      style: { gridColumn: String(colOffset), gridRow: "1" },
+      text: label,
+    }),
+  ];
+  rows.forEach(({ label: rowLabel, value, status }, i) => {
+    const gridRow = String(i + 1);
+    cells.push(el("span", { class: "volume-grid-label", style: { gridColumn: String(colOffset + 1), gridRow }, text: rowLabel }));
+    cells.push(el("span", { class: "volume-grid-value", style: { gridColumn: String(colOffset + 2), gridRow }, text: `${value}세트` }));
+    cells.push(el("span", { class: "volume-grid-status", style: { gridColumn: String(colOffset + 3), gridRow }, text: status }));
+  });
+  return cells;
+}
+
+function buildDetailGrid(upperLabel, upperRows, lowerLabel, lowerRows) {
+  return el("div", { class: "volume-detail-grid" }, [
+    ...buildDetailColumns(upperLabel, upperRows, 1), // 열1~4: 상체 밸런스
+    ...buildDetailColumns(lowerLabel, lowerRows, 5), // 열5~8: 하체 밸런스
   ]);
 }
 
@@ -93,8 +100,7 @@ function buildVolumeCard() {
 
   return el("div", { class: "volume-card" }, [
     buildBalanceHeader(primaryRows),
-    buildDetailSection("상체 밸런스", upperRows),
-    buildDetailSection("하체 밸런스", lowerRows),
+    buildDetailGrid("상체 밸런스", upperRows, "하체 밸런스", lowerRows),
   ]);
 }
 

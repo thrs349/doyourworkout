@@ -216,6 +216,7 @@
   padding: 12px; font-size: 14px; color: var(--color-text-primary); font-family: var(--font-body);
 }
 .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; }
+.toggle-row span { font-size: 14px; color: var(--color-text-primary); }
 /* v2.7.5: 운동명 입력칸과 메인/보조 역할 토글을 같은 행에 배치(행 수를 늘리지 않기 위함). 역할 칸은
    switch가 줄바꿈 없이 들어가기에 충분한 고정 폭(64px - v2.7.3에서 확인된 값)만 차지하고, 남는 폭은 전부
    운동명 입력칸(flex:1)에 배분합니다. 헤더 줄도 동일한 폭 비율로 나눠 두 헤더가 각각 입력칸/토글 시작점과
@@ -223,7 +224,7 @@
 .name-role-headers { display: flex; align-items: baseline; gap: var(--sp-2); }
 .name-role-headers .field-label { margin-bottom: 6px; }
 .name-role-headers .field-label:first-child { flex: 1; }
-.name-role-headers .role-header-label { flex-shrink: 0; width: 64px; text-align: right; }
+.name-role-headers .role-header-label { flex-shrink: 0; width: 64px; text-align: left; }
 .name-role-fields { display: flex; align-items: center; gap: var(--sp-2); }
 .role-toggle-col { flex-shrink: 0; width: 64px; display: flex; justify-content: flex-start; }
 .switch { width: 42px; height: 24px; border-radius: 14px; background: var(--color-border); position: relative; flex-shrink: 0; border: none; }
@@ -323,20 +324,28 @@
 .volume-card-headers { display: flex; align-items: baseline; flex-wrap: wrap; column-gap: 10px; row-gap: 2px; margin-bottom: 8px; }
 /* v2.7.5: "상/하체 밸런스"를 헤더 행 자체로 옮기고, 그 옆에 상체/하체/코어 값을 인라인으로 표시합니다.
    볼드는 쓰지 않고(font-weight 그대로 normal), 라벨만 색상(--color-primary)으로 강조합니다.
-   v2.7.6: 이 스타일들은 내용 영역의 상체/하체 세부 가로 나열(.volume-hrow)에도 그대로 재사용됩니다
-   (동일한 폰트/색상/볼드 여부 보장 - "기존 헤더와 동일한 폰트" 요청). */
+   v2.7.6~v2.7.7: 이 스타일들은 내용 영역의 상체/하체 세부 표시(v2.7.7부터는 .volume-detail-grid)에도
+   그대로 재사용되는 부분이 있습니다(동일한 폰트/색상/볼드 여부 보장 - "기존 헤더와 동일한 폰트" 요청). */
 .volume-balance-label { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--color-primary); text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
 .volume-balance-item { font-family: var(--font-mono); font-weight: 400; font-size: 11px; white-space: nowrap; }
 .volume-balance-item-label { color: var(--color-text-secondary); }
 .volume-balance-item-value { color: var(--color-text-primary); }
 .volume-balance-item-status { line-height: 1; }
-/* v2.7.6: 상체/하체 세부 부위를 카드 좌우 절반이 아니라 카드 전체 폭을 쓰는 "가로 나열" 한 줄로 표시합니다
-   (기존 3열 Grid는 카드가 넓은데 절반씩만 써서 정보 밀도가 낮다는 피드백으로 폐기). 좁은 화면에서 다 안
-   들어가면 flex-wrap으로 자연스럽게 다음 줄로 넘어가며(잘림/줄임표 없음), 항목 사이 간격은 라벨 텍스트
-   길이와 무관하게 항상 일정합니다. */
-.volume-hgroup { margin-top: 8px; }
-.volume-hgroup .volume-balance-label { display: block; margin-bottom: 4px; }
-.volume-hrow { display: flex; flex-wrap: wrap; column-gap: 14px; row-gap: 4px; }
+/* v2.7.7: 상체/하체 세부를 4행 x 8열 Grid로 재구성합니다(가로 나열 flex 방식 폐기). 열 폭을 전부 auto로
+   두지 않고, 세트/상태 열은 고정 또는 최소 폭을 줘서 Galaxy S25 같은 좁은 화면에서도 흔들리지 않게 했습니다:
+   1,5열(제목)과 2,6열(부위명)은 내용 크기에 맞추고(auto), 3,7열(세트)은 최소 3.2em(2자리 숫자+"세트" 기준),
+   4,8열(상태 아이콘)은 18px 고정 - 이 두 전용 열 덕분에 아이콘이 행마다 라벨 길이가 달라도 항상 같은
+   x좌표에 정렬됩니다. justify-content:center로 그리드 전체를 카드 안에서 가운데 배치합니다. */
+.volume-detail-grid {
+  display: grid;
+  grid-template-columns: auto auto minmax(3.2em, auto) 18px auto auto minmax(3.2em, auto) 18px;
+  column-gap: 8px; row-gap: 4px; justify-content: center; justify-items: start;
+  margin-top: 10px;
+}
+.volume-grid-title { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--color-primary); text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
+.volume-grid-label { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--color-text-secondary); white-space: nowrap; }
+.volume-grid-value { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--color-text-primary); white-space: nowrap; }
+.volume-grid-status { font-size: 11px; line-height: 1; white-space: nowrap; }
 
 .result-summary { display: flex; align-items: center; justify-content: space-between; padding: 12px 4px; border-top: 1px solid var(--color-border); }
 .result-summary:first-child { border-top: none; }
