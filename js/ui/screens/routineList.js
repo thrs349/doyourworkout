@@ -54,31 +54,42 @@ function buildVolumeGroup(rows, extraClass) {
   return el("div", { class: `volume-group${extraClass ? ` ${extraClass}` : ""}` }, children);
 }
 
+// v2.7.5: 상/하체 밸런스(상체·하체·코어 Primary total)를 더 이상 별도 좌측 컬럼으로 두지 않고, 기존
+// 헤더 행 자리를 재활용해 "라벨 + 3개 값(세트+상태)"을 한 줄로 표시합니다. 볼드는 쓰지 않고 라벨만 색상으로
+// 강조합니다(font-weight는 그대로 normal 유지).
+function buildBalanceHeader(rows) {
+  const children = [el("span", { class: "volume-balance-label", text: "상/하체 밸런스" })];
+  rows.forEach(({ label, value, status }) => {
+    children.push(
+      el("span", { class: "volume-balance-item" }, [
+        el("span", { class: "volume-balance-item-label", text: `${label} ` }),
+        el("span", { class: "volume-balance-item-value", text: `${value}세트 ` }),
+        el("span", { class: "volume-balance-item-status", text: status }),
+      ])
+    );
+  });
+  return el("div", { class: "volume-card-headers" }, children);
+}
+
 function buildVolumeCard() {
   const volume = state.getWeeklyVolume();
-  // 1~2열: 상/하체 밸런스(상체·하체·코어 Primary total, 3행) - 정렬 방식 "유지"(space-between, 기본 .volume-group)
+  // 상/하체 밸런스(상체·하체·코어 Primary total) - 이제 헤더 행에 표시(아래 buildBalanceHeader).
   const primaryRows = [
     { label: "상체", value: volume["상체"].total },
     { label: "하체", value: volume["하체"].total },
     { label: "코어", value: volume["코어"].total },
   ];
-  // 3~4열: 상체 밸런스(4행) / 5~6열: 하체 밸런스(3행) - 서로 억지로 맞추지 않고 위쪽부터 채우고 남는 공간은
-  // 빈 공간으로 둡니다(.volume-group-tags 수정자로 정렬 방식만 다르게).
+  // 내용 영역: 좌(상체 세부, 4행) / 우(하체 세부, 3행) 절반 분할, 구분선 없음. 서로 억지로 맞추지 않고
+  // 위쪽부터 채우고 남는 공간은 아래 빈 공간으로 둡니다(.volume-group-tags 수정자).
   const upperRows = secondaryTagsFor("상체").map((tag) => ({ label: tag, value: volume["상체"].tags[tag] ?? 0 }));
   const lowerRows = secondaryTagsFor("하체").map((tag) => ({ label: tag, value: volume["하체"].tags[tag] ?? 0 }));
-  // 세 그룹 전부 동일한 방식으로 상태 컬럼을 채웁니다(라벨 문자열이 VOLUME_TARGETS 키와 그대로 일치).
   [...primaryRows, ...upperRows, ...lowerRows].forEach((row) => {
     row.status = calcVolumeStatus(row.label, row.value);
   });
 
   return el("div", { class: "volume-card" }, [
-    el("div", { class: "volume-card-headers" }, [
-      el("span", { class: "volume-group-header", text: "상/하체 밸런스" }),
-      el("span", { class: "volume-group-header", text: "상체 밸런스" }),
-      el("span", { class: "volume-group-header", text: "하체 밸런스" }),
-    ]),
+    buildBalanceHeader(primaryRows),
     el("div", { class: "volume-card-grid" }, [
-      buildVolumeGroup(primaryRows),
       buildVolumeGroup(upperRows, "volume-group-tags"),
       buildVolumeGroup(lowerRows, "volume-group-tags"),
     ]),

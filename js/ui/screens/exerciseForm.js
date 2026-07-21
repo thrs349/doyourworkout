@@ -55,29 +55,37 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
     type: "text",
     placeholder: "예: 레그프레스",
     value: name,
+    style: { flex: "1", minWidth: "0" },
     oninput: (e) => (name = e.target.value),
   });
-  const nameGroup = el("div", { class: "field-group" }, [el("div", { class: "field-label", text: "운동명" }), nameInput]);
 
-  // v2.7.4 UI 롤백: v2.7.2에서 도입했던 "운동명 입력칸+역할 토글 같은 행" 배치를 되돌립니다. 이름 입력칸 폭을
-  // 줄여야 하는 부작용(긴 운동명 표시를 위해 역할 토글까지 좌측으로 몰리며 우측에 빈 공간 발생)이 있었고,
-  // 증량방식/운동부위처럼 "헤더 위 + 전체 폭 컨트롤 아래"라는 화면의 다른 필드 구조와도 통일성이 떨어졌습니다.
-  // 이제 역할 토글은 별도 field-group으로 분리하고, field-label(헤더)도 다른 헤더들과 동일한 클래스/정렬을
-  // 그대로 사용해 y축 시작 위치가 자연히 맞습니다. 토글 자체는 기존 활성/비활성 switch를 재사용하되, 다른
-  // toggle-row(편측성/워밍업)와 동일하게 좌우 여유 패딩이 있는 박스 안에 배치합니다.
-  const roleStateLabel = el("span", { text: role === ROLES.ASSIST ? "보조" : "메인" });
+  // v2.7.5 UI 롤백: v2.7.4에서 분리했던 "운동명" / "메인·보조"를 다시 한 행으로 합칩니다(행 수를 늘리지
+  // 않기 위한 요청). 이름 입력칸은 flex:1로 남는 폭을 가져가고, 역할 칸은 고정 폭(64px - v2.7.3에서 확인된
+  // "메인/보조" 헤더 줄바꿈 방지에 필요한 최소 폭)만 차지합니다. 헤더 줄도 같은 폭 비율로 나눠 운동명 헤더는
+  // 입력칸 시작점과, 메인/보조 헤더는 역할 토글 시작점과 각각 y축이 자연히 맞습니다.
   const roleSwitch = el("button", {
     class: `switch${role === ROLES.ASSIST ? " on" : ""}`,
     onclick: () => {
       role = role === ROLES.ASSIST ? ROLES.MAIN : ROLES.ASSIST;
       roleSwitch.classList.toggle("on", role === ROLES.ASSIST);
-      roleStateLabel.textContent = role === ROLES.ASSIST ? "보조" : "메인";
     },
   });
-  const roleGroup = el("div", { class: "field-group" }, [
-    el("div", { class: "field-label", text: "메인/보조" }),
-    el("div", { class: "toggle-row" }, [roleStateLabel, roleSwitch]),
+  const nameRoleHeaderRow = el("div", { class: "name-role-headers" }, [
+    el("div", { class: "field-label", text: "운동명" }),
+    el("div", { class: "field-label role-header-label", text: "메인/보조" }),
   ]);
+  const roleToggleCol = el("div", { class: "role-toggle-col" }, [roleSwitch]);
+  const nameRoleFieldRow = el("div", { class: "name-role-fields" }, [nameInput, roleToggleCol]);
+  const nameRoleGroup = el("div", { class: "field-group" }, [nameRoleHeaderRow, nameRoleFieldRow]);
+  const roleHeaderLabel = nameRoleHeaderRow.children[1];
+
+  function refreshRoleUI() {
+    // 코어(primaryBodyPart==="코어")는 항상 자동으로 코어 취급되므로, 역할 관련 요소(헤더+토글)만 숨기고
+    // 운동명 헤더/입력칸은 그대로 유지합니다. 역할 칸이 사라지면 flex:1인 이름 입력칸이 남는 폭을 채웁니다.
+    const hideRole = primaryBodyPart === "코어";
+    roleHeaderLabel.style.display = hideRole ? "none" : "block";
+    roleToggleCol.style.display = hideRole ? "none" : "flex";
+  }
 
   function refreshRoleUI() {
     // 코어(primaryBodyPart==="코어")는 항상 자동으로 코어 취급되므로, 역할 그룹 전체(헤더+토글)를 숨깁니다.
@@ -243,8 +251,7 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
       el("div", { class: "title", text: title }),
       el("span", { style: { opacity: 0 } }, "·"),
     ]),
-    nameGroup,
-    roleGroup,
+    nameRoleGroup,
     el("div", { class: "field-group" }, [
       el("div", { class: "field-label", text: "증량 방식" }),
       el("div", { class: "type-toggle" }, [methodOpts.machine, methodOpts.freeweight, methodOpts.high_rep, methodOpts.bodyweight]),

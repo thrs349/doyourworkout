@@ -164,7 +164,9 @@
   margin-bottom: var(--sp-2);
 }
 /* v2.7.4 롤백: ☰ 핸들 글리프를 다시 추가합니다(v2.7.3 이전 스타일 복원). */
-.drag-handle { color: var(--color-text-muted); font-size: 16px; letter-spacing: 2px; line-height: 1; cursor: grab; padding: 4px; }
+/* v2.7.5: 글리프 크기(font-size:16px)는 그대로 두고, 좌우 여백(padding)만 4px -> 2px로 줄여 종목명~큐노트
+   버튼 사이 공간을 확보합니다(세로 padding은 터치 영역 확보를 위해 유지). */
+.drag-handle { color: var(--color-text-muted); font-size: 16px; letter-spacing: 2px; line-height: 1; cursor: grab; padding: 4px 2px; }
 .order-badge { font-family: var(--font-mono); font-size: 10.5px; color: var(--color-primary); background: var(--color-primary-soft); width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 /* v2.7.4 롤백: ☰/순서/역할 아이콘 + 종목명을 계속 같은 클러스터 안에 두어, "순서↔역할" 간격과 "역할↔종목명"
    간격이 서로 동일하게 유지됩니다(요청하신 "두 간격이 동일하거나 유사"). */
@@ -214,6 +216,16 @@
   padding: 12px; font-size: 14px; color: var(--color-text-primary); font-family: var(--font-body);
 }
 .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; }
+/* v2.7.5: 운동명 입력칸과 메인/보조 역할 토글을 같은 행에 배치(행 수를 늘리지 않기 위함). 역할 칸은
+   switch가 줄바꿈 없이 들어가기에 충분한 고정 폭(64px - v2.7.3에서 확인된 값)만 차지하고, 남는 폭은 전부
+   운동명 입력칸(flex:1)에 배분합니다. 헤더 줄도 동일한 폭 비율로 나눠 두 헤더가 각각 입력칸/토글 시작점과
+   y축이 맞습니다. */
+.name-role-headers { display: flex; align-items: baseline; gap: var(--sp-2); }
+.name-role-headers .field-label { margin-bottom: 6px; }
+.name-role-headers .field-label:first-child { flex: 1; }
+.name-role-headers .role-header-label { flex-shrink: 0; width: 64px; text-align: right; }
+.name-role-fields { display: flex; align-items: center; gap: var(--sp-2); }
+.role-toggle-col { flex-shrink: 0; width: 64px; display: flex; justify-content: flex-start; }
 .switch { width: 42px; height: 24px; border-radius: 14px; background: var(--color-border); position: relative; flex-shrink: 0; border: none; }
 .switch.small { width: 34px; height: 20px; border-radius: 12px; }
 .switch.small::after { width: 14px; height: 14px; top: 3px; left: 3px; }
@@ -300,24 +312,29 @@
    가져, Weekly Volume Card의 세로 중심이 (A+B)/2에 오도록 합니다. min-height는 남는 공간이 거의 없을 때도
    카드가 위아래 요소에 완전히 붙어버리지 않게 하는 최소 여백이며, 양쪽이 같은 값이라 대칭은 깨지지 않습니다. */
 .volume-card-spacer { flex: 1 1 auto; min-height: var(--sp-2); }
-.volume-card-headers { display: flex; margin-bottom: 6px; }
-/* v2.7.3: 구분선 삭제(3-2). 헤더 강조는 볼드가 아니라 색상 대비로(3-3) - color-text-muted(흐림) ->
-   color-text-primary(진하게)로 변경, font-weight는 그대로 normal 유지. */
-.volume-group-header { flex: 1; font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--color-text-primary); text-transform: uppercase; letter-spacing: .03em; text-align: center; white-space: nowrap; }
-.volume-card-grid { display: flex; align-items: stretch; }
+.volume-card-headers { display: flex; align-items: baseline; flex-wrap: wrap; column-gap: 10px; row-gap: 2px; margin-bottom: 8px; }
+/* v2.7.5: "상/하체 밸런스"를 헤더 행 자체로 옮기고, 그 옆에 상체/하체/코어 값을 인라인으로 표시합니다.
+   볼드는 쓰지 않고(font-weight 그대로 normal), 라벨만 색상(--color-primary)으로 강조합니다. */
+.volume-balance-label { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--color-primary); text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
+.volume-balance-item { font-family: var(--font-mono); font-weight: 400; font-size: 11px; white-space: nowrap; }
+.volume-balance-item-label { color: var(--color-text-secondary); }
+.volume-balance-item-value { color: var(--color-text-primary); }
+.volume-balance-item-status { line-height: 1; }
+.volume-card-grid { display: flex; align-items: stretch; gap: 10px; }
 /* v2.7.4: 그룹을 flex 행 나열 대신 3열(부위명/세트/상태) CSS Grid로 재구성했습니다. 그룹 안의 모든 라벨이
    1열, 모든 세트가 2열, 모든 상태 아이콘이 3열에 정렬되어 행마다 라벨 길이가 달라도 각 열의 시작 x좌표가
    항상 고정됩니다("숫자 정렬 불안정" 문제의 실제 원인은 폰트가 아니라 이 부분의 레이아웃 구조였습니다).
-   1~2열(상/하체 밸런스)은 기존처럼 space-between으로 세로 공간에 고르게 분산(유지 요청), 3~6열(상체/하체
-   밸런스 세부)은 .volume-group-tags 수정자로 위쪽부터 채우고 남는 공간은 아래 빈 공간으로 남깁니다. */
+   v2.7.5: 내용 영역은 이제 상체 세부(좌) / 하체 세부(우) 절반 분할 2개뿐이며(상/하체 밸런스는 헤더로 이동),
+   서로 억지로 맞추지 않고 위쪽부터 채우고 남는 공간은 아래 빈 공간으로 둡니다(.volume-group-tags). */
 .volume-group {
   flex: 1; display: grid; grid-template-columns: auto auto auto; column-gap: 5px; row-gap: 3px;
-  justify-content: start; justify-items: start; align-content: space-between; min-width: 0; padding: 0 6px;
+  justify-content: start; justify-items: start; align-content: space-between; min-width: 0; padding: 0 8px;
 }
 .volume-group.volume-group-tags { align-content: start; }
 .volume-group:first-child { padding-left: 0; }
 .volume-group:last-child { padding-right: 0; }
-.volume-group:not(:last-child) { border-right: 1px solid var(--color-border); }
+/* v2.7.5: "구분선 전부 제거" - border-right를 없애고, 좌우 여백(gap, 위에서 선언한 .volume-card-grid의
+   10px)만으로 두 영역을 자연스럽게 분리합니다. */
 /* v2.7.2: 내용 폰트 축소(12px -> 11px), 볼드 제거 */
 .volume-row-label { font-size: 11px; font-weight: 400; color: var(--color-text-secondary); white-space: nowrap; }
 /* v2.7.4: 우측 정렬 -> 좌측 정렬("모든 열 좌측 정렬" 요청). 열 폭 자체가 Grid로 고정되어 min-width는
