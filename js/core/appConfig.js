@@ -38,4 +38,12 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // tabular-nums를 전역 적용해 숫자 자리맞춤 확보. v2.7.2의 다른 UI 수정(운동 수정 화면 같은 행 구조, 루틴
 // Editor ☰ 제거, 요일 카드 2행 구조, Weekly Volume Card 배열/여백)은 전부 그대로 유지. 데이터 구조·
 // SCHEMA_VERSION·volume.js 계산 로직·judge.js/gain.js 전부 무변경(폰트 전용 패치).
-export const APP_VERSION = "v2.7.3";
+// v2.7.4: v2.7.3 사용자 테스트 반영 UI 롤백/수정 + Weekly Volume Dashboard 상태(MEV/MAV) 표시 추가.
+// 운동 수정 화면의 운동명+역할 토글 같은 행 배치를 되돌려 운동명/역할을 다시 별도 field-group으로 분리
+// (헤더가 증량방식/운동부위와 동일한 구조로 정렬됨). 루틴 Editor에 ☰ 핸들 재도입(드래그 트리거도 다시 ☰),
+// 드래그 중 틸트(rotate)와 placeholder 점선 테두리 제거. Weekly Volume Card는 "마지막 루틴 카드 하단"과
+// "하단 탭바 상단" 사이 남는 공간의 정중앙에 오도록 flex 스페이서로 배치(고정 margin 아님). 각 그룹을
+// 부위/세트/상태 3열 CSS Grid로 재구성 - 상태는 고정된 MEV/MAV 임계값표로 routineList.js 내부에서만
+// 판정하며(새 helper 파일 없음), volume.js가 계산한 숫자를 읽기만 하고 되돌려 쓰지 않습니다. 데이터 구조·
+// SCHEMA_VERSION·volume.js/state.js/models.js/storage.js·judge.js/gain.js 전부 무변경(UI 전용 패치).
+export const APP_VERSION = "v2.7.4";

@@ -39,11 +39,11 @@ export function renderRoutineEditor(root, params) {
     const isActive = !ex || ex.active !== false;
     // v2.7.0: 종목이 삭제된 경우(ex===null)는 역할을 알 수 없으므로 배지를 표시하지 않습니다.
     const roleBadge = ex ? el("span", { class: "role-badge", title: "역할(읽기 전용)", text: ROLE_BADGE_TEXT[effectiveRole(ex)] }) : null;
-    // v2.7.3 UI 개선: ☰ 핸들 아이콘을 제거하고, 순서 번호(order-badge) 자체를 길게 눌러 드래그하는 방식으로
-    // 변경합니다. attachDrag()가 ".drag-handle" 클래스를 가진 요소에 pointerdown을 붙이므로, 별도 요소를
-    // 새로 만들지 않고 order-badge에 그 클래스를 함께 부여해 기존 드래그 로직을 그대로 재사용합니다.
+    // v2.7.4 UI 롤백: v2.7.3에서 제거했던 ☰ 핸들을 다시 추가합니다(기존 드래그 방식으로 롤백). order-badge는
+    // 다시 순수 표시용으로 되돌리고, ☰ 요소가 다시 ".drag-handle" 클래스를 가져가 attachDrag()의 대상이 됩니다.
     const iconCluster = el("span", { class: "drag-row-icons" }, [
-      el("span", { class: "order-badge drag-handle", text: String(index + 1).padStart(2, "0") }),
+      el("span", { class: "drag-handle", text: "≡" }),
+      el("span", { class: "order-badge", text: String(index + 1).padStart(2, "0") }),
       roleBadge,
       // v2.7.0 UI 개선: "(비활성)" 텍스트를 없애고, .drag-row.inactive의 opacity/취소선 스타일만으로 표현합니다.
       el("span", { class: "name", text: exerciseName(exId) }),
@@ -199,7 +199,7 @@ export function renderRoutineEditor(root, params) {
       titleEl,
       el("button", { class: "icon-btn", text: "✎", onclick: renameTitle }),
     ]),
-    el("div", { class: "helper-text", text: "순서 번호를 길게 눌러 드래그하면 순서가 바뀝니다." }),
+    el("div", { class: "helper-text", text: "≡ 핸들을 눌러 드래그하면 순서가 바뀝니다." }),
     renderList(),
     el("div", { class: "bottom-fixed" }, [
       el("button", { class: "btn btn-ghost", text: "+ 운동 추가", onclick: () => navigate(`#/exercise-picker/${dayKey}`) }),
