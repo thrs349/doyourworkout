@@ -61,4 +61,17 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // 보다 커 보였음), (4) Weekly Volume Card 내용 영역을 가로나열 flex에서 4행x8열 CSS Grid로 재구성 -
 // 상태 아이콘이 라벨 길이와 무관하게 항상 같은 열(4/8열)에 정렬됨. 헤더(상/하체 밸런스)는 무변경.
 // 데이터 구조·SCHEMA_VERSION·volume.js/state.js/models.js/storage.js·judge.js/gain.js 전부 무변경.
-export const APP_VERSION = "v2.7.7";
+// v2.7.8: v2.7.7 사용자 테스트 반영 - (1) Weekly Volume Card 위치를 "남는 공간 정중앙"(flex 스페이서)
+// 방식에서 고정 margin 방식으로 전환(100dvh 적용 후에도 새로고침 시 위치가 흔들리는 문제가 실기기에서
+// 재현되어, 뷰포트/폰트 로딩 타이밍에 의존하지 않는 안정적 방식으로 교체), (2) 운동 수정 화면 입력칸-역할
+// 토글 gap 8px->16px 확대(헤더 gap도 동일하게 맞춰 정렬 유지), (3) Weekly Volume Card 세트 열 폭 축소
+// 3.2em->2.4em, (4) MEV/MAV 기준값을 "Recomposition + Running Standard"로 재보정했으나 이후 롤백 요청에
+// 따라 v2.7.7까지 쓰던 기존 기준값으로 복원(calcVolumeStatus 구조는 두 시점 모두 무변경). 이어서 Weekly
+// Volume Dashboard 목적 자체를 변경(1단계, 그래프는 2단계에서 별도 진행) - "MEV/MAV로 부족/적정/과다
+// 판정"에서 "현재 루틴의 운동량과 부위별 자극 분포 확인"으로. 헤더(상/하체 밸런스 라벨·구조는 그대로)는
+// 가중치 없는 순수 세트 합산, Grid 제목은 "상체 자극"/"하체 자극"으로 헤더와 의미를 분리하고 내용은
+// 세트 수 + 기여도 비율(%, 태그별 독립 Math.round)로 표시(MEV/MAV 상태 아이콘 완전 제거). 세부 부위 태그
+// 선택이 "선택 순서 기반 주동근(①,×1.0)/보조근(②,×0.5, 최대 2개)" 방식으로 바뀜(exerciseForm.js) - 저장
+// 형태는 그대로 배열이라 SCHEMA_VERSION 변경 없음. 기존 메인/보조 운동 역할 토글은 완전히 별개로 유지.
+// 데이터 구조·volume.js/state.js/models.js/storage.js·judge.js/gain.js 전부 무변경.
+export const APP_VERSION = "v2.7.8";

@@ -42,7 +42,10 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
   let isUnilateral = defInitial.isUnilateral;
   // v2.6.0: 운동 태그 시스템(탐색 전용). judge.js/gain.js와 무관한 필드입니다.
   let primaryBodyPart = defInitial.primaryBodyPart ?? null;
-  let secondaryTags = new Set(defInitial.secondaryTags || []);
+  // v2.8.0: Set(무순서) -> Array(선택 순서 보존). 저장 형태 자체는 이미 배열이라 스키마 변경 없음.
+  // 기존 UI는 선택 개수 제한이 없었으므로, 혹시 4개 이상 저장된 예전 데이터가 있다면 앞의 3개만 사용합니다
+  // (배열 순서 = 저장 당시 선택 순서이므로 slice(0,3)이 곧 "①+② 최대 2개"를 그대로 보존합니다).
+  let secondaryTags = [...(defInitial.secondaryTags || [])].slice(0, 3);
   // v2.7.0: 운동 역할(볼륨 계산 전용, 루틴별이 아닌 종목 자체의 기본 역할). judge.js/gain.js와 무관합니다.
   // 코어(primaryBodyPart==="코어")는 이 토글 자체를 숨기고 항상 "main"으로 저장합니다
   // (effectiveRole()이 표시/계산 시 primaryBodyPart를 보고 "코어"로 자동 파생하므로, 저장값 자체는 의미가 없습니다).
@@ -119,6 +122,8 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
 
   // ---- v2.6.3: 보조 태그(선택, 복수 선택) - 선택된 운동 부위에 맞는 태그 목록으로 매번 다시 그립니다.
   // (상체: 가슴/등/어깨/팔, 하체: 대퇴사두/둔근/햄스트링, 코어: 없음 - secondaryTagsFor()가 빈 배열 반환) ----
+  // v2.8.0: 저장 값은 이미 일반 배열이라 스키마 변경 없이, "배열의 인덱스 순서 = 선택 순서"라는 규칙만
+  // UI에서 지킵니다. 0번째 = 주동근(①, 최대 1개), 1~2번째 = 보조근(②, 최대 2개), 총 최대 3개.
   let secondaryTagOpts = {};
   // v2.6.5: 실기기 테스트 반영 - "보조 태그" 텍스트 라벨을 제거합니다(버튼 기능/저장 구조는 그대로 유지).
   const secondaryTagButtons = el("div", { class: "type-toggle" });
@@ -135,19 +140,29 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
 
   function refreshBodyPartUI() {
     BODY_PARTS.forEach((part) => bodyPartOpts[part].classList.toggle("selected", part === primaryBodyPart));
-    Object.keys(secondaryTagOpts).forEach((tag) => secondaryTagOpts[tag].classList.toggle("selected", secondaryTags.has(tag)));
+    // v2.8.0: 선택 순서에 따라 배지(①=주동근/②=보조근)를 버튼 라벨에 붙입니다. 미선택 태그는 이름만 표시.
+    Object.keys(secondaryTagOpts).forEach((tag) => {
+      const idx = secondaryTags.indexOf(tag);
+      const selected = idx !== -1;
+      secondaryTagOpts[tag].classList.toggle("selected", selected);
+      secondaryTagOpts[tag].textContent = selected ? `${idx === 0 ? "①" : "②"} ${tag}` : tag;
+    });
   }
   function selectBodyPart(part) {
     primaryBodyPart = primaryBodyPart === part ? null : part;
     // 부위가 바뀌면(또는 선택 해제되면) 보조 태그 선택값을 초기화합니다(부위마다 태그 목록 자체가 다르므로).
-    secondaryTags = new Set();
+    secondaryTags = [];
     rebuildSecondaryTagButtons();
     refreshBodyPartUI();
     refreshRoleUI(); // v2.7.0: 코어 선택/해제에 따라 역할 토글 표시 여부가 바뀝니다.
   }
   function toggleSecondaryTag(tag) {
-    if (secondaryTags.has(tag)) secondaryTags.delete(tag);
-    else secondaryTags.add(tag);
+    const idx = secondaryTags.indexOf(tag);
+    if (idx !== -1) {
+      secondaryTags.splice(idx, 1); // 재선택 시 제거
+    } else if (secondaryTags.length < 3) {
+      secondaryTags.push(tag); // 선택 순서 그대로 뒤에 추가(0번째=주동근, 이후=보조근). 3개 초과 시 무시.
+    }
     refreshBodyPartUI();
   }
 
@@ -313,9 +328,10 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
             // v2.6.0: 운동 태그 시스템(탐색 전용). secondaryTags는 상체가 아니면 UI에서 이미 비워지지만,
             // 저장 시점에도 한 번 더 방어적으로 정리합니다.
             primaryBodyPart,
-            // v2.6.3: 부위 변경 시 secondaryTags를 항상 초기화하고 버튼도 해당 부위 목록으로만 다시 그리므로,
-            // 이 시점의 secondaryTags Set은 이미 현재 primaryBodyPart에 유효한 태그만 담고 있습니다.
-            secondaryTags: Array.from(secondaryTags),
+            // v2.8.0: 부위 변경 시 secondaryTags를 항상 초기화하고 버튼도 해당 부위 목록으로만 다시 그리므로,
+            // 이 시점의 secondaryTags 배열은 이미 현재 primaryBodyPart에 유효한 태그만, 선택 순서 그대로 담고
+            // 있습니다(0번째=주동근/①, 1~2번째=보조근/②). 이미 배열이라 별도 변환 없이 그대로 저장합니다.
+            secondaryTags,
             // v2.7.0: 코어는 역할 토글이 숨겨져 사용자가 고를 수 없으므로 항상 기본값("main")으로 저장합니다.
             // 실제 "코어" 취급은 저장값이 아니라 models.js의 effectiveRole()이 primaryBodyPart를 보고 자동 판단합니다.
             role: primaryBodyPart === "코어" ? ROLES.MAIN : role,

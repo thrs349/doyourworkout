@@ -11,54 +11,77 @@ function buildMetaText(summary) {
   return `${summary.count}개 운동(메인 ${summary.mainSets}세트, 보조 ${summary.assistSets}세트)`;
 }
 
-// v2.7.4: Weekly Effective Volume Target(MEV/MAV) 고정 기준표. 상태 판정은 volume.js가 이미 계산해 둔
-// 숫자(state.getWeeklyVolume() 결과)를 "읽기만" 해서 색상만 매기는 표시 전용 로직입니다 - Effective Sets
-// 계산 자체에는 관여하지 않습니다(volume.js 미수정, 새 helper 파일도 만들지 않고 이 파일 안에만 둡니다).
-const VOLUME_TARGETS = {
-  상체: { mev: 45, mavLow: 55, mavHigh: 70 },
-  하체: { mev: 30, mavLow: 38, mavHigh: 50 },
-  코어: { mev: 6, mavLow: 8, mavHigh: 12, isCore: true },
-  가슴: { mev: 8, mavLow: 12, mavHigh: 16 },
-  등: { mev: 10, mavLow: 14, mavHigh: 18 },
-  어깨: { mev: 8, mavLow: 12, mavHigh: 16 },
-  팔: { mev: 8, mavLow: 10, mavHigh: 14 },
-  대퇴사두: { mev: 8, mavLow: 12, mavHigh: 16 },
-  둔근: { mev: 10, mavLow: 14, mavHigh: 18 },
-  햄스트링: { mev: 6, mavLow: 10, mavHigh: 14 },
-};
+// v2.8.0: Weekly Volume Dashboard 목적 변경 - "MEV/MAV로 부족/적정/과다 판정"에서 "현재 루틴의 운동량과
+// 부위별 자극 분포 확인"으로. 기존 MEV/MAV 판정 코드(VOLUME_TARGETS/calcVolumeStatus)는 이 파일에서
+// 완전히 제거했습니다(다른 화면에서 쓰지 않는 걸 확인함 - 요일 카드 메타 텍스트는 별도의
+// calcDayRoleSetSummary를 씀). volume.js/state.js는 전혀 수정하지 않고, 이미 공개되어 있던
+// state.getRoutineExercisesForEdit(dayKey)만 사용해 아래 두 계산을 이 파일 안에서 새로 만듭니다.
 
-// 일반 부위: MEV 미만 🔴 / MEV~MAV하단 미만 🟡 / MAV하단~MAV상단 🟢 / MAV상단 초과 🔴
-// 코어: 위와 동일하되 MAV상단 초과가 🟡(코어는 초과해도 크게 페널티를 주지 않는 기준).
-function calcVolumeStatus(label, value) {
-  const target = VOLUME_TARGETS[label];
-  if (!target) return ""; // 정의되지 않은 라벨은 방어적으로 상태 표시를 비웁니다(회귀 방지).
-  if (value < target.mev) return "🔴";
-  if (value < target.mavLow) return "🟡";
-  if (value <= target.mavHigh) return "🟢";
-  return target.isCore ? "🟡" : "🔴";
+// 헤더용: 상위 분류(상체/하체/코어) 단순 세트 합산. 주동근/보조근 가중치를 적용하지 않는 "순수 운동량".
+function calcPrimarySetSum(bodyPart) {
+  let sum = 0;
+  DAYS_DISPLAY_ORDER.forEach((d) => {
+    state.getRoutineExercisesForEdit(d.key).forEach((ex) => {
+      if (ex && ex.primaryBodyPart === bodyPart) sum += ex.baseSets || 0;
+    });
+  });
+  return sum;
 }
 
-// v2.7.5: 상/하체 밸런스(상체·하체·코어 Primary total)를 별도 좌측 컬럼이 아니라 헤더 행에 "라벨 + 3개 값
-// (세트+상태)"으로 한 줄 표시합니다. 볼드는 쓰지 않고 라벨만 색상으로 강조합니다(font-weight 그대로 normal).
-// v2.7.6: 이 헤더 구조는 "절대 변경 금지"로 요청되어 그대로 유지합니다(내용 영역만 변경).
+// 내용 영역용: Secondary Tag별 raw 세트 합(표시용 "OO세트")과, 주동근(선택 순서 0번째, ×1.0)/보조근
+// (1~2번째, ×0.5) 가중치를 적용한 기여도 비율(%). 태그 개수로 나누는 균등분배는 하지 않고, 종목 하나가
+// 여러 태그를 가지면 각 태그에 가중치를 그대로 반영합니다(요청하신 계산식 그대로).
+function calcTagRowsForBodyPart(bodyPart) {
+  const rawSets = {};
+  const contribution = {};
+  secondaryTagsFor(bodyPart).forEach((tag) => {
+    rawSets[tag] = 0;
+    contribution[tag] = 0;
+  });
+  DAYS_DISPLAY_ORDER.forEach((d) => {
+    state.getRoutineExercisesForEdit(d.key).forEach((ex) => {
+      if (!ex || ex.primaryBodyPart !== bodyPart) return;
+      const sets = ex.baseSets || 0;
+      (ex.secondaryTags || []).forEach((tag, idx) => {
+        if (!(tag in rawSets)) return;
+        rawSets[tag] += sets;
+        contribution[tag] += sets * (idx === 0 ? 1.0 : 0.5); // 0번째=주동근(①), 1~2번째=보조근(②)
+      });
+    });
+  });
+  const total = Object.values(contribution).reduce((sum, v) => sum + v, 0);
+  // "round 적용, 표시 합계가 100%가 되도록" -> 각 태그별로 독립적으로 Math.round합니다. (참고: 이는
+  // 대부분의 경우 합계를 100%에 가깝게 만들지만, 나머지값이 특정 방향으로 몰리는 드문 경우엔 99%/101%처럼
+  // 정확히 100이 안 될 수 있습니다 - 이는 "독립 반올림" 방식의 수학적 특성이며, 예시(29+36+21+14=100)에서는
+  // 정확히 100%로 맞아떨어집니다.)
+  return secondaryTagsFor(bodyPart).map((tag) => ({
+    label: tag,
+    value: rawSets[tag],
+    percent: total > 0 ? Math.round((contribution[tag] / total) * 100) : 0,
+  }));
+}
+
+// v2.7.5: 상/하체 밸런스(상체·하체·코어 Primary total)를 별도 좌측 컬럼이 아니라 헤더 행에 "라벨 + 3개 값"
+// 으로 한 줄 표시합니다. 볼드는 쓰지 않고 라벨만 색상으로 강조합니다(font-weight 그대로 normal).
+// v2.7.6~v2.8.0: 이 헤더 구조는 "절대 변경 금지"로 요청되어 그대로 유지합니다(내용/데이터 소스만 변경).
+// v2.8.0: 값은 이제 MEV/MAV 가중 Effective Sets가 아니라 순수 세트 합산(calcPrimarySetSum)입니다.
+// 상태 아이콘은 제거했지만, 향후 확장을 위해 아이콘이 들어가던 자리 자체는 마크업에서 비워둡니다.
 function buildBalanceHeader(rows) {
   const children = [el("span", { class: "volume-balance-label", text: "상/하체 밸런스" })];
-  rows.forEach(({ label, value, status }) => {
+  rows.forEach(({ label, value }) => {
     children.push(
       el("span", { class: "volume-balance-item" }, [
         el("span", { class: "volume-balance-item-label", text: `${label} ` }),
-        el("span", { class: "volume-balance-item-value", text: `${value}세트 ` }),
-        el("span", { class: "volume-balance-item-status", text: status }),
+        el("span", { class: "volume-balance-item-value", text: `${value}세트` }),
       ])
     );
   });
   return el("div", { class: "volume-card-headers" }, children);
 }
 
-// v2.7.7: 상체/하체 세부 부위를 "가로 나열"(flex, 라벨 길이만큼 다음 항목이 밀림) 대신 4행 Grid로 재구성합니다.
-// 각 항목(라벨/세트/상태)을 grid-column/grid-row로 명시적으로 배치해, 상태 아이콘이 항상 같은 열(4번째)에
-// 정렬되도록 합니다(행마다 라벨 길이가 달라도 흔들리지 않음 - 기존 flex 방식의 한계를 구조적으로 해결).
-// rows가 4개보다 적으면(하체는 3개) 남는 행은 그냥 비워둡니다(자동으로 공란 처리, 별도 코드 불필요).
+// v2.7.7: 상체/하체 세부 부위를 4행 Grid로 배치합니다. 각 항목(라벨/세트/비율)을 grid-column/grid-row로
+// 명시적으로 배치해, 4번째 열이 항상 같은 x좌표에 정렬되도록 합니다(행마다 라벨 길이가 달라도 흔들리지 않음).
+// v2.8.0: 4번째 값이 상태 아이콘(🟢🟡🔴)에서 기여도 비율(%)로 바뀌었습니다.
 function buildDetailColumns(label, rows, colOffset) {
   const cells = [
     el("div", {
@@ -67,40 +90,36 @@ function buildDetailColumns(label, rows, colOffset) {
       text: label,
     }),
   ];
-  rows.forEach(({ label: rowLabel, value, status }, i) => {
+  rows.forEach(({ label: rowLabel, value, percent }, i) => {
     const gridRow = String(i + 1);
     cells.push(el("span", { class: "volume-grid-label", style: { gridColumn: String(colOffset + 1), gridRow }, text: rowLabel }));
     cells.push(el("span", { class: "volume-grid-value", style: { gridColumn: String(colOffset + 2), gridRow }, text: `${value}세트` }));
-    cells.push(el("span", { class: "volume-grid-status", style: { gridColumn: String(colOffset + 3), gridRow }, text: status }));
+    cells.push(el("span", { class: "volume-grid-percent", style: { gridColumn: String(colOffset + 3), gridRow }, text: `${percent}%` }));
   });
   return cells;
 }
 
 function buildDetailGrid(upperLabel, upperRows, lowerLabel, lowerRows) {
   return el("div", { class: "volume-detail-grid" }, [
-    ...buildDetailColumns(upperLabel, upperRows, 1), // 열1~4: 상체 밸런스
-    ...buildDetailColumns(lowerLabel, lowerRows, 5), // 열5~8: 하체 밸런스
+    ...buildDetailColumns(upperLabel, upperRows, 1), // 열1~4: 상체 자극
+    ...buildDetailColumns(lowerLabel, lowerRows, 5), // 열5~8: 하체 자극
   ]);
 }
 
 function buildVolumeCard() {
-  const volume = state.getWeeklyVolume();
-  // 상/하체 밸런스(상체·하체·코어 Primary total) - 헤더 행에 표시(buildBalanceHeader, 변경 없음).
+  // 상/하체 밸런스(상체·하체·코어 순수 세트 합산) - 헤더 행에 표시.
   const primaryRows = [
-    { label: "상체", value: volume["상체"].total },
-    { label: "하체", value: volume["하체"].total },
-    { label: "코어", value: volume["코어"].total },
+    { label: "상체", value: calcPrimarySetSum("상체") },
+    { label: "하체", value: calcPrimarySetSum("하체") },
+    { label: "코어", value: calcPrimarySetSum("코어") },
   ];
-  // 내용 영역: 상체 세부(1행 라벨 + 1행 가로나열) / 하체 세부(1행 라벨 + 1행 가로나열).
-  const upperRows = secondaryTagsFor("상체").map((tag) => ({ label: tag, value: volume["상체"].tags[tag] ?? 0 }));
-  const lowerRows = secondaryTagsFor("하체").map((tag) => ({ label: tag, value: volume["하체"].tags[tag] ?? 0 }));
-  [...primaryRows, ...upperRows, ...lowerRows].forEach((row) => {
-    row.status = calcVolumeStatus(row.label, row.value);
-  });
+  // 내용 영역: 상체 세부(라벨+세트+기여도%) / 하체 세부(동일).
+  const upperRows = calcTagRowsForBodyPart("상체");
+  const lowerRows = calcTagRowsForBodyPart("하체");
 
   return el("div", { class: "volume-card" }, [
     buildBalanceHeader(primaryRows),
-    buildDetailGrid("상체 밸런스", upperRows, "하체 밸런스", lowerRows),
+    buildDetailGrid("상체 자극", upperRows, "하체 자극", lowerRows),
   ]);
 }
 
@@ -132,13 +151,12 @@ export function renderRoutineList(root) {
       el("button", { class: "icon-btn", text: "운동 관리", style: { width: "auto", padding: "0 12px" }, onclick: () => navigate("#/exercise-manage") }),
     ]),
     el("div", { class: "table-area" }, rows),
-    // v2.7.5: Weekly Volume Card를 "마지막(일요일) 루틴 카드 하단(A)"과 "하단 탭바 상단(B)" 사이에 남는
-    // 세로 공간의 정중앙에 배치합니다. margin으로 어림잡지 않고, 카드 위/아래에 동일한 flex:1 스페이서를
-    // 둬서 두 스페이서가 항상 같은 높이로 남는 공간을 정확히 반씩 나눠 갖도록 했습니다(레이아웃 자체가
-    // 중앙 정렬을 보장 - 콘텐츠 양이 바뀌어도 항상 A/B 사이 정중앙 유지).
-    el("div", { class: "volume-card-spacer" }),
+    // v2.7.8: 정중앙 배치(flex 스페이서)를 폐기하고 고정 여백으로 전환합니다. 스페이서 방식은 화면의
+    // "남는 공간"을 계산해서 나누는 구조라, 새로고침 직후처럼 viewport/폰트 로딩 타이밍이 아직 안정되지
+    // 않은 시점에는 계산 결과가 흔들려 카드 위치가 매번 달라지고 스크롤까지 발생하는 근본적인 문제가
+    // 있었습니다(100vh -> 100dvh로도 완전히 해결되지 않음을 실기기에서 재확인). volume-card 자체에 고정
+    // margin을 줘서(.volume-card CSS 참고) 외부 요인과 무관하게 항상 동일한 위치를 보장합니다.
     buildVolumeCard(),
-    el("div", { class: "volume-card-spacer" }),
     renderBottomNav("routine"),
   ]);
   mount(root, screen);
