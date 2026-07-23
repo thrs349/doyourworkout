@@ -123,29 +123,35 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
   // ---- v2.6.3: 보조 태그(선택, 복수 선택) - 선택된 운동 부위에 맞는 태그 목록으로 매번 다시 그립니다.
   // (상체: 가슴/등/어깨/팔, 하체: 대퇴사두/둔근/햄스트링, 코어: 없음 - secondaryTagsFor()가 빈 배열 반환) ----
   // v2.8.0: 저장 값은 이미 일반 배열이라 스키마 변경 없이, "배열의 인덱스 순서 = 선택 순서"라는 규칙만
-  // UI에서 지킵니다. 0번째 = 주동근(①, 최대 1개), 1~2번째 = 보조근(②, 최대 2개), 총 최대 3개.
+  // UI에서 지킵니다. 0번째 = 주동근(Ⓟ, 최대 1개), 1~2번째 = 보조근(Ⓢ, 최대 2개), 총 최대 3개.
+  // v2.7.9: 배지를 버튼 텍스트에 합쳐 넣지 않고(중앙 정렬이 깨지는 문제) 별도 absolute 레이어(.tag-role-badge)
+  // 로 분리합니다. 라벨(.tag-label)은 항상 그대로 있고 배지만 켜졌다 꺼졌다 합니다.
   let secondaryTagOpts = {};
-  // v2.6.5: 실기기 테스트 반영 - "보조 태그" 텍스트 라벨을 제거합니다(버튼 기능/저장 구조는 그대로 유지).
   const secondaryTagButtons = el("div", { class: "type-toggle" });
   const secondaryTagGroup = el("div", { class: "field-group" }, [secondaryTagButtons]);
 
   function rebuildSecondaryTagButtons() {
     const tags = secondaryTagsFor(primaryBodyPart);
-    secondaryTagOpts = Object.fromEntries(
-      tags.map((tag) => [tag, el("div", { class: "type-opt", text: tag, onclick: () => toggleSecondaryTag(tag) })])
-    );
-    secondaryTagButtons.replaceChildren(...tags.map((tag) => secondaryTagOpts[tag]));
+    secondaryTagOpts = {};
+    tags.forEach((tag) => {
+      const badge = el("span", { class: "tag-role-badge" });
+      const label = el("span", { class: "tag-label", text: tag });
+      const btn = el("div", { class: "type-opt", onclick: () => toggleSecondaryTag(tag) }, [badge, label]);
+      secondaryTagOpts[tag] = { btn, badge };
+    });
+    secondaryTagButtons.replaceChildren(...tags.map((tag) => secondaryTagOpts[tag].btn));
     secondaryTagGroup.style.display = tags.length > 0 ? "block" : "none";
   }
 
   function refreshBodyPartUI() {
     BODY_PARTS.forEach((part) => bodyPartOpts[part].classList.toggle("selected", part === primaryBodyPart));
-    // v2.8.0: 선택 순서에 따라 배지(①=주동근/②=보조근)를 버튼 라벨에 붙입니다. 미선택 태그는 이름만 표시.
+    // v2.7.9: 선택 순서에 따라 배지(Ⓟ=주동근/Ⓢ=보조근)만 갱신합니다. 라벨 텍스트는 손대지 않아 중앙 정렬 유지.
     Object.keys(secondaryTagOpts).forEach((tag) => {
       const idx = secondaryTags.indexOf(tag);
       const selected = idx !== -1;
-      secondaryTagOpts[tag].classList.toggle("selected", selected);
-      secondaryTagOpts[tag].textContent = selected ? `${idx === 0 ? "①" : "②"} ${tag}` : tag;
+      const { btn, badge } = secondaryTagOpts[tag];
+      btn.classList.toggle("selected", selected);
+      badge.textContent = selected ? (idx === 0 ? "Ⓟ" : "Ⓢ") : "";
     });
   }
   function selectBodyPart(part) {

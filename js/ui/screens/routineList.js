@@ -79,30 +79,27 @@ function buildBalanceHeader(rows) {
   return el("div", { class: "volume-card-headers" }, children);
 }
 
-// v2.7.7: 상체/하체 세부 부위를 4행 Grid로 배치합니다. 각 항목(라벨/세트/비율)을 grid-column/grid-row로
-// 명시적으로 배치해, 4번째 열이 항상 같은 x좌표에 정렬되도록 합니다(행마다 라벨 길이가 달라도 흔들리지 않음).
-// v2.8.0: 4번째 값이 상태 아이콘(🟢🟡🔴)에서 기여도 비율(%)로 바뀌었습니다.
-function buildDetailColumns(label, rows, colOffset) {
-  const cells = [
-    el("div", {
-      class: "volume-grid-title",
-      style: { gridColumn: String(colOffset), gridRow: "1" },
-      text: label,
+// v2.7.9: 상체/하체 세부 부위를 Grid(부위/세트/비율) 대신 가로 막대그래프(부위/막대/%)로 표시합니다.
+// 세트 수는 "본세트인지 보조근 포함인지 헷갈린다"는 피드백에 따라 제거하고, 부위명+실제 비율 중심으로
+// 단순화했습니다. Grid 제목("상체 자극"/"하체 자극")과 헤더 구조는 그대로 유지합니다.
+// 막대 길이: 절대 %가 아니라 "그룹 내 최대 부위" 기준 상대비를 쓰고, 최대 막대도 전체 가능 영역의 80%로
+// 제한합니다(카드 끝까지 꽉 차는 부담 감소 + % 숫자가 표시될 여유 공간 확보). 숫자는 항상 실제 비율(round된
+// 값, 계산 로직 자체는 v2.7.8과 동일)을 표시하며, 0%인 부위도 행 자체는 그대로 유지해 표시합니다.
+function buildBarSection(label, rows) {
+  const maxPercent = Math.max(0, ...rows.map((r) => r.percent));
+  return el("div", { class: "volume-bar-section" }, [
+    el("div", { class: "volume-grid-title", text: label }),
+    ...rows.map(({ label: rowLabel, percent }) => {
+      // 막대 폭 = (해당 부위 비율 / 그룹 내 최대 비율) × 80%. 그룹 전체가 0%면(운동 없음) 막대 폭도 0.
+      const barWidth = maxPercent > 0 ? (percent / maxPercent) * 80 : 0;
+      return el("div", { class: "volume-bar-row" }, [
+        el("span", { class: "volume-bar-label", text: rowLabel }),
+        el("div", { class: "volume-bar-track" }, [
+          el("span", { class: "volume-bar-fill", style: { width: `${barWidth}%` } }),
+          el("span", { class: "volume-bar-percent", text: `${percent}%` }),
+        ]),
+      ]);
     }),
-  ];
-  rows.forEach(({ label: rowLabel, value, percent }, i) => {
-    const gridRow = String(i + 1);
-    cells.push(el("span", { class: "volume-grid-label", style: { gridColumn: String(colOffset + 1), gridRow }, text: rowLabel }));
-    cells.push(el("span", { class: "volume-grid-value", style: { gridColumn: String(colOffset + 2), gridRow }, text: `${value}세트` }));
-    cells.push(el("span", { class: "volume-grid-percent", style: { gridColumn: String(colOffset + 3), gridRow }, text: `${percent}%` }));
-  });
-  return cells;
-}
-
-function buildDetailGrid(upperLabel, upperRows, lowerLabel, lowerRows) {
-  return el("div", { class: "volume-detail-grid" }, [
-    ...buildDetailColumns(upperLabel, upperRows, 1), // 열1~4: 상체 자극
-    ...buildDetailColumns(lowerLabel, lowerRows, 5), // 열5~8: 하체 자극
   ]);
 }
 
@@ -113,13 +110,15 @@ function buildVolumeCard() {
     { label: "하체", value: calcPrimarySetSum("하체") },
     { label: "코어", value: calcPrimarySetSum("코어") },
   ];
-  // 내용 영역: 상체 세부(라벨+세트+기여도%) / 하체 세부(동일).
+  // 내용 영역: 상체 세부(막대+%) / 하체 세부(동일). 부위 표시 순서는 secondaryTagsFor()가 이미 고정 순서
+  // (가슴/등/어깨/팔, 대퇴사두/둔근/햄스트링)로 반환하므로 별도 정렬 코드가 필요 없습니다.
   const upperRows = calcTagRowsForBodyPart("상체");
   const lowerRows = calcTagRowsForBodyPart("하체");
 
   return el("div", { class: "volume-card" }, [
     buildBalanceHeader(primaryRows),
-    buildDetailGrid("상체 자극", upperRows, "하체 자극", lowerRows),
+    buildBarSection("상체 자극", upperRows),
+    buildBarSection("하체 자극", lowerRows),
   ]);
 }
 

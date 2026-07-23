@@ -221,11 +221,11 @@
    switch가 줄바꿈 없이 들어가기에 충분한 고정 폭(64px - v2.7.3에서 확인된 값)만 차지하고, 남는 폭은 전부
    운동명 입력칸(flex:1)에 배분합니다. 헤더 줄도 동일한 폭 비율로 나눠 두 헤더가 각각 입력칸/토글 시작점과
    y축이 맞습니다. */
-.name-role-headers { display: flex; align-items: baseline; gap: var(--sp-4); }
+.name-role-headers { display: flex; align-items: baseline; gap: var(--sp-2); }
 .name-role-headers .field-label { margin-bottom: 6px; }
 .name-role-headers .field-label:first-child { flex: 1; }
 .name-role-headers .role-header-label { flex-shrink: 0; width: 64px; text-align: left; }
-.name-role-fields { display: flex; align-items: center; gap: var(--sp-4); }
+.name-role-fields { display: flex; align-items: center; gap: var(--sp-2); }
 .role-toggle-col { flex-shrink: 0; width: 64px; display: flex; justify-content: flex-start; }
 .switch { width: 42px; height: 24px; border-radius: 14px; background: var(--color-border); position: relative; flex-shrink: 0; border: none; }
 .switch.small { width: 34px; height: 20px; border-radius: 12px; }
@@ -235,7 +235,12 @@
 .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .15s; }
 .switch.on::after { transform: translateX(18px); }
 .type-toggle { display: flex; gap: 6px; flex-wrap: wrap; }
-.type-opt { flex: 1; min-width: 60px; text-align: center; padding: 9px 2px; border-radius: 9px; border: 1px solid var(--color-border); font-size: 12px; font-family: var(--font-body); color: var(--color-text-secondary); background: var(--color-surface); }
+.type-opt { position: relative; flex: 1; min-width: 60px; text-align: center; padding: 9px 2px; border-radius: 9px; border: 1px solid var(--color-border); font-size: 12px; font-family: var(--font-body); color: var(--color-text-secondary); background: var(--color-surface); }
+/* v2.7.9: 태그 역할 배지(Ⓟ 주동근 / Ⓢ 보조근). 버튼 좌측 내부에 절대 위치로 표시되어 라벨(.tag-label)의
+   중앙 정렬에는 전혀 영향을 주지 않고, 버튼 폭 밖으로도 벗어나지 않습니다. 미선택 시 텍스트가 비어 있어
+   보이지 않습니다(별도 표시/숨김 클래스 불필요). */
+.tag-role-badge { position: absolute; left: 4px; top: 50%; transform: translateY(-50%); font-size: 10px; line-height: 1; color: var(--color-primary); pointer-events: none; }
+.tag-label { pointer-events: none; }
 .type-opt.selected { border-color: var(--color-primary); background: var(--color-primary-soft); color: var(--color-primary); font-weight: 700; }
 .stepper { display: flex; align-items: center; justify-content: space-between; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; padding: 8px 14px; }
 .stepper .sval { font-family: var(--font-mono); font-weight: 700; font-size: 16px; }
@@ -312,32 +317,25 @@
 .volume-card-headers { display: flex; align-items: baseline; flex-wrap: wrap; column-gap: 10px; row-gap: 2px; margin-bottom: 8px; }
 /* v2.7.5: "상/하체 밸런스"를 헤더 행 자체로 옮기고, 그 옆에 상체/하체/코어 값을 인라인으로 표시합니다.
    볼드는 쓰지 않고(font-weight 그대로 normal), 라벨만 색상(--color-primary)으로 강조합니다.
-   v2.7.6~v2.7.7: 이 스타일들은 내용 영역의 상체/하체 세부 표시(v2.7.7부터는 .volume-detail-grid)에도
-   그대로 재사용되는 부분이 있습니다(동일한 폰트/색상/볼드 여부 보장 - "기존 헤더와 동일한 폰트" 요청).
-   v2.8.0: 헤더의 MEV/MAV 상태 아이콘을 제거했습니다(값은 순수 세트 합산으로 변경). */
+   v2.8.0: 헤더의 MEV/MAV 상태 아이콘을 제거했습니다(값은 순수 세트 합산으로 변경). 이 헤더 구조는
+   v2.7.9에서도 "절대 변경 금지"로 유지됩니다. */
 .volume-balance-label { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--color-primary); text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
 .volume-balance-item { font-family: var(--font-mono); font-weight: 400; font-size: 11px; white-space: nowrap; }
 .volume-balance-item-label { color: var(--color-text-secondary); }
 .volume-balance-item-value { color: var(--color-text-primary); }
-/* v2.7.7: 상체/하체 세부를 4행 x 8열 Grid로 재구성합니다(가로 나열 flex 방식 폐기). 열 폭을 전부 auto로
-   두지 않고, 세트/비율 열은 고정 또는 최소 폭을 줘서 Galaxy S25 같은 좁은 화면에서도 흔들리지 않게 했습니다:
-   1,5열(제목)과 2,6열(부위명)은 내용 크기에 맞추고(auto), 4,8열(비율 %)은 22px 고정 - 이 전용 열 덕분에
-   비율 값이 행마다 라벨 길이가 달라도 항상 같은 x좌표에 정렬됩니다. justify-content:center로 그리드 전체를
-   카드 안에서 가운데 배치합니다.
-   v2.8.0: (1) 4,8열을 상태 아이콘(🟢🟡🔴, MEV/MAV 판정 제거)에서 기여도 비율(%)로 교체 - "00%" 2자리 표시가
-   가능한 22px로 설정. (2) 세트 열(3,7열)을 2.4em -> 2ch로 추가 축소("00세트"의 숫자 두 자리만 고려한
-   최소폭 - "세트"라는 글자 자체는 폭 계산에서 제외해 더 좁게 잡았습니다). (3) column-gap 6px -> 4px로 줄여
-   세트-비율 사이 간격을 좁히고 카드 좌우 여백을 더 확보합니다. */
-.volume-detail-grid {
-  display: grid;
-  grid-template-columns: auto auto minmax(2ch, auto) 22px auto auto minmax(2ch, auto) 22px;
-  column-gap: 4px; row-gap: 4px; justify-content: center; justify-items: start;
-  margin-top: 10px;
-}
-.volume-grid-title { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--color-primary); text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
-.volume-grid-label { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--color-text-secondary); white-space: nowrap; }
-.volume-grid-value { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--color-text-primary); white-space: nowrap; }
-.volume-grid-percent { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--color-primary); white-space: nowrap; }
+/* v2.7.9: 4행x8열 Grid(부위/세트/비율)를 폐기하고 가로 막대그래프로 재구성합니다. "세트" 열은 요청대로
+   제거(본세트/보조근 포함 여부가 헷갈린다는 피드백). 제목(.volume-grid-title, "상체 자극"/"하체 자극")은
+   그대로 재사용합니다. 각 부위 행(.volume-bar-row)은 라벨(고정폭, 좌측 정렬) + 트랙(.volume-bar-track,
+   flex:1) 구조이며, 트랙 안에서 막대(.volume-bar-fill, width:N%로 상대비 표현)와 % 텍스트가 순서대로
+   나열되는 flex 흐름이라, 막대가 짧아지면 % 표시 위치도 자연스럽게 따라 이동합니다(별도 absolute 계산 불필요). */
+.volume-bar-section { margin-top: 10px; }
+.volume-bar-section:first-of-type { margin-top: 8px; }
+.volume-grid-title { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--color-primary); text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; margin-bottom: 4px; }
+.volume-bar-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+.volume-bar-label { flex-shrink: 0; width: 40px; font-family: var(--font-mono); font-size: 11px; color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.volume-bar-track { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.volume-bar-fill { display: block; height: 9px; min-width: 2px; border-radius: 4px; background: var(--color-primary); flex-shrink: 0; }
+.volume-bar-percent { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-primary); white-space: nowrap; }
 
 .result-summary { display: flex; align-items: center; justify-content: space-between; padding: 12px 4px; border-top: 1px solid var(--color-border); }
 .result-summary:first-child { border-top: none; }
@@ -397,7 +395,7 @@
 /* v2.1.0 Patch: 종목명 제목을 없앴으므로 .cue-modal-title은 더 이상 사용하지 않습니다. */
 .cue-view-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .cue-view-item { font-size: 14px; color: var(--color-text-primary); line-height: 1.4; }
-.cue-view-item::before { content: "☑ "; color: var(--color-primary); font-weight: 700; }
+.cue-view-item::before { content: "✅ "; color: var(--color-primary); font-weight: 700; }
 .cue-view-empty { color: var(--color-text-muted); font-size: 13px; text-align: center; margin: 8px 0; }
 
 /* 큐 노트 관리(추가/수정/삭제) 모달 (운동 관리 화면) */
