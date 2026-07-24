@@ -124,8 +124,10 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
   // (상체: 가슴/등/어깨/팔, 하체: 대퇴사두/둔근/햄스트링, 코어: 없음 - secondaryTagsFor()가 빈 배열 반환) ----
   // v2.8.0: 저장 값은 이미 일반 배열이라 스키마 변경 없이, "배열의 인덱스 순서 = 선택 순서"라는 규칙만
   // UI에서 지킵니다. 0번째 = 주동근(Ⓟ, 최대 1개), 1~2번째 = 보조근(Ⓢ, 최대 2개), 총 최대 3개.
-  // v2.7.9: 배지를 버튼 텍스트에 합쳐 넣지 않고(중앙 정렬이 깨지는 문제) 별도 absolute 레이어(.tag-role-badge)
-  // 로 분리합니다. 라벨(.tag-label)은 항상 그대로 있고 배지만 켜졌다 꺼졌다 합니다.
+  // v2.7.12: 배지를 버튼 기준 absolute 좌표로 미세조정하던 방식을 폐기합니다. 라벨 길이가 달라질 때마다
+  // 배지-텍스트 간격이 달라지는 근본 원인이었습니다("버튼 기준"이라 "텍스트 기준"이 될 수 없었음). 이제
+  // 배지+라벨을 tag-inner(inline-flex) 하나의 그룹으로 묶고, 이 그룹 자체를 버튼 중앙에 정렬합니다 -
+  // 그룹 내부 간격은 flex gap 하나로 고정되어, 라벨이 몇 글자든 배지-텍스트 간격이 항상 동일합니다.
   let secondaryTagOpts = {};
   const secondaryTagButtons = el("div", { class: "type-toggle" });
   const secondaryTagGroup = el("div", { class: "field-group" }, [secondaryTagButtons]);
@@ -136,7 +138,8 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
     tags.forEach((tag) => {
       const badge = el("span", { class: "tag-role-badge" });
       const label = el("span", { class: "tag-label", text: tag });
-      const btn = el("div", { class: "type-opt", onclick: () => toggleSecondaryTag(tag) }, [badge, label]);
+      const inner = el("span", { class: "tag-inner" }, [badge, label]);
+      const btn = el("div", { class: "type-opt", onclick: () => toggleSecondaryTag(tag) }, [inner]);
       secondaryTagOpts[tag] = { btn, badge };
     });
     secondaryTagButtons.replaceChildren(...tags.map((tag) => secondaryTagOpts[tag].btn));
@@ -146,12 +149,15 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
   function refreshBodyPartUI() {
     BODY_PARTS.forEach((part) => bodyPartOpts[part].classList.toggle("selected", part === primaryBodyPart));
     // v2.7.9: 선택 순서에 따라 배지(Ⓟ=주동근/Ⓢ=보조근)만 갱신합니다. 라벨 텍스트는 손대지 않아 중앙 정렬 유지.
+    // v2.7.12: 미선택 시 배지를 display:none으로 완전히 제거합니다(자리만 비워두면 라벨이 그룹 중심에서
+    // 살짝 밀려 보일 수 있어, 라벨 단독일 때도 정확히 버튼 중앙에 오도록 함).
     Object.keys(secondaryTagOpts).forEach((tag) => {
       const idx = secondaryTags.indexOf(tag);
       const selected = idx !== -1;
       const { btn, badge } = secondaryTagOpts[tag];
       btn.classList.toggle("selected", selected);
       badge.textContent = selected ? (idx === 0 ? "Ⓟ" : "Ⓢ") : "";
+      badge.style.display = selected ? "inline-flex" : "none";
     });
   }
   function selectBodyPart(part) {

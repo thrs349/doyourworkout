@@ -81,4 +81,16 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // 제보는 코드 재검토+가짜 DOM 시뮬레이션으로 재현되지 않음(계산/렌더링 로직 자체는 정상 확인) - 캐시
 // 생애주기 관련 가능성 있음, 상세 내용은 보고 참고. 데이터 구조·SCHEMA_VERSION·
 // volume.js/state.js/models.js/storage.js·judge.js/gain.js 전부 무변경.
-export const APP_VERSION = "v2.7.11";
+// v2.7.12: (a) 역할 토글 컬럼 폭 64px->56px로 축소(우측으로 살짝 이동, 여유 폭은 운동명 입력칸이 흡수),
+// (b) 태그 역할 배지(Ⓟ/Ⓢ) 좌측 여백 조정, (c) [버그 수정] Weekly Volume Dashboard 상/하체 자극 그래프의
+// 라벨 열 폭이 고정 40px로 두 섹션에 공유되어 사실상 같은 x축 기준으로 보이던 문제 - 섹션별 독립 CSS Grid
+// (.volume-bar-grid)로 전환, (d) [버그 수정] "마지막 요일 카드 margin-bottom 제거" 규칙 누락 복원 -
+// Dashboard 카드 위/아래 여백 비대칭 해결, (e) 역할 토글 좌우 대칭 여백(입력창-토글 = 토글-화면끝, 둘 다
+// 16px), (f) Dashboard 상/하체 좌우 2열 배치(세로 스택 폐기)로 전환, 47:53 비율 분배, 행 높이 소폭 확대,
+// (g) [구조 개선] 태그 역할 배지를 button 기준 absolute 좌표 미세조정 방식에서, 배지+라벨을 tag-inner
+// (inline-flex) 하나의 그룹으로 묶어 "텍스트 기준"으로 함께 중앙 정렬하는 방식으로 전환 - 라벨 길이(가슴~
+// 대퇴사두)와 무관하게 배지-텍스트 간격이 항상 동일해짐. "루틴 추가 시 그래프 미갱신" 제보는 코드
+// 재검토+가짜 DOM 시뮬레이션으로 재현되지 않음(계산/렌더링 로직 자체는 정상 확인, 이후 실기기 재현 결과
+// "보조 태그 미설정 종목은 분포 그래프에 기여하지 않는" 의도된 동작으로 확인되어 현상 유지 확정).
+// 데이터 구조·SCHEMA_VERSION·volume.js/state.js/models.js/storage.js·judge.js/gain.js 전부 무변경.
+export const APP_VERSION = "v2.7.12";
