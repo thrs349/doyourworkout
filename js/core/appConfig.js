@@ -100,4 +100,8 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // (b) Weekly Volume Dashboard 막대그래프의 행 사이 간격만 4px->2px로 축소(제목→첫 행 간격은
 // .volume-grid-title의 별도 margin-bottom이라 그대로 유지, 막대 계산/%/라벨 정렬은 무변경).
 // 데이터 구조·SCHEMA_VERSION·volume.js/state.js/models.js/storage.js·judge.js/gain.js 전부 무변경.
+// v2.7.13-patch: 위 (a) 역할 토글 헤더 3분할 구조를 실기기 테스트 결과에 따라 v2.7.12 방식(단일 텍스트
+// "메인/보조", text-align:right)으로 롤백. (b) Dashboard 막대그래프 개선 사항(47:53 분배, 좌우 2열,
+// 행 간격 2px 등)은 그대로 유지. 토글 클릭 동작·role 데이터 처리·운동명 입력칸 width 구조는 무변경.
+// 데이터 구조·SCHEMA_VERSION·volume.js/state.js/models.js/storage.js·judge.js/gain.js 전부 무변경.
 export const APP_VERSION = "v2.7.13";

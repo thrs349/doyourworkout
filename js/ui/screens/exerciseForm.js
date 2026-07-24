@@ -73,25 +73,17 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
       roleSwitch.classList.toggle("on", role === ROLES.ASSIST);
     },
   });
-  // v2.7.13 항목1: "메인/보조" 헤더 텍스트를 하나의 문자열로 통째로 오른쪽 정렬하면, "/"의 실제 x좌표가
-  // 텍스트 전체 렌더링 폭에 좌우되어 스위치 중심과 정확히 일치한다는 보장이 없었습니다. "메인"/"보조"를
-  // 동일한 flex:1 폭으로 나눠 "/"가 그 그룹의 정중앙에 "구조적으로"(폰트 렌더링과 무관하게) 오도록 하고,
-  // 이 그룹 자체를 스위치(42px)와 동일한 폭·동일한 우측 정렬 규칙으로 배치해 "/" 위치와 스위치 중심이
-  // 항상 일치하도록 만듭니다.
-  const roleHeaderLabel = el("div", { class: "field-label role-header-label" }, [
-    el("span", { class: "role-header-inner" }, [
-      el("span", { class: "role-header-half", text: "메인" }),
-      el("span", { class: "role-header-slash", text: "/" }),
-      el("span", { class: "role-header-half", text: "보조" }),
-    ]),
-  ]);
+  // v2.7.13-patch: v2.7.13에서 도입했던 "메인"/"/"/"보조" 3분할 구조(role-header-inner/half/slash)를
+  // 되돌리고, v2.7.12까지 쓰던 단일 텍스트 문자열 방식으로 복원합니다.
   const nameRoleHeaderRow = el("div", { class: "name-role-headers" }, [
     el("div", { class: "field-label", text: "운동명" }),
-    roleHeaderLabel,
+    el("div", { class: "field-label role-header-label", text: "메인/보조" }),
   ]);
   const roleToggleCol = el("div", { class: "role-toggle-col" }, [roleSwitch]);
   const nameRoleFieldRow = el("div", { class: "name-role-fields" }, [nameInput, roleToggleCol]);
   const nameRoleGroup = el("div", { class: "field-group" }, [nameRoleHeaderRow, nameRoleFieldRow]);
+  const roleHeaderLabel = nameRoleHeaderRow.children[1];
+
 
   function refreshRoleUI() {
     // 코어(primaryBodyPart==="코어")는 항상 자동으로 코어 취급되므로, 역할 관련 요소(헤더+토글)만 숨기고
