@@ -85,21 +85,29 @@ function buildBalanceHeader(rows) {
 // 막대 길이: 절대 %가 아니라 "그룹 내 최대 부위" 기준 상대비를 쓰고, 최대 막대도 전체 가능 영역의 80%로
 // 제한합니다(카드 끝까지 꽉 차는 부담 감소 + % 숫자가 표시될 여유 공간 확보). 숫자는 항상 실제 비율(round된
 // 값, 계산 로직 자체는 v2.7.8과 동일)을 표시하며, 0%인 부위도 행 자체는 그대로 유지해 표시합니다.
+// v2.7.10 버그 수정: 각 섹션을 독립된 CSS Grid(.volume-bar-grid)로 감싸, 라벨 열 폭이 "그 섹션 자신의
+// 가장 긴 라벨"에 맞춰 자동으로 결정되도록 했습니다(예: 하체의 "대퇴사두"). 기존엔 라벨 폭이 고정 40px로
+// 두 섹션에 공유되어, 사실상 상체/하체가 같은 x축 기준으로 정렬되어 보였습니다 - 이제 상체 섹션과 하체
+// 섹션이 각자 독립적으로 정렬되고, 같은 섹션 안의 행들끼리는(=섹션 내부 기준) 여전히 서로 정렬됩니다.
 function buildBarSection(label, rows) {
   const maxPercent = Math.max(0, ...rows.map((r) => r.percent));
   return el("div", { class: "volume-bar-section" }, [
     el("div", { class: "volume-grid-title", text: label }),
-    ...rows.map(({ label: rowLabel, percent }) => {
-      // 막대 폭 = (해당 부위 비율 / 그룹 내 최대 비율) × 80%. 그룹 전체가 0%면(운동 없음) 막대 폭도 0.
-      const barWidth = maxPercent > 0 ? (percent / maxPercent) * 80 : 0;
-      return el("div", { class: "volume-bar-row" }, [
-        el("span", { class: "volume-bar-label", text: rowLabel }),
-        el("div", { class: "volume-bar-track" }, [
-          el("span", { class: "volume-bar-fill", style: { width: `${barWidth}%` } }),
-          el("span", { class: "volume-bar-percent", text: `${percent}%` }),
-        ]),
-      ]);
-    }),
+    el(
+      "div",
+      { class: "volume-bar-grid" },
+      rows.map(({ label: rowLabel, percent }) => {
+        // 막대 폭 = (해당 부위 비율 / 그룹 내 최대 비율) × 80%. 그룹 전체가 0%면(운동 없음) 막대 폭도 0.
+        const barWidth = maxPercent > 0 ? (percent / maxPercent) * 80 : 0;
+        return el("div", { class: "volume-bar-row" }, [
+          el("span", { class: "volume-bar-label", text: rowLabel }),
+          el("div", { class: "volume-bar-track" }, [
+            el("span", { class: "volume-bar-fill", style: { width: `${barWidth}%` } }),
+            el("span", { class: "volume-bar-percent", text: `${percent}%` }),
+          ]),
+        ]);
+      })
+    ),
   ]);
 }
 
