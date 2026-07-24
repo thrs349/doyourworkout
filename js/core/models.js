@@ -2,8 +2,8 @@
 // 앱이 다루는 데이터의 "형태"만 정의하는 순수 모듈입니다.
 // UI나 저장소에 의존하지 않으므로, 이후 다른 프레임워크로 옮기더라도 그대로 재사용할 수 있습니다.
 
-export const SCHEMA_VERSION = 15; // v2.6.0: Exercise Tag System. ExerciseDefinition에 primaryBodyPart/secondaryTags 필드 추가.
-// 탐색(검색/필터) 전용 데이터이며 judge.js/gain.js는 이 필드를 전혀 참조하지 않습니다(판정/증량/상태전이와 무관).
+export const SCHEMA_VERSION = 16; // v2.7.0: Exercise Role System. ExerciseDefinition에 role 필드 추가.
+// 볼륨 계산(volume.js) 전용 데이터이며 judge.js/gain.js는 이 필드를 전혀 참조하지 않습니다(판정/증량/상태전이와 무관).
 
 // 증량 방식(gainMethod) 목록입니다. 새 방식을 추가하려면 여기 하나만 더 넣고,
 // judge.js/gain.js의 해당 분기만 채우면 됩니다.
@@ -32,6 +32,29 @@ export const SECONDARY_TAGS_BY_BODY_PART = {
 // 특정 부위의 보조 태그 선택지를 반환합니다. 정의되지 않은 부위(null 등)는 빈 배열을 반환합니다.
 export function secondaryTagsFor(bodyPart) {
   return SECONDARY_TAGS_BY_BODY_PART[bodyPart] || [];
+}
+
+// v2.7.0: 운동 역할 시스템(볼륨 계산 전용). judge.js/gain.js는 이 상수들과 role 필드를 전혀 참조하지 않습니다.
+// 루틴별 역할 구분이 아니라 종목(ExerciseDefinition) 자체에 저장되는 기본 역할입니다.
+export const ROLES = { MAIN: "main", ASSIST: "assist" };
+export const ROLE_LABELS = { main: "메인", assist: "보조" };
+// 코어(primaryBodyPart === "코어") 운동은 별도 role 값을 쓰지 않고 항상 role="main"으로 저장하되,
+// 아래 effectiveRole()/effectiveRoleWeight()가 primaryBodyPart를 우선 확인해 "코어"로 자동 파생 처리합니다
+// (UI의 역할 토글 자체도 exerciseForm.js에서 코어 선택 시 숨김 처리됩니다).
+export const ROLE_WEIGHTS = { main: 1.0, assist: 0.65, core: 0.65 };
+
+// 종목의 "실질 역할"을 반환합니다: primaryBodyPart가 코어면 저장된 role 값과 무관하게 "core",
+// 그 외에는 저장된 role(없으면 기본값 "main")을 그대로 반환합니다.
+// 역할 아이콘 표시(routineEditor.js)와 볼륨 가중치 계산(volume.js) 양쪽에서 공용으로 사용해
+// "코어는 role 토글 없이 자동 파생"이라는 규칙이 한 곳에서만 정의되도록 합니다.
+export function effectiveRole(ex) {
+  if (ex.primaryBodyPart === "코어") return "core";
+  return ex.role || ROLES.MAIN;
+}
+
+// 종목의 볼륨 계산용 가중치(1.0 | 0.65)를 반환합니다. 판정/증량 로직과는 무관한 순수 계산 헬퍼입니다.
+export function effectiveRoleWeight(ex) {
+  return ROLE_WEIGHTS[effectiveRole(ex)] ?? ROLE_WEIGHTS.main;
 }
 
 export const DAYS = [
@@ -142,6 +165,10 @@ export function makeExerciseDefinition({
   primaryBodyPart = null,
   // secondaryTags: SECONDARY_TAGS(상체 태그) 중 복수 선택. primaryBodyPart와 무관하게 저장 가능(보조 자극 표현용).
   secondaryTags = [],
+  // v2.7.0: 운동 역할(볼륨 계산 전용). judge.js/gain.js는 이 필드를 전혀 참조하지 않습니다.
+  // "main" | "assist". 루틴별 구분이 아니라 종목 자체의 기본 역할이며, 기존/신규 종목 모두 기본값은 "main"입니다.
+  // 코어 종목은 이 값과 무관하게 항상 effectiveRole()에서 "core"로 자동 파생되므로, 저장 시에는 그냥 기본값을 둡니다.
+  role = ROLES.MAIN,
 } = {}) {
   return {
     id,
@@ -161,6 +188,7 @@ export function makeExerciseDefinition({
     cueNotes,
     primaryBodyPart,
     secondaryTags,
+    role,
   };
 }
 

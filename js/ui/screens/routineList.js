@@ -3,18 +3,153 @@ import { el, mount } from "../dom.js";
 import { navigate } from "../router.js";
 import { renderBottomNav } from "../components/bottomNav.js";
 import * as state from "../../core/state.js";
-import { DAYS_DISPLAY_ORDER } from "../../core/models.js";
+import { DAYS_DISPLAY_ORDER, secondaryTagsFor } from "../../core/models.js";
+
+// v2.7.0 UI 개선: "5개 운동(메인 9세트, 보조 8세트)" - 괄호 앞 공백 제거(사용자 테스트 피드백 반영).
+function buildMetaText(summary) {
+  if (!summary.count) return "운동 없음";
+  return `${summary.count}개 운동(메인 ${summary.mainSets}세트, 보조 ${summary.assistSets}세트)`;
+}
+
+// v2.8.0: Weekly Volume Dashboard 목적 변경 - "MEV/MAV로 부족/적정/과다 판정"에서 "현재 루틴의 운동량과
+// 부위별 자극 분포 확인"으로. 기존 MEV/MAV 판정 코드(VOLUME_TARGETS/calcVolumeStatus)는 이 파일에서
+// 완전히 제거했습니다(다른 화면에서 쓰지 않는 걸 확인함 - 요일 카드 메타 텍스트는 별도의
+// calcDayRoleSetSummary를 씀). volume.js/state.js는 전혀 수정하지 않고, 이미 공개되어 있던
+// state.getRoutineExercisesForEdit(dayKey)만 사용해 아래 두 계산을 이 파일 안에서 새로 만듭니다.
+
+// 헤더용: 상위 분류(상체/하체/코어) 단순 세트 합산. 주동근/보조근 가중치를 적용하지 않는 "순수 운동량".
+function calcPrimarySetSum(bodyPart) {
+  let sum = 0;
+  DAYS_DISPLAY_ORDER.forEach((d) => {
+    state.getRoutineExercisesForEdit(d.key).forEach((ex) => {
+      if (ex && ex.primaryBodyPart === bodyPart) sum += ex.baseSets || 0;
+    });
+  });
+  return sum;
+}
+
+// 내용 영역용: Secondary Tag별 raw 세트 합(표시용 "OO세트")과, 주동근(선택 순서 0번째, ×1.0)/보조근
+// (1~2번째, ×0.5) 가중치를 적용한 기여도 비율(%). 태그 개수로 나누는 균등분배는 하지 않고, 종목 하나가
+// 여러 태그를 가지면 각 태그에 가중치를 그대로 반영합니다(요청하신 계산식 그대로).
+function calcTagRowsForBodyPart(bodyPart) {
+  const rawSets = {};
+  const contribution = {};
+  secondaryTagsFor(bodyPart).forEach((tag) => {
+    rawSets[tag] = 0;
+    contribution[tag] = 0;
+  });
+  DAYS_DISPLAY_ORDER.forEach((d) => {
+    state.getRoutineExercisesForEdit(d.key).forEach((ex) => {
+      if (!ex || ex.primaryBodyPart !== bodyPart) return;
+      const sets = ex.baseSets || 0;
+      (ex.secondaryTags || []).forEach((tag, idx) => {
+        if (!(tag in rawSets)) return;
+        rawSets[tag] += sets;
+        contribution[tag] += sets * (idx === 0 ? 1.0 : 0.5); // 0번째=주동근(①), 1~2번째=보조근(②)
+      });
+    });
+  });
+  const total = Object.values(contribution).reduce((sum, v) => sum + v, 0);
+  // "round 적용, 표시 합계가 100%가 되도록" -> 각 태그별로 독립적으로 Math.round합니다. (참고: 이는
+  // 대부분의 경우 합계를 100%에 가깝게 만들지만, 나머지값이 특정 방향으로 몰리는 드문 경우엔 99%/101%처럼
+  // 정확히 100이 안 될 수 있습니다 - 이는 "독립 반올림" 방식의 수학적 특성이며, 예시(29+36+21+14=100)에서는
+  // 정확히 100%로 맞아떨어집니다.)
+  return secondaryTagsFor(bodyPart).map((tag) => ({
+    label: tag,
+    value: rawSets[tag],
+    percent: total > 0 ? Math.round((contribution[tag] / total) * 100) : 0,
+  }));
+}
+
+// v2.7.5: 상/하체 밸런스(상체·하체·코어 Primary total)를 별도 좌측 컬럼이 아니라 헤더 행에 "라벨 + 3개 값"
+// 으로 한 줄 표시합니다. 볼드는 쓰지 않고 라벨만 색상으로 강조합니다(font-weight 그대로 normal).
+// v2.7.6~v2.8.0: 이 헤더 구조는 "절대 변경 금지"로 요청되어 그대로 유지합니다(내용/데이터 소스만 변경).
+// v2.8.0: 값은 이제 MEV/MAV 가중 Effective Sets가 아니라 순수 세트 합산(calcPrimarySetSum)입니다.
+// 상태 아이콘은 제거했지만, 향후 확장을 위해 아이콘이 들어가던 자리 자체는 마크업에서 비워둡니다.
+function buildBalanceHeader(rows) {
+  const children = [el("span", { class: "volume-balance-label", text: "상/하체 밸런스" })];
+  rows.forEach(({ label, value }) => {
+    children.push(
+      el("span", { class: "volume-balance-item" }, [
+        el("span", { class: "volume-balance-item-label", text: `${label} ` }),
+        el("span", { class: "volume-balance-item-value", text: `${value}세트` }),
+      ])
+    );
+  });
+  return el("div", { class: "volume-card-headers" }, children);
+}
+
+// v2.7.9: 상체/하체 세부 부위를 Grid(부위/세트/비율) 대신 가로 막대그래프(부위/막대/%)로 표시합니다.
+// 세트 수는 "본세트인지 보조근 포함인지 헷갈린다"는 피드백에 따라 제거하고, 부위명+실제 비율 중심으로
+// 단순화했습니다. Grid 제목("상체 자극"/"하체 자극")과 헤더 구조는 그대로 유지합니다.
+// 막대 길이: 절대 %가 아니라 "그룹 내 최대 부위" 기준 상대비를 쓰고, 최대 막대도 전체 가능 영역의 80%로
+// 제한합니다(카드 끝까지 꽉 차는 부담 감소 + % 숫자가 표시될 여유 공간 확보). 숫자는 항상 실제 비율(round된
+// 값, 계산 로직 자체는 v2.7.8과 동일)을 표시하며, 0%인 부위도 행 자체는 그대로 유지해 표시합니다.
+// v2.7.10 버그 수정: 각 섹션을 독립된 CSS Grid(.volume-bar-grid)로 감싸, 라벨 열 폭이 "그 섹션 자신의
+// 가장 긴 라벨"에 맞춰 자동으로 결정되도록 했습니다(예: 하체의 "대퇴사두"). 기존엔 라벨 폭이 고정 40px로
+// 두 섹션에 공유되어, 사실상 상체/하체가 같은 x축 기준으로 정렬되어 보였습니다 - 이제 상체 섹션과 하체
+// 섹션이 각자 독립적으로 정렬되고, 같은 섹션 안의 행들끼리는(=섹션 내부 기준) 여전히 서로 정렬됩니다.
+function buildBarSection(label, rows) {
+  const maxPercent = Math.max(0, ...rows.map((r) => r.percent));
+  return el("div", { class: "volume-bar-section" }, [
+    el("div", { class: "volume-grid-title", text: label }),
+    el(
+      "div",
+      { class: "volume-bar-grid" },
+      rows.map(({ label: rowLabel, percent }) => {
+        // 막대 폭 = (해당 부위 비율 / 그룹 내 최대 비율) × 80%. 그룹 전체가 0%면(운동 없음) 막대 폭도 0.
+        const barWidth = maxPercent > 0 ? (percent / maxPercent) * 80 : 0;
+        return el("div", { class: "volume-bar-row" }, [
+          el("span", { class: "volume-bar-label", text: rowLabel }),
+          el("div", { class: "volume-bar-track" }, [
+            el("span", { class: "volume-bar-fill", style: { width: `${barWidth}%` } }),
+            el("span", { class: "volume-bar-percent", text: `${percent}%` }),
+          ]),
+        ]);
+      })
+    ),
+  ]);
+}
+
+function buildVolumeCard() {
+  // 상/하체 밸런스(상체·하체·코어 순수 세트 합산) - 헤더 행에 표시.
+  const primaryRows = [
+    { label: "상체", value: calcPrimarySetSum("상체") },
+    { label: "하체", value: calcPrimarySetSum("하체") },
+    { label: "코어", value: calcPrimarySetSum("코어") },
+  ];
+  // 내용 영역: 상체 세부(막대+%) / 하체 세부(동일). 부위 표시 순서는 secondaryTagsFor()가 이미 고정 순서
+  // (가슴/등/어깨/팔, 대퇴사두/둔근/햄스트링)로 반환하므로 별도 정렬 코드가 필요 없습니다.
+  const upperRows = calcTagRowsForBodyPart("상체");
+  const lowerRows = calcTagRowsForBodyPart("하체");
+
+  return el("div", { class: "volume-card" }, [
+    buildBalanceHeader(primaryRows),
+    // v2.7.11: 상체 자극/하체 자극을 세로 스택("상체 밑에 하체")에서 좌우 50:50 배치로 변경. 각 섹션은
+    // .volume-bar-columns 안에서 flex:1(카드 폭 절반)을 차지하고, 섹션 내부 정렬(v2.7.10에서 구현한
+    // 섹션별 독립 Grid - 라벨 열 폭이 그 섹션 자신의 내용에 맞춰짐)은 그대로 유지됩니다.
+    el("div", { class: "volume-bar-columns" }, [buildBarSection("상체 자극", upperRows), buildBarSection("하체 자극", lowerRows)]),
+  ]);
+}
 
 export function renderRoutineList(root) {
   // v1.1: 요일을 월~일 순서로 표시합니다.
   const rows = DAYS_DISPLAY_ORDER.map((d) => {
     const version = state.getDefaultVersion(d.key);
-    const count = version.items.length;
+    const summary = state.getRoutineDaySummary(d.key); // v2.7.2: 개수 + 메인/보조 세트 + Primary별 하이라이트 그룹(최대 3개)
+    // v2.7.2 UI 개선: 3행 -> 2행 구조. 1행 = 운동명 + Highlight Box(같은 행), 2행 = 메타 텍스트만.
+    const titleRow = el("div", { class: "list-row-title-line" }, [
+      el("span", { class: "name", text: `${d.label}요일 · ${version.title}` }),
+      summary.highlightGroups.length
+        ? el(
+            "span",
+            { class: "ex-meta-chips" },
+            summary.highlightGroups.map((group) => el("span", { class: "ex-chip ex-chip-tag", text: group }))
+          )
+        : null,
+    ]);
     return el("button", { class: "list-row", style: { width: "100%", border: "1px solid var(--color-border)", background: "var(--color-surface)" }, onclick: () => navigate(`#/routine/${d.key}`) }, [
-      el("div", {}, [
-        el("div", { class: "name", text: `${d.label}요일 · ${version.title}` }),
-        el("div", { class: "meta", text: count ? `${count}개 운동` : "운동 없음" }),
-      ]),
+      el("div", { style: { minWidth: "0", flex: "1" } }, [titleRow, el("div", { class: "meta", text: buildMetaText(summary) })]),
       el("span", { class: "arrow", text: "›" }),
     ]);
   });
@@ -25,6 +160,12 @@ export function renderRoutineList(root) {
       el("button", { class: "icon-btn", text: "운동 관리", style: { width: "auto", padding: "0 12px" }, onclick: () => navigate("#/exercise-manage") }),
     ]),
     el("div", { class: "table-area" }, rows),
+    // v2.7.8: 정중앙 배치(flex 스페이서)를 폐기하고 고정 여백으로 전환합니다. 스페이서 방식은 화면의
+    // "남는 공간"을 계산해서 나누는 구조라, 새로고침 직후처럼 viewport/폰트 로딩 타이밍이 아직 안정되지
+    // 않은 시점에는 계산 결과가 흔들려 카드 위치가 매번 달라지고 스크롤까지 발생하는 근본적인 문제가
+    // 있었습니다(100vh -> 100dvh로도 완전히 해결되지 않음을 실기기에서 재확인). volume-card 자체에 고정
+    // margin을 줘서(.volume-card CSS 참고) 외부 요인과 무관하게 항상 동일한 위치를 보장합니다.
+    buildVolumeCard(),
     renderBottomNav("routine"),
   ]);
   mount(root, screen);

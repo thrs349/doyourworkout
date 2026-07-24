@@ -23,7 +23,10 @@ import {
   uid,
   BODYWEIGHT_GOAL_ALERT_STREAK,
   DAYS_DISPLAY_ORDER,
+  secondaryTagsFor,
 } from "./models.js";
+// v2.7.0: 주간 볼륨 계산(볼륨 카드/루틴 카드 메타 표시 전용). judge.js/gain.js와는 별개 경로입니다.
+import { calcWeeklyVolume, calcDayRoleSetSummary, calcDayHighlightTags } from "./volume.js";
 import {
   computeJudgement,
   computeChallengeResult,
@@ -248,6 +251,40 @@ export function getRoutineExercisesForEdit(dayKey) {
     .sort((a, b) => a.order - b.order)
     .map((it) => getExercise(it.exerciseId))
     .filter(Boolean);
+}
+
+// v2.7.0: 주간 예상 루틴 볼륨(부위별/보조태그별 세트 수). 비활성 종목도 루틴에 포함되어 있으면 계산에
+// 포함합니다(getRoutineExercisesForEdit이 이미 그렇게 동작). 판정/증량 상태와 무관한 순수 조회 함수입니다.
+export function getWeeklyVolume() {
+  const dayExerciseLists = {};
+  DAYS_DISPLAY_ORDER.forEach((d) => {
+    dayExerciseLists[d.key] = getRoutineExercisesForEdit(d.key);
+  });
+  return calcWeeklyVolume(dayExerciseLists);
+}
+
+// v2.7.0: 루틴 리스트 카드 한 줄에 필요한 요약(운동 개수/메인·보조 세트/하이라이트 태그)을 한 번에 반환합니다.
+// v2.7.2: highlightGroups 추가 - Secondary Tag 하나하나가 아니라 Primary Body Part(상체/하체/코어) 기준으로
+// 최대 3개 그룹으로 묶어 반환합니다(예: ["어깨·팔", "둔근·햄스트링", "코어"]). volume.js의 calcDayHighlightTags()는
+// 그대로 두고(이미 상체 태그 -> 하체 태그 -> "코어" 순서로 정렬된 flat 배열을 반환), 그 결과를 여기서만
+// Primary 소속 여부로 다시 나눕니다 - "Volume 계산 로직"이 아니라 표시용 재분류라 volume.js 수정 없이 처리됩니다.
+export function getRoutineDaySummary(dayKey) {
+  const exercises = getRoutineExercisesForEdit(dayKey);
+  const { main, assist } = calcDayRoleSetSummary(exercises);
+  const flatTags = calcDayHighlightTags(exercises);
+  const upperSet = new Set(secondaryTagsFor("상체"));
+  const lowerSet = new Set(secondaryTagsFor("하체"));
+  const upperGroup = flatTags.filter((tag) => upperSet.has(tag));
+  const lowerGroup = flatTags.filter((tag) => lowerSet.has(tag));
+  const highlightGroups = [upperGroup, lowerGroup, flatTags.includes("코어") ? ["코어"] : []]
+    .filter((group) => group.length)
+    .map((group) => group.join("·"));
+  return {
+    count: exercises.length,
+    mainSets: main,
+    assistSets: assist,
+    highlightGroups,
+  };
 }
 
 /* ---------------- 증량 후보 / 도전 ---------------- */

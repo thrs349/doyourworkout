@@ -12,10 +12,15 @@
   --radius: 12px;
   --radius-lg: 16px;
 
-  /* 글꼴: 문학적인 톤(감성) 기본 적용 */
-  --font-display: "Gowun Batang", serif;
-  --font-body: "Gowun Batang", serif;
-  --font-mono: "Space Mono", monospace;
+  /* 글꼴: v2.7.3 - 폰트 비교 샘플 검토 후 A안(혼용)으로 확정. "Noto Sans Mono CJK KR"은 Google Fonts
+     웹폰트 서비스에 정식 등록되어 있지 않아(비교 샘플 단계에서 확인) 대신 신뢰성 있게 로드되는 조합을
+     사용합니다: --font-mono은 "Noto Sans Mono"(라틴 전용 고정폭)를 우선 쓰고 한글 글리프가 필요한 자리는
+     자동으로 "Noto Sans KR"로 폴백됩니다(Noto Sans Mono엔 한글 글리프가 없음 - 브라우저가 문자 단위로
+     자동 폴백 처리). --font-body/--font-display는 그대로 "Noto Sans KR"(운동명 등 사람이 읽는 텍스트).
+     이전 v2.7.2의 Space Mono 전체 통일은 폐기합니다. */
+  --font-display: "Noto Sans KR", sans-serif;
+  --font-body: "Noto Sans KR", sans-serif;
+  --font-mono: "Noto Sans Mono", "Noto Sans KR", monospace;
 
   /* 색상 기본값 (Theme B) - theme.js가 부팅 시 즉시 덮어씀 */
   --color-bg: #FFF8B9;

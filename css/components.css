@@ -152,17 +152,28 @@
   border: 1px solid var(--color-border); border-radius: 10px; margin-bottom: var(--sp-2); touch-action: none; user-select: none;
 }
 .drag-row.dragging { border-color: var(--color-primary); box-shadow: 0 10px 22px rgba(0,0,0,.14); opacity: .95; }
+/* v2.7.4 롤백: 드래그 중 기울어지는 "틸트" 효과(rotate)를 제거했습니다. 그림자/확대는 "지금 들고 있다"는
+   피드백으로 남겨두되 회전은 더 이상 적용하지 않습니다. */
 .drag-ghost {
   position: fixed; z-index: 999; pointer-events: none; box-shadow: 0 16px 32px rgba(0,0,0,.22);
-  border-radius: 10px; transform: scale(1.02) rotate(-1deg); opacity: .96; transition: none;
+  border-radius: 10px; transform: scale(1.02); opacity: .96; transition: none;
 }
+/* v2.7.4 롤백: 점선(dashed) 테두리를 제거하고 단순한 배경 채움만 남겼습니다(이동 위치 표시 기능 자체는 유지). */
 .drag-placeholder {
-  border: 1.5px dashed var(--color-primary); border-radius: 10px; background: var(--color-primary-soft);
+  border-radius: 10px; background: var(--color-primary-soft);
   margin-bottom: var(--sp-2);
 }
-.drag-handle { color: var(--color-text-muted); font-size: 16px; letter-spacing: 2px; line-height: 1; cursor: grab; padding: 4px; }
+/* v2.7.4 롤백: ☰ 핸들 글리프를 다시 추가합니다(v2.7.3 이전 스타일 복원). */
+/* v2.7.5: 글리프 크기(font-size:16px)는 그대로 두고, 좌우 여백(padding)만 4px -> 2px로 줄여 종목명~큐노트
+   버튼 사이 공간을 확보합니다(세로 padding은 터치 영역 확보를 위해 유지). */
+.drag-handle { color: var(--color-text-muted); font-size: 16px; letter-spacing: 2px; line-height: 1; cursor: grab; padding: 4px 2px; }
 .order-badge { font-family: var(--font-mono); font-size: 10.5px; color: var(--color-primary); background: var(--color-primary-soft); width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.drag-row .name { flex: 1; font-size: 13.5px; font-weight: 600; }
+/* v2.7.4 롤백: ☰/순서/역할 아이콘 + 종목명을 계속 같은 클러스터 안에 두어, "순서↔역할" 간격과 "역할↔종목명"
+   간격이 서로 동일하게 유지됩니다(요청하신 "두 간격이 동일하거나 유사"). */
+.drag-row-icons { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+/* v2.7.0 UI 개선: 역할 배지의 Highlight Box(배경/테두리)를 제거하고 이모지 글리프만 남깁니다. */
+.role-badge { font-size: 14px; line-height: 1; min-width: 18px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.drag-row .name { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .drag-row.inactive { opacity: .55; }
 .drag-row.inactive .name { text-decoration: line-through; color: var(--color-text-muted); font-weight: 500; }
 .drag-row .remove-btn { color: var(--color-x); font-size: 13px; background: none; border: none; padding: 4px; }
@@ -205,6 +216,20 @@
   padding: 12px; font-size: 14px; color: var(--color-text-primary); font-family: var(--font-body);
 }
 .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; }
+.toggle-row span { font-size: 14px; color: var(--color-text-primary); }
+/* v2.7.5: 운동명 입력칸과 메인/보조 역할 토글을 같은 행에 배치(행 수를 늘리지 않기 위함). 역할 칸은
+   switch가 줄바꿈 없이 들어가기에 충분한 고정 폭(64px - v2.7.3에서 확인된 값)만 차지하고, 남는 폭은 전부
+   운동명 입력칸(flex:1)에 배분합니다. 헤더 줄도 동일한 폭 비율로 나눠 두 헤더가 각각 입력칸/토글 시작점과
+   y축이 맞습니다. */
+.name-role-headers { display: flex; align-items: baseline; gap: 2px; }
+.name-role-headers .field-label { margin-bottom: 6px; }
+.name-role-headers .field-label:first-child { flex: 1; }
+.name-role-headers .role-header-label { flex-shrink: 0; width: 56px; text-align: right; }
+.name-role-fields { display: flex; align-items: center; gap: 2px; }
+/* v2.7.12: 컬럼(56px) 안에서 스위치(42px)를 우측 정렬해 화면 안쪽 padding 경계에 딱 붙입니다. 컬럼 자체의
+   여유폭(14px)은 이제 입력창 쪽(왼쪽)에 남고, 위 gap(2px)과 합쳐 "입력창-토글" 시각적 간격도 16px가
+   되어(2+14=16) "토글-화면끝" 간격(화면 padding, 16px)과 동일해집니다. */
+.role-toggle-col { flex-shrink: 0; width: 56px; display: flex; justify-content: flex-end; }
 .switch { width: 42px; height: 24px; border-radius: 14px; background: var(--color-border); position: relative; flex-shrink: 0; border: none; }
 .switch.small { width: 34px; height: 20px; border-radius: 12px; }
 .switch.small::after { width: 14px; height: 14px; top: 3px; left: 3px; }
@@ -214,6 +239,14 @@
 .switch.on::after { transform: translateX(18px); }
 .type-toggle { display: flex; gap: 6px; flex-wrap: wrap; }
 .type-opt { flex: 1; min-width: 60px; text-align: center; padding: 9px 2px; border-radius: 9px; border: 1px solid var(--color-border); font-size: 12px; font-family: var(--font-body); color: var(--color-text-secondary); background: var(--color-surface); }
+/* v2.7.12: 태그 역할 배지(Ⓟ 주동근 / Ⓢ 보조근). 이전엔 버튼 기준 absolute 좌표로 배지 위치를 잡아서
+   라벨 길이가 바뀔 때마다 배지-텍스트 간격이 달라지는 문제가 있었습니다("버튼 기준"이라 "텍스트 기준"이
+   될 수 없는 구조). 이제 배지+라벨을 tag-inner(inline-flex) 하나의 그룹으로 묶습니다. inline-flex는
+   인라인 레벨 박스라 부모(.type-opt)의 text-align:center를 그대로 물려받아 버튼 중앙에 정렬되고, 그룹
+   내부 간격은 gap 값 하나로 고정되어 "가슴"이든 "대퇴사두"든 배지-텍스트 간격이 항상 동일합니다. */
+.tag-inner { display: inline-flex; align-items: center; gap: 3px; }
+.tag-role-badge { font-size: 10px; line-height: 1; color: var(--color-primary); flex-shrink: 0; }
+.tag-label { pointer-events: none; }
 .type-opt.selected { border-color: var(--color-primary); background: var(--color-primary-soft); color: var(--color-primary); font-weight: 700; }
 .stepper { display: flex; align-items: center; justify-content: space-between; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; padding: 8px 14px; }
 .stepper .sval { font-family: var(--font-mono); font-weight: 700; font-size: 16px; }
@@ -234,7 +267,11 @@
 .section-label { font-family: var(--font-mono); font-size: 10.5px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .06em; margin: var(--sp-5) 0 var(--sp-2); }
 
 /* 목록형 화면 (종목 목록, 요일 목록, 기록 목록) */
-.list-row { display: flex; align-items: center; justify-content: space-between; padding: 13px 14px; border: 1px solid var(--color-border); border-radius: 12px; margin-bottom: var(--sp-2); background: var(--color-surface); }
+.list-row { display: flex; align-items: center; justify-content: space-between; padding: 13px 14px; border: 1px solid var(--color-border); border-radius: 12px; margin-bottom: var(--sp-2); background: var(--color-surface); text-align: left; }
+/* v2.7.2 UI 개선: 요일 카드 3행 -> 2행. 운동명과 Highlight Box를 같은 줄에 배치(1행), 메타 텍스트는 별도 줄(2행).
+   폭이 부족하면 chip만 다음 줄로 자연스럽게 넘어가되(flex-wrap), 운동명 자체는 항상 온전히 보이도록 줄이지 않습니다. */
+.list-row-title-line { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; row-gap: 2px; }
+.list-row-title-line .ex-meta-chips { margin-top: 0; }
 .list-row .name { font-size: 14px; font-weight: 600; }
 .list-row .meta { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-muted); margin-top: 2px; }
 
@@ -270,6 +307,56 @@
 .ex-chip-tag { letter-spacing: 0; }
 
 .list-row .arrow { color: var(--color-text-muted); }
+
+/* v2.7.0 UI 개선: 이 화면에서만 .table-area가 남는 flex 공간만큼 늘어나지 않고 실제 요일 카드 목록
+   높이만큼만 차지하도록 합니다(다른 화면의 .table-area는 그대로 flex:1 유지 - 전역 변경 아님). 콘텐츠가
+   짧으면 카드/하단 탭 아래에 여백이 남을 수 있지만(정중앙 배치 대신 안정성 우선, v2.7.8), 콘텐츠가
+   길어지면 overflow-y:auto로 이 영역만 내부 스크롤됩니다(페이지 전체 스크롤 방지). */
+#routine-list-screen .table-area { flex: 0 1 auto; }
+/* v2.7.10 버그 수정: v2.7.8 리팩터링 때 실수로 빠졌던 규칙을 복원합니다. 이게 없으면 마지막 요일 카드의
+   margin-bottom(var(--sp-2), 8px)이 .volume-card의 margin-top(var(--sp-3), 12px)과 그대로 합쳐져 위쪽
+   간격만 20px로 커지고, 아래쪽(하단 탭 방향)은 .volume-card의 margin-bottom(12px)만 남아 "위는 크고
+   아래는 작은" 비대칭이 생깁니다. 마지막 카드의 margin-bottom을 0으로 없애면 위/아래 둘 다 정확히
+   .volume-card의 margin(12px)만 남아 대칭이 맞습니다. */
+#routine-list-screen .table-area .list-row:last-child { margin-bottom: 0; }
+
+/* v2.7.8: Weekly Volume Card 위치를 "남는 공간의 정중앙"(flex 스페이서) 방식에서 고정 여백 방식으로
+   전환합니다. 스페이서 방식은 새로고침 직후처럼 viewport/폰트 로딩이 아직 안정되지 않은 시점에 계산이
+   흔들려(100vh->100dvh 적용 후에도 실기기에서 재현됨) 카드 위치가 매번 달라지고 스크롤까지 발생하는
+   근본적인 문제가 있었습니다. margin-top/margin-bottom 고정값은 외부 요인과 무관하게 항상 동일해서,
+   새로고침 여부와 관계없이 루틴 카드-볼륨 카드-하단 탭 사이 간격이 안정적으로 유지됩니다. */
+.volume-card { border: 1px solid var(--color-border); border-radius: 12px; padding: 12px 10px; margin: var(--sp-3) 0; background: var(--color-surface); flex-shrink: 0; }
+.volume-card-headers { display: flex; align-items: baseline; flex-wrap: wrap; column-gap: 10px; row-gap: 2px; margin-bottom: 8px; }
+/* v2.7.5: "상/하체 밸런스"를 헤더 행 자체로 옮기고, 그 옆에 상체/하체/코어 값을 인라인으로 표시합니다.
+   볼드는 쓰지 않고(font-weight 그대로 normal), 라벨만 색상(--color-primary)으로 강조합니다.
+   v2.8.0: 헤더의 MEV/MAV 상태 아이콘을 제거했습니다(값은 순수 세트 합산으로 변경). 이 헤더 구조는
+   v2.7.9에서도 "절대 변경 금지"로 유지됩니다. */
+.volume-balance-label { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--color-primary); text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
+.volume-balance-item { font-family: var(--font-mono); font-weight: 400; font-size: 11px; white-space: nowrap; }
+.volume-balance-item-label { color: var(--color-text-secondary); }
+.volume-balance-item-value { color: var(--color-text-primary); }
+/* v2.7.9: 4행x8열 Grid(부위/세트/비율)를 폐기하고 가로 막대그래프로 재구성합니다. "세트" 열은 요청대로
+   제거(본세트/보조근 포함 여부가 헷갈린다는 피드백). 제목(.volume-grid-title, "상체 자극"/"하체 자극")은
+   그대로 재사용합니다.
+   v2.7.10 버그 수정: 라벨 폭을 고정 40px 공유값 대신, 섹션별 독립 CSS Grid(.volume-bar-grid)의 auto 열로
+   바꿨습니다 - 상체 섹션은 상체 라벨(가슴/등/어깨/팔) 중 가장 긴 것에, 하체 섹션은 하체 라벨(대퇴사두/
+   둔근/햄스트링) 중 가장 긴 것에 각자 맞춰 x축 시작점이 독립적으로 결정됩니다. 같은 섹션 안의 행들끼리는
+   같은 Grid 열을 공유하므로 여전히 서로 정렬됩니다. 트랙 안에서 막대(.volume-bar-fill, width:N%로 상대비
+   표현)와 % 텍스트가 순서대로 나열되는 flex 흐름이라, 막대가 짧아지면 % 표시 위치도 자연스럽게 따라
+   이동합니다(별도 absolute 계산 불필요).
+   v2.7.11: 상체/하체 세로 스택(카드가 길어짐) 대신 좌우 50:50 배치로 변경. .volume-bar-columns가 두
+   섹션을 flex:1씩 나눠 가지며, 각 섹션 내부의 독립 정렬(.volume-bar-grid)은 그대로 유지됩니다. 폭이
+   절반으로 줄어드는 만큼 트랙 사이 gap을 살짝 좁혀 막대/% 표시 공간을 확보합니다. */
+.volume-bar-columns { display: flex; gap: 10px; margin-top: 8px; align-items: flex-start; }
+.volume-bar-columns .volume-bar-section:first-child { flex: 47 1 0; min-width: 0; }
+.volume-bar-columns .volume-bar-section:last-child { flex: 53 1 0; min-width: 0; }
+.volume-grid-title { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--color-primary); text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; margin-bottom: 4px; }
+.volume-bar-grid { display: grid; grid-template-columns: auto 1fr; column-gap: 6px; row-gap: 2px; align-items: center; }
+.volume-bar-row { display: contents; }
+.volume-bar-label { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.volume-bar-track { display: flex; align-items: center; gap: 4px; min-width: 0; padding: 4px 0; }
+.volume-bar-fill { display: block; height: 10px; min-width: 2px; border-radius: 4px; background: var(--color-primary); flex-shrink: 0; }
+.volume-bar-percent { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-primary); white-space: nowrap; }
 
 .result-summary { display: flex; align-items: center; justify-content: space-between; padding: 12px 4px; border-top: 1px solid var(--color-border); }
 .result-summary:first-child { border-top: none; }
@@ -329,7 +416,7 @@
 /* v2.1.0 Patch: 종목명 제목을 없앴으므로 .cue-modal-title은 더 이상 사용하지 않습니다. */
 .cue-view-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .cue-view-item { font-size: 14px; color: var(--color-text-primary); line-height: 1.4; }
-.cue-view-item::before { content: "☑ "; color: var(--color-primary); font-weight: 700; }
+.cue-view-item::before { content: "✅ "; color: var(--color-primary); font-weight: 700; }
 .cue-view-empty { color: var(--color-text-muted); font-size: 13px; text-align: center; margin: 8px 0; }
 
 /* 큐 노트 관리(추가/수정/삭제) 모달 (운동 관리 화면) */

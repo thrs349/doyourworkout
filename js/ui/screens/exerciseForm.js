@@ -3,7 +3,7 @@
 import { el, mount } from "../dom.js";
 import { navigate } from "../router.js";
 import * as state from "../../core/state.js";
-import { BODY_PARTS, secondaryTagsFor } from "../../core/models.js";
+import { BODY_PARTS, secondaryTagsFor, ROLES } from "../../core/models.js";
 import { showAlert } from "../components/modal.js";
 
 function stepper(initial, min, max) {
@@ -42,7 +42,14 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
   let isUnilateral = defInitial.isUnilateral;
   // v2.6.0: 운동 태그 시스템(탐색 전용). judge.js/gain.js와 무관한 필드입니다.
   let primaryBodyPart = defInitial.primaryBodyPart ?? null;
-  let secondaryTags = new Set(defInitial.secondaryTags || []);
+  // v2.8.0: Set(무순서) -> Array(선택 순서 보존). 저장 형태 자체는 이미 배열이라 스키마 변경 없음.
+  // 기존 UI는 선택 개수 제한이 없었으므로, 혹시 4개 이상 저장된 예전 데이터가 있다면 앞의 3개만 사용합니다
+  // (배열 순서 = 저장 당시 선택 순서이므로 slice(0,3)이 곧 "①+② 최대 2개"를 그대로 보존합니다).
+  let secondaryTags = [...(defInitial.secondaryTags || [])].slice(0, 3);
+  // v2.7.0: 운동 역할(볼륨 계산 전용, 루틴별이 아닌 종목 자체의 기본 역할). judge.js/gain.js와 무관합니다.
+  // 코어(primaryBodyPart==="코어")는 이 토글 자체를 숨기고 항상 "main"으로 저장합니다
+  // (effectiveRole()이 표시/계산 시 primaryBodyPart를 보고 "코어"로 자동 파생하므로, 저장값 자체는 의미가 없습니다).
+  let role = defInitial.role || ROLES.MAIN;
 
   const isEdit = !!exerciseId;
 
@@ -51,8 +58,40 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
     type: "text",
     placeholder: "예: 레그프레스",
     value: name,
+    style: { flex: "1", minWidth: "0" },
     oninput: (e) => (name = e.target.value),
   });
+
+  // v2.7.5 UI 롤백: v2.7.4에서 분리했던 "운동명" / "메인·보조"를 다시 한 행으로 합칩니다(행 수를 늘리지
+  // 않기 위한 요청). 이름 입력칸은 flex:1로 남는 폭을 가져가고, 역할 칸은 고정 폭(64px - v2.7.3에서 확인된
+  // "메인/보조" 헤더 줄바꿈 방지에 필요한 최소 폭)만 차지합니다. 헤더 줄도 같은 폭 비율로 나눠 운동명 헤더는
+  // 입력칸 시작점과, 메인/보조 헤더는 역할 토글 시작점과 각각 y축이 자연히 맞습니다.
+  const roleSwitch = el("button", {
+    class: `switch${role === ROLES.ASSIST ? " on" : ""}`,
+    onclick: () => {
+      role = role === ROLES.ASSIST ? ROLES.MAIN : ROLES.ASSIST;
+      roleSwitch.classList.toggle("on", role === ROLES.ASSIST);
+    },
+  });
+  // v2.7.13-patch: v2.7.13에서 도입했던 "메인"/"/"/"보조" 3분할 구조(role-header-inner/half/slash)를
+  // 되돌리고, v2.7.12까지 쓰던 단일 텍스트 문자열 방식으로 복원합니다.
+  const nameRoleHeaderRow = el("div", { class: "name-role-headers" }, [
+    el("div", { class: "field-label", text: "운동명" }),
+    el("div", { class: "field-label role-header-label", text: "메인/보조" }),
+  ]);
+  const roleToggleCol = el("div", { class: "role-toggle-col" }, [roleSwitch]);
+  const nameRoleFieldRow = el("div", { class: "name-role-fields" }, [nameInput, roleToggleCol]);
+  const nameRoleGroup = el("div", { class: "field-group" }, [nameRoleHeaderRow, nameRoleFieldRow]);
+  const roleHeaderLabel = nameRoleHeaderRow.children[1];
+
+
+  function refreshRoleUI() {
+    // 코어(primaryBodyPart==="코어")는 항상 자동으로 코어 취급되므로, 역할 관련 요소(헤더+토글)만 숨기고
+    // 운동명 헤더/입력칸은 그대로 유지합니다. 역할 칸이 사라지면 flex:1인 이름 입력칸이 남는 폭을 채웁니다.
+    const hideRole = primaryBodyPart === "코어";
+    roleHeaderLabel.style.display = hideRole ? "none" : "block";
+    roleToggleCol.style.display = hideRole ? "none" : "flex";
+  }
 
   // ---- 증량 방식 4분기 토글 ----
   const methodOpts = {
@@ -86,34 +125,59 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
 
   // ---- v2.6.3: 보조 태그(선택, 복수 선택) - 선택된 운동 부위에 맞는 태그 목록으로 매번 다시 그립니다.
   // (상체: 가슴/등/어깨/팔, 하체: 대퇴사두/둔근/햄스트링, 코어: 없음 - secondaryTagsFor()가 빈 배열 반환) ----
+  // v2.8.0: 저장 값은 이미 일반 배열이라 스키마 변경 없이, "배열의 인덱스 순서 = 선택 순서"라는 규칙만
+  // UI에서 지킵니다. 0번째 = 주동근(Ⓟ, 최대 1개), 1~2번째 = 보조근(Ⓢ, 최대 2개), 총 최대 3개.
+  // v2.7.12: 배지를 버튼 기준 absolute 좌표로 미세조정하던 방식을 폐기합니다. 라벨 길이가 달라질 때마다
+  // 배지-텍스트 간격이 달라지는 근본 원인이었습니다("버튼 기준"이라 "텍스트 기준"이 될 수 없었음). 이제
+  // 배지+라벨을 tag-inner(inline-flex) 하나의 그룹으로 묶고, 이 그룹 자체를 버튼 중앙에 정렬합니다 -
+  // 그룹 내부 간격은 flex gap 하나로 고정되어, 라벨이 몇 글자든 배지-텍스트 간격이 항상 동일합니다.
   let secondaryTagOpts = {};
-  // v2.6.5: 실기기 테스트 반영 - "보조 태그" 텍스트 라벨을 제거합니다(버튼 기능/저장 구조는 그대로 유지).
   const secondaryTagButtons = el("div", { class: "type-toggle" });
   const secondaryTagGroup = el("div", { class: "field-group" }, [secondaryTagButtons]);
 
   function rebuildSecondaryTagButtons() {
     const tags = secondaryTagsFor(primaryBodyPart);
-    secondaryTagOpts = Object.fromEntries(
-      tags.map((tag) => [tag, el("div", { class: "type-opt", text: tag, onclick: () => toggleSecondaryTag(tag) })])
-    );
-    secondaryTagButtons.replaceChildren(...tags.map((tag) => secondaryTagOpts[tag]));
+    secondaryTagOpts = {};
+    tags.forEach((tag) => {
+      const badge = el("span", { class: "tag-role-badge" });
+      const label = el("span", { class: "tag-label", text: tag });
+      const inner = el("span", { class: "tag-inner" }, [badge, label]);
+      const btn = el("div", { class: "type-opt", onclick: () => toggleSecondaryTag(tag) }, [inner]);
+      secondaryTagOpts[tag] = { btn, badge };
+    });
+    secondaryTagButtons.replaceChildren(...tags.map((tag) => secondaryTagOpts[tag].btn));
     secondaryTagGroup.style.display = tags.length > 0 ? "block" : "none";
   }
 
   function refreshBodyPartUI() {
     BODY_PARTS.forEach((part) => bodyPartOpts[part].classList.toggle("selected", part === primaryBodyPart));
-    Object.keys(secondaryTagOpts).forEach((tag) => secondaryTagOpts[tag].classList.toggle("selected", secondaryTags.has(tag)));
+    // v2.7.9: 선택 순서에 따라 배지(Ⓟ=주동근/Ⓢ=보조근)만 갱신합니다. 라벨 텍스트는 손대지 않아 중앙 정렬 유지.
+    // v2.7.12: 미선택 시 배지를 display:none으로 완전히 제거합니다(자리만 비워두면 라벨이 그룹 중심에서
+    // 살짝 밀려 보일 수 있어, 라벨 단독일 때도 정확히 버튼 중앙에 오도록 함).
+    Object.keys(secondaryTagOpts).forEach((tag) => {
+      const idx = secondaryTags.indexOf(tag);
+      const selected = idx !== -1;
+      const { btn, badge } = secondaryTagOpts[tag];
+      btn.classList.toggle("selected", selected);
+      badge.textContent = selected ? (idx === 0 ? "Ⓟ" : "Ⓢ") : "";
+      badge.style.display = selected ? "inline-flex" : "none";
+    });
   }
   function selectBodyPart(part) {
     primaryBodyPart = primaryBodyPart === part ? null : part;
     // 부위가 바뀌면(또는 선택 해제되면) 보조 태그 선택값을 초기화합니다(부위마다 태그 목록 자체가 다르므로).
-    secondaryTags = new Set();
+    secondaryTags = [];
     rebuildSecondaryTagButtons();
     refreshBodyPartUI();
+    refreshRoleUI(); // v2.7.0: 코어 선택/해제에 따라 역할 토글 표시 여부가 바뀝니다.
   }
   function toggleSecondaryTag(tag) {
-    if (secondaryTags.has(tag)) secondaryTags.delete(tag);
-    else secondaryTags.add(tag);
+    const idx = secondaryTags.indexOf(tag);
+    if (idx !== -1) {
+      secondaryTags.splice(idx, 1); // 재선택 시 제거
+    } else if (secondaryTags.length < 3) {
+      secondaryTags.push(tag); // 선택 순서 그대로 뒤에 추가(0번째=주동근, 이후=보조근). 3개 초과 시 무시.
+    }
     refreshBodyPartUI();
   }
 
@@ -211,7 +275,7 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
       el("div", { class: "title", text: title }),
       el("span", { style: { opacity: 0 } }, "·"),
     ]),
-    el("div", { class: "field-group" }, [el("div", { class: "field-label", text: "운동명" }), nameInput]),
+    nameRoleGroup,
     el("div", { class: "field-group" }, [
       el("div", { class: "field-label", text: "증량 방식" }),
       el("div", { class: "type-toggle" }, [methodOpts.machine, methodOpts.freeweight, methodOpts.high_rep, methodOpts.bodyweight]),
@@ -279,9 +343,13 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
             // v2.6.0: 운동 태그 시스템(탐색 전용). secondaryTags는 상체가 아니면 UI에서 이미 비워지지만,
             // 저장 시점에도 한 번 더 방어적으로 정리합니다.
             primaryBodyPart,
-            // v2.6.3: 부위 변경 시 secondaryTags를 항상 초기화하고 버튼도 해당 부위 목록으로만 다시 그리므로,
-            // 이 시점의 secondaryTags Set은 이미 현재 primaryBodyPart에 유효한 태그만 담고 있습니다.
-            secondaryTags: Array.from(secondaryTags),
+            // v2.8.0: 부위 변경 시 secondaryTags를 항상 초기화하고 버튼도 해당 부위 목록으로만 다시 그리므로,
+            // 이 시점의 secondaryTags 배열은 이미 현재 primaryBodyPart에 유효한 태그만, 선택 순서 그대로 담고
+            // 있습니다(0번째=주동근/①, 1~2번째=보조근/②). 이미 배열이라 별도 변환 없이 그대로 저장합니다.
+            secondaryTags,
+            // v2.7.0: 코어는 역할 토글이 숨겨져 사용자가 고를 수 없으므로 항상 기본값("main")으로 저장합니다.
+            // 실제 "코어" 취급은 저장값이 아니라 models.js의 effectiveRole()이 primaryBodyPart를 보고 자동 판단합니다.
+            role: primaryBodyPart === "코어" ? ROLES.MAIN : role,
           };
 
           if (isEdit) {
@@ -326,6 +394,7 @@ function renderForm(root, { title, exerciseId, defInitial, stateInitial, onBack,
   refreshMethodUI();
   rebuildSecondaryTagButtons(); // v2.6.3: 초기(수정 진입 시 기존 부위) 태그 버튼을 먼저 그린 뒤 선택 상태를 반영
   refreshBodyPartUI();
+  refreshRoleUI(); // v2.7.0: 초기 진입 시(수정 화면 등) 코어 여부에 따라 역할 토글 표시 상태를 맞춥니다.
   mount(root, screen);
 }
 
@@ -350,6 +419,7 @@ export function renderExerciseForm(root, params) {
       isUnilateral: false,
       primaryBodyPart: null,
       secondaryTags: [],
+      role: ROLES.MAIN,
     },
     stateInitial: null,
     onBack: () => history.back(),

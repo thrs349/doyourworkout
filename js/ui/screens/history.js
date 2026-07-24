@@ -61,8 +61,10 @@ export function renderHistory(root) {
   // 데이터 구조 변경이나 migration 없이 표시 문구만 수정하면 됩니다.
   // v2.6.5: 실기기 테스트 반영 - "기록 · 루틴명" 형태 대신 "요일 + 루틴명"으로 변경(예: "월요일 상체A").
   // v2.6.6: 실기기 테스트 반영 - "요일 + 루틴명" 대신 "오늘 날짜(요일) + 루틴명"으로 변경(예: "7.18(일) · 상체A").
-  // toLocaleDateString은 "7. 18."처럼 공백/마침표가 붙어 요청 형식과 달라 getMonth()/getDate()로 직접 조합합니다.
-  // 이 값도 매 렌더마다 "지금 이 순간"을 새로 읽어 표시하는 것뿐이라 과거 세션 기록에는 전혀 영향이 없습니다.
+  // v2.7.0: 실기기 테스트 반영 - 날짜와 "(요일)" 사이가 너무 붙어 보인다는 피드백에 따라 최소 간격을 추가.
+  // 일반 공백(" ") 대신 얇은 공백(U+2009 thin space)을 써서, " · " 구분자 좌우 간격보다는 좁게 유지합니다.
+  // 별도 태그/레이아웃 변경 없이 문자열 안에만 넣는 것이라 헤더 높이·정렬·줄바꿈 동작에 영향이 없습니다.
+  const DATE_WEEKDAY_GAP = "\u2009";
   const version = state.getDefaultVersion(dayKey);
   const routineTitle = version.title || "루틴";
   const now = new Date();
@@ -74,7 +76,7 @@ export function renderHistory(root) {
 
   const screen = el("div", { id: "history-screen", class: "screen-content" }, [
     el("div", { class: "topbar" }, [
-      el("div", { class: "title", text: `${dateLabel}(${dayLabel}) · ${routineTitle}` }),
+      el("div", { class: "title", text: `${dateLabel}${DATE_WEEKDAY_GAP}(${dayLabel}) · ${routineTitle}` }),
       el("span", { style: { opacity: 0 } }, "·"),
     ]),
     el("div", { class: "table-area" }, cards),
