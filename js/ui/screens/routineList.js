@@ -125,8 +125,10 @@ function buildVolumeCard() {
 
   return el("div", { class: "volume-card" }, [
     buildBalanceHeader(primaryRows),
-    buildBarSection("상체 자극", upperRows),
-    buildBarSection("하체 자극", lowerRows),
+    // v2.7.11: 상체 자극/하체 자극을 세로 스택("상체 밑에 하체")에서 좌우 50:50 배치로 변경. 각 섹션은
+    // .volume-bar-columns 안에서 flex:1(카드 폭 절반)을 차지하고, 섹션 내부 정렬(v2.7.10에서 구현한
+    // 섹션별 독립 Grid - 라벨 열 폭이 그 섹션 자신의 내용에 맞춰짐)은 그대로 유지됩니다.
+    el("div", { class: "volume-bar-columns" }, [buildBarSection("상체 자극", upperRows), buildBarSection("하체 자극", lowerRows)]),
   ]);
 }
 

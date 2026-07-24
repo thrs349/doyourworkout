@@ -81,4 +81,4 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // 제보는 코드 재검토+가짜 DOM 시뮬레이션으로 재현되지 않음(계산/렌더링 로직 자체는 정상 확인) - 캐시
 // 생애주기 관련 가능성 있음, 상세 내용은 보고 참고. 데이터 구조·SCHEMA_VERSION·
 // volume.js/state.js/models.js/storage.js·judge.js/gain.js 전부 무변경.
-export const APP_VERSION = "v2.7.10";
+export const APP_VERSION = "v2.7.11";
