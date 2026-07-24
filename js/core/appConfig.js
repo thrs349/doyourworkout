@@ -93,4 +93,11 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // 재검토+가짜 DOM 시뮬레이션으로 재현되지 않음(계산/렌더링 로직 자체는 정상 확인, 이후 실기기 재현 결과
 // "보조 태그 미설정 종목은 분포 그래프에 기여하지 않는" 의도된 동작으로 확인되어 현상 유지 확정).
 // 데이터 구조·SCHEMA_VERSION·volume.js/state.js/models.js/storage.js·judge.js/gain.js 전부 무변경.
-export const APP_VERSION = "v2.7.12";
+// v2.7.13: (검토 후 반영) (a) 운동 수정 화면의 "메인/보조" 헤더를 하나의 텍스트 문자열에서 [메인(flex:1,
+// 우측정렬)] [/(고정폭)] [보조(flex:1,좌측정렬)] 3분할 구조로 변경 - "메인"/"보조"에 동일한 flex 폭을 줘서
+// "/"가 그 그룹의 정중앙에 폰트 렌더링과 무관하게 구조적으로 위치하고, 이 그룹을 스위치(42px)와 동일한
+// 폭·정렬 규칙(56px 컬럼 안에서 우측 정렬)으로 배치해 "/" 위치와 스위치 중심이 항상 일치하도록 함,
+// (b) Weekly Volume Dashboard 막대그래프의 행 사이 간격만 4px->2px로 축소(제목→첫 행 간격은
+// .volume-grid-title의 별도 margin-bottom이라 그대로 유지, 막대 계산/%/라벨 정렬은 무변경).
+// 데이터 구조·SCHEMA_VERSION·volume.js/state.js/models.js/storage.js·judge.js/gain.js 전부 무변경.
+export const APP_VERSION = "v2.7.13";

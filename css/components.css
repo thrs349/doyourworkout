@@ -224,7 +224,14 @@
 .name-role-headers { display: flex; align-items: baseline; gap: 2px; }
 .name-role-headers .field-label { margin-bottom: 6px; }
 .name-role-headers .field-label:first-child { flex: 1; }
-.name-role-headers .role-header-label { flex-shrink: 0; width: 56px; text-align: right; }
+.name-role-headers .role-header-label { flex-shrink: 0; width: 56px; display: flex; justify-content: flex-end; }
+/* v2.7.13: 스위치(42px, .role-toggle-col 안에서 flex-end 정렬)와 동일한 폭·정렬 규칙을 공유하는 42px
+   그룹. "메인"/"보조"에 동일한 flex:1을 줘서 "/"가 이 그룹의 정중앙에 구조적으로 위치합니다. */
+.role-header-inner { display: flex; align-items: baseline; width: 42px; }
+.role-header-inner .role-header-half { flex: 1; white-space: nowrap; }
+.role-header-inner .role-header-half:first-child { text-align: right; }
+.role-header-inner .role-header-half:last-child { text-align: left; }
+.role-header-slash { padding: 0 1px; }
 .name-role-fields { display: flex; align-items: center; gap: 2px; }
 /* v2.7.12: 컬럼(56px) 안에서 스위치(42px)를 우측 정렬해 화면 안쪽 padding 경계에 딱 붙입니다. 컬럼 자체의
    여유폭(14px)은 이제 입력창 쪽(왼쪽)에 남고, 위 gap(2px)과 합쳐 "입력창-토글" 시각적 간격도 16px가
@@ -351,7 +358,7 @@
 .volume-bar-columns .volume-bar-section:first-child { flex: 47 1 0; min-width: 0; }
 .volume-bar-columns .volume-bar-section:last-child { flex: 53 1 0; min-width: 0; }
 .volume-grid-title { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--color-primary); text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; margin-bottom: 4px; }
-.volume-bar-grid { display: grid; grid-template-columns: auto 1fr; column-gap: 6px; row-gap: 4px; align-items: center; }
+.volume-bar-grid { display: grid; grid-template-columns: auto 1fr; column-gap: 6px; row-gap: 2px; align-items: center; }
 .volume-bar-row { display: contents; }
 .volume-bar-label { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .volume-bar-track { display: flex; align-items: center; gap: 4px; min-width: 0; padding: 4px 0; }
