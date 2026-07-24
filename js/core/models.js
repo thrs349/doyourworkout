@@ -2,7 +2,7 @@
 // 앱이 다루는 데이터의 "형태"만 정의하는 순수 모듈입니다.
 // UI나 저장소에 의존하지 않으므로, 이후 다른 프레임워크로 옮기더라도 그대로 재사용할 수 있습니다.
 
-export const SCHEMA_VERSION = 16; // v2.7.0: Exercise Role System. ExerciseDefinition에 role 필드 추가.
+export const SCHEMA_VERSION = 17; // v2.8.0: Recovery Mode. ExerciseRecord에 recoveryMode 필드 추가.
 // 볼륨 계산(volume.js) 전용 데이터이며 judge.js/gain.js는 이 필드를 전혀 참조하지 않습니다(판정/증량/상태전이와 무관).
 
 // 증량 방식(gainMethod) 목록입니다. 새 방식을 추가하려면 여기 하나만 더 넣고,
@@ -280,6 +280,11 @@ export function makeExerciseRecord({
   highRepGoalReviewSuggested = false, // 고반복(high_rep) 전용: 이 세션에서 모든 본세트가 상한 반복수를 연속 수행으로 달성해
   // "목표 중량 검토" 안내를 띄워야 하는 경우 true. 맨몸의 goalAdjustSuggested와 달리 ExerciseState에는 대응하는
   // 지속 상태(pending)가 전혀 없습니다 - 오직 이 세션 기록에만 1회성으로 남고, 다음 세션 판단에는 전혀 영향을 주지 않습니다.
+  // v2.8.0: 회복 모드(Recovery Mode) 전용. 이 레코드가 회복 모드 세션에서 만들어졌는지만 나타내는 순수 표시용
+  // 플래그입니다. judge.js/gain.js는 이 필드를 전혀 참조하지 않으며(판정/증량 계산과 무관), ExerciseState에도
+  // 대응하는 지속 상태가 없습니다(세션 단위 런타임 값 - state.js의 finishSession()이 draftSession.recoveryMode를
+  // 그대로 각 레코드에 옮겨 적을 뿐입니다). history.js의 "최근 기록" 표시(⚡/🌱)에만 사용됩니다.
+  recoveryMode = false,
 } = {}) {
   return {
     exerciseId,
@@ -292,6 +297,7 @@ export function makeExerciseRecord({
     gainEvent,
     goalAdjustSuggested,
     highRepGoalReviewSuggested,
+    recoveryMode,
   };
 }
 

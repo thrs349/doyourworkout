@@ -104,4 +104,8 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // "메인/보조", text-align:right)으로 롤백. (b) Dashboard 막대그래프 개선 사항(47:53 분배, 좌우 2열,
 // 행 간격 2px 등)은 그대로 유지. 토글 클릭 동작·role 데이터 처리·운동명 입력칸 width 구조는 무변경.
 // 데이터 구조·SCHEMA_VERSION·volume.js/state.js/models.js/storage.js·judge.js/gain.js 전부 무변경.
-export const APP_VERSION = "v2.7.13";
+// v2.7 정식 릴리즈: v2.7.0~v2.7.13-patch까지의 누적 개발/실기기 테스트 반영분(Exercise Role System,
+// Weekly Volume Dashboard 목적 변경 및 막대그래프, 태그 주동근/보조근 배지, UI 정렬·캐싱 전략 개선 등)을
+// 하나의 정식 릴리즈로 묶어 "v2.7" 라벨로 배포합니다. v2.6 -> "v2.6" 라벨 통합 때와 동일한 방식이며,
+// 기능/데이터 구조 변경은 없고 버전 표기만 정리합니다(코드 로직 무변경, 위 상세 이력은 그대로 보존).
+export const APP_VERSION = "v2.7";

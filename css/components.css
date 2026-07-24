@@ -50,6 +50,23 @@
 .routine-card-lg .card-fg { position: relative; z-index: 1; }
 .routine-card-lg h2 { font-family: var(--font-display); font-size: 24px; margin: 0 0 var(--sp-3); font-weight: 700; }
 .eyebrow-title { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; color: var(--color-primary); text-transform: uppercase; margin-bottom: 8px; }
+
+/* v2.8.0: Recovery Mode - "오늘의 루틴" 헤더 우측 상단의 ⚡/🌱 모드 선택 버튼.
+   기능 구현 우선 원칙에 따라 세로 토글이 아닌, 기존 fab-btn과 톤을 맞춘 작은 원형 버튼 2개로 구성합니다. */
+.routine-card-head { display: flex; align-items: center; justify-content: space-between; }
+.routine-card-head .eyebrow-title { margin-bottom: 0; }
+.mode-toggle { display: flex; gap: 6px; flex-shrink: 0; }
+.mode-btn {
+  width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: var(--color-surface); border: 1.5px solid var(--color-border); padding: 0;
+}
+.mode-btn.active { border-color: var(--color-primary); background: var(--color-primary-soft); }
+.mode-btn-icon { font-size: 14px; line-height: 1; }
+
+/* v2.8.0: 운동 화면 상단바의 회복 모드 배지. 기존 균형 맞춤용 투명 placeholder 자리를 그대로 재사용하므로
+   새 레이아웃 공간을 차지하지 않습니다. */
+.topbar-mode-badge { font-size: 16px; line-height: 1; }
+
 .ex-preview { display: flex; flex-direction: column; gap: var(--sp-2); }
 .ex-preview-row { display: flex; align-items: center; gap: var(--sp-2); font-size: 14px; color: var(--color-text-secondary); }
 .ex-num { font-family: var(--font-mono); font-size: 10.5px; color: var(--color-text-muted); width: 18px; }

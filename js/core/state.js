@@ -515,15 +515,21 @@ export function clearDraft() {
 /* ---------------- 오늘의 운동(세션) ---------------- */
 
 // 화면에 그릴 계획(워밍업/본세트/도전세트 행 구조)을 만듭니다. 아직 세션을 저장하지는 않습니다.
-export function buildWorkoutPlan(dayKey) {
-  const challengeExerciseId = resolveTodayChallengeExerciseId(dayKey);
+// v2.8.0: recoveryMode(당일 세션 단위 런타임 값, 기본 false)를 받으면 본세트 수만 줄입니다.
+// - 회복 모드에서는 도전세트를 그날 아예 생성하지 않습니다(후보 상태 자체는 건드리지 않음 - designatedChallengeExerciseId/
+//   isGainCandidate는 이 함수가 전혀 참조/변경하지 않으므로 다음 일반 모드 세션에는 기존 후보가 그대로 노출됩니다).
+// - 세트 감소 규칙(본세트 -1, 단 2세트 이하는 유지)은 freeweight의 stage 반영(아래 baseSetCount 계산)이 끝난
+//   "최종 본세트 수" 기준으로 적용합니다.
+export function buildWorkoutPlan(dayKey, recoveryMode = false) {
+  const challengeExerciseId = recoveryMode ? null : resolveTodayChallengeExerciseId(dayKey);
   const exercises = getRoutineExercises(dayKey);
 
   return exercises.map((ex) => {
     const state = getExerciseState(ex.id);
     const isHighRep = ex.gainMethod === "high_rep";
     const isBodyweightTime = ex.gainMethod === "bodyweight" && ex.bodyweightGoalType === "time";
-    // 고반복/맨몸/편측 종목은 도전세트를 쓰지 않습니다.
+    // 고반복/맨몸/편측 종목은 도전세트를 쓰지 않습니다. 회복 모드에서는 challengeExerciseId가 항상 null이라
+    // 이 조건도 항상 false가 됩니다(도전세트 미생성).
     const isChallengeToday =
       !isHighRep && ex.gainMethod !== "bodyweight" && !ex.isUnilateral && ex.id === challengeExerciseId;
     // 프리웨이트 전용: 10x3(stage1) A-A 달성 후에는 같은 중량에서 10x4(stage2 이상)로 실제 세트 수가 늘어나야 합니다.
@@ -533,7 +539,12 @@ export function buildWorkoutPlan(dayKey) {
       const freeweightStage = state.freeweightStage || "stage1_3set";
       baseSetCount = freeweightStage === "stage1_3set" ? ex.baseSets : ex.baseSets + 1;
     }
-    const mainSetCount = baseSetCount - (isChallengeToday ? 1 : 0);
+    let mainSetCount = baseSetCount - (isChallengeToday ? 1 : 0);
+    // v2.8.0 회복 모드: 본세트 -1(최소 자극량 유지를 위해 2세트 이하는 그대로 둠). 워밍업/도전세트 수는
+    // 이 규칙의 영향을 받지 않습니다(도전세트는 위에서 이미 항상 제외됨, 워밍업은 아래에서 별도 계산).
+    if (recoveryMode) {
+      mainSetCount = mainSetCount <= 2 ? mainSetCount : mainSetCount - 1;
+    }
     const mainTargetReps = isHighRep ? ex.highRepLower : isBodyweightTime ? ex.targetSeconds : ex.targetReps;
 
     // v1.9.1: 맨몸은 워밍업 세트를 쓰지 않습니다. UI에서 이미 막아두지만, 과거 데이터에 warmupEnabled:true가
@@ -574,13 +585,16 @@ export function buildWorkoutPlan(dayKey) {
   });
 }
 
-export function startSession(dayKey) {
+// v2.8.0: recoveryMode는 이 세션(오늘 하루)에만 적용되는 런타임 값입니다. data(영구 저장소)에는 전혀
+// 쓰지 않고, 반환된 draft 객체(및 이를 그대로 저장하는 storage.js의 draft 복구 기능)에만 실어 나릅니다.
+export function startSession(dayKey, recoveryMode = false) {
   return {
     id: uid("session"),
     date: new Date().toISOString().slice(0, 10),
     day: dayKey,
     startTime: new Date().toISOString(),
-    plan: buildWorkoutPlan(dayKey),
+    recoveryMode,
+    plan: buildWorkoutPlan(dayKey, recoveryMode),
   };
 }
 
@@ -589,6 +603,9 @@ export function finishSession(draftSession) {
   const endTime = new Date().toISOString();
   const startMs = new Date(draftSession.startTime).getTime();
   const durationMinutes = Math.max(1, Math.round((new Date(endTime).getTime() - startMs) / 60000));
+  // v2.8.0: 회복 모드는 세션(오늘 하루) 단위 런타임 값입니다. data(영구 저장소)에는 쓰지 않고, 이 세션의
+  // 모든 레코드에 동일하게 적용해 gain.js 호출/증량 관련 상태 갱신을 스킵하는 데만 사용합니다.
+  const recoveryMode = !!draftSession.recoveryMode;
 
   const records = draftSession.plan.map((row) => {
     const ex = row.exercise;
@@ -617,7 +634,8 @@ export function finishSession(draftSession) {
       }
       // 고반복 편측: 상한 반복수 달성 여부(자동 증량 대신 검토 팝업 트리거)를 좌우 각각 확인합니다.
       // 비편측 high_rep의 highRepGoalReviewSuggested 계산(else 블록)과 동일한 목적이며, 좌우 합산은 하지 않습니다.
-      if (isHighRep && ex.highRepUpper != null) {
+      // v2.8.0: 회복 모드에서는 이 신호 자체를 계산하지 않습니다("증량 검토 진입 자체를 하지 않음").
+      if (!recoveryMode && isHighRep && ex.highRepUpper != null) {
         highRepGoalReviewSuggested = allUnilateralSetsAchievedContinuously(row.mainSets, ex.highRepUpper);
       }
     } else if (isBodyweight) {
@@ -633,16 +651,21 @@ export function finishSession(draftSession) {
         { mode: "threshold" } // v2.3.x: machine/freeweight도 "목표 이상 연속 수행 = A"로 통일(기존엔 machine/freeweight만 "정확히 일치" 요구했던 것을 헌장 기준에 맞춰 수정). high_rep은 원래부터 threshold였음.
       );
 
-      if (isHighRep) {
-        // v1.8: 고반복은 자동 증량을 하지 않습니다. currentWeight를 바꾸는 코드는 전혀 없으며,
-        // 모든 본세트가 상한 반복수를 연속 수행으로 달성했을 때 "목표 중량 검토가 필요하다"는
-        // 1회성 신호만 세션 기록(highRepGoalReviewSuggested)에 남깁니다. ExerciseState는 전혀 건드리지 않으므로
-        // 다음 세션/앱 재실행 후에는 이 신호가 남지 않고, 그 세션의 결과만으로 다시 판단됩니다.
-        if (ex.highRepUpper != null) {
-          highRepGoalReviewSuggested = allSetsAchievedContinuously(row.mainSets, ex.highRepUpper);
+      // v2.8.0: 회복 모드에서는 이 if/else 블록 전체(고반복 검토 신호 계산 + machine/freeweight 증량 상태
+      // 전이)를 건너뜁니다. "증량 후보만 제외"가 아니라 증량 로직 단계 자체에 진입하지 않아야 하므로,
+      // gain.js의 applyJudgement()를 호출하지 않는 것으로 처리합니다(gain.js 자체는 무수정).
+      if (!recoveryMode) {
+        if (isHighRep) {
+          // v1.8: 고반복은 자동 증량을 하지 않습니다. currentWeight를 바꾸는 코드는 전혀 없으며,
+          // 모든 본세트가 상한 반복수를 연속 수행으로 달성했을 때 "목표 중량 검토가 필요하다"는
+          // 1회성 신호만 세션 기록(highRepGoalReviewSuggested)에 남깁니다. ExerciseState는 전혀 건드리지 않으므로
+          // 다음 세션/앱 재실행 후에는 이 신호가 남지 않고, 그 세션의 결과만으로 다시 판단됩니다.
+          if (ex.highRepUpper != null) {
+            highRepGoalReviewSuggested = allSetsAchievedContinuously(row.mainSets, ex.highRepUpper);
+          }
+        } else if (judgement) {
+          data.exerciseStates[ex.id] = applyJudgement(ex.gainMethod, state, judgement);
         }
-      } else if (judgement) {
-        data.exerciseStates[ex.id] = applyJudgement(ex.gainMethod, state, judgement);
       }
     }
 
@@ -651,8 +674,10 @@ export function finishSession(draftSession) {
     // v1.7: 팝업은 pending 상태가 false -> true로 "새로 바뀌는 순간"에만 1회 표시합니다.
     // pending이 이미 true인 동안에는 A가 계속돼도 팝업을 다시 띄우지 않고 상태만 유지하며,
     // 사용자가 종목 수정 화면에서 목표를 실제로 바꿔야만(clearBodyweightGoalPending) 해제됩니다.
+    // v2.8.0: 회복 모드에서는 bodyweightConsecutiveA/bodyweightGoalAdjustPending을 전혀 갱신하지 않습니다
+    // ("pending 진입 자체를 하지 않음"). 판정(judgement) 자체는 그대로 계산되어 record에 남습니다.
     let goalAdjustSuggested = false;
-    if (isBodyweight && judgement) {
+    if (!recoveryMode && isBodyweight && judgement) {
       const bwState = getExerciseState(ex.id);
       const nextStreak = judgement === "A" ? (bwState.bodyweightConsecutiveA || 0) + 1 : 0;
       const wasPending = bwState.bodyweightGoalAdjustPending;
@@ -733,6 +758,7 @@ export function finishSession(draftSession) {
       gainEvent,
       goalAdjustSuggested,
       highRepGoalReviewSuggested,
+      recoveryMode,
     });
   });
 

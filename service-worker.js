@@ -2,7 +2,7 @@
 // 오프라인에서도 앱 자체(껍데기)는 항상 열리도록 하는 최소한의 캐시 전략입니다.
 // 데이터는 여기서 다루지 않습니다(전부 Local Storage에 있음).
 
-const CACHE_NAME = "doyourworkout-v2.7.13"; // v2.7.13-patch: 역할 토글 헤더를 v2.7.12 방식으로 롤백(Dashboard 그래프는 유지).
+const CACHE_NAME = "doyourworkout-v2.7"; // v2.7 정식 릴리즈: v2.7.0~v2.7.13-patch 누적분을 "v2.7" 라벨로 통합(로직 무변경).
 // APP_VERSION과 동일한 라벨로 캐시를 무효화합니다(activate 핸들러가 다른 캐시 키를 전부 삭제).
 const CORE_ASSETS = [
   "./",

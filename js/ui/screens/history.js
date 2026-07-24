@@ -12,6 +12,8 @@ import { todayDayKey, DAYS } from "../../core/models.js";
 
 // v1.9.1: bodyweight는 "weightUsed}kg ×" 대신 반복수/시간 단위(회/초)를 붙여서 보여줍니다.
 // (기록 자체는 그대로 유지 — 중량 표현만 제거하고 단위를 붙이는 순수 텍스트 포맷 변경입니다.)
+// v2.8.0: 회복 모드로 수행된 기록이면 맨 끝에 🌱, 아니면 ⚡를 붙입니다. record.recoveryMode는 순수 표시용
+// 플래그이며(judge.js/gain.js 무관), 그래프(renderLineChart)/최고 중량 표시에는 영향을 주지 않습니다.
 function fmtRecentSummary(entry, ex) {
   if (!entry) return "아직 기록이 없습니다.";
   const { date, record } = entry;
@@ -19,11 +21,12 @@ function fmtRecentSummary(entry, ex) {
   const performed = mainSets.map((s) => s.performedRaw || "-").join("/");
   const resultText = record.gainEvent === "auto_increase" ? "증량!" : record.judgement;
   const judge = resultText ? ` · ${resultText}` : "";
+  const modeIcon = record.recoveryMode ? " 🌱" : " ⚡";
   if (ex.gainMethod === "bodyweight") {
     const unit = ex.bodyweightGoalType === "time" ? "초" : "회";
-    return `${date} · ${performed}${unit}${judge}`;
+    return `${date} · ${performed}${unit}${judge}${modeIcon}`;
   }
-  return `${date} · ${record.weightUsed}kg × ${performed}${judge}`;
+  return `${date} · ${record.weightUsed}kg × ${performed}${judge}${modeIcon}`;
 }
 
 function buildExerciseCard(ex) {

@@ -16,10 +16,41 @@ export function renderHome(root) {
   // (year는 "numeric" 그대로라 자릿수 변화 없음. 요일 표기는 이 문자열과 별도로 아래에서 조합됩니다.)
   const dateStr = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "numeric", day: "numeric" });
 
+  // v2.8.0 Recovery Mode: 홈 화면을 새로 그릴 때마다 항상 "⚡ 일반 모드"에서 시작하는 세션 단위 런타임
+  // 값입니다. 영구 저장하지 않으며(data/localStorage 어디에도 쓰지 않음), 이 화면을 벗어났다가 돌아오면
+  // 다시 기본값으로 초기화됩니다 - "당일 세션에만 적용"이라는 요구사항과 일치합니다.
+  let recoveryMode = false;
+
+  const modeBtnNormal = el("button", {
+    class: "mode-btn active",
+    "aria-label": "일반 모드",
+    title: "일반 모드",
+    onclick: () => setMode(false),
+  }, [el("span", { class: "mode-btn-icon", text: "⚡" })]);
+  const modeBtnRecovery = el("button", {
+    class: "mode-btn",
+    "aria-label": "회복 모드",
+    title: "회복 모드",
+    onclick: () => setMode(true),
+  }, [el("span", { class: "mode-btn-icon", text: "🌱" })]);
+
+  function setMode(nextRecoveryMode) {
+    recoveryMode = nextRecoveryMode;
+    modeBtnNormal.classList.toggle("active", !recoveryMode);
+    modeBtnRecovery.classList.toggle("active", recoveryMode);
+    // 회복 모드에서는 도전세트를 그날 진행하지 않으므로(§6 확정), 도전세트 후보 FAB를 숨깁니다.
+    // 후보 데이터(designatedChallengeExerciseId/isGainCandidate) 자체는 전혀 건드리지 않으므로,
+    // 다시 ⚡ 일반 모드로 돌아오면 처음 계산해둔 showChallengeFab 값 그대로 복원됩니다.
+    if (challengeFab) challengeFab.style.display = recoveryMode ? "none" : "";
+  }
+
   const routineCard = el("div", { class: "routine-card-lg" }, [
     el("div", { class: "card-bg" }),
     el("div", { class: "card-fg" }, [
-      el("div", { class: "eyebrow-title", text: "오늘의 루틴" }),
+      el("div", { class: "routine-card-head" }, [
+        el("div", { class: "eyebrow-title", text: "오늘의 루틴" }),
+        el("div", { class: "mode-toggle" }, [modeBtnNormal, modeBtnRecovery]),
+      ]),
       el("h2", { text: version.title || `${dayLabel}요일 루틴` }),
       exercises.length
         ? el(
@@ -120,7 +151,7 @@ export function renderHome(root) {
       showMissingWeightModal(missing);
       return;
     }
-    const session = state.startSession(dayKey);
+    const session = state.startSession(dayKey, recoveryMode);
     window.__draftSession = session; // 세션 진행 중에는 메모리에만 두고, 종료 시 state에 커밋합니다.
     navigate("#/workout");
   }
