@@ -2,7 +2,7 @@
 // 앱이 다루는 데이터의 "형태"만 정의하는 순수 모듈입니다.
 // UI나 저장소에 의존하지 않으므로, 이후 다른 프레임워크로 옮기더라도 그대로 재사용할 수 있습니다.
 
-export const SCHEMA_VERSION = 17; // v2.8.0: Recovery Mode. ExerciseRecord에 recoveryMode 필드 추가.
+export const SCHEMA_VERSION = 18; // v3.0.2: 종목 정의에 weightDirection(표시 전용) 필드 추가.
 // 볼륨 계산(volume.js) 전용 데이터이며 judge.js/gain.js는 이 필드를 전혀 참조하지 않습니다(판정/증량/상태전이와 무관).
 
 // 증량 방식(gainMethod) 목록입니다. 새 방식을 추가하려면 여기 하나만 더 넣고,
@@ -169,6 +169,11 @@ export function makeExerciseDefinition({
   // "main" | "assist". 루틴별 구분이 아니라 종목 자체의 기본 역할이며, 기존/신규 종목 모두 기본값은 "main"입니다.
   // 코어 종목은 이 값과 무관하게 항상 effectiveRole()에서 "core"로 자동 파생되므로, 저장 시에는 그냥 기본값을 둡니다.
   role = ROLES.MAIN,
+  // v3.0.2: 종목 카드 "최근 최고" 표시 및 그래프 해석 전용 필드입니다. judge.js/gain.js/volume.js는 이 필드를
+  // 전혀 참조하지 않으며(판정/증량/볼륨 계산과 무관), currentWeight를 어떻게 올리고 내리는지에도 영향을 주지
+  // 않습니다. "asc" = 높은 중량이 최고 기록(일반 운동, 기본값), "desc" = 낮은 중량이 최고 기록(치닝디핑 같은
+  // 보조 중량 방식 운동). 종목 생성/수정 UI에는 노출하지 않고, 내부 기본값과 migration으로만 관리합니다.
+  weightDirection = "asc", // "asc" | "desc"
 } = {}) {
   return {
     id,
@@ -189,6 +194,7 @@ export function makeExerciseDefinition({
     primaryBodyPart,
     secondaryTags,
     role,
+    weightDirection,
   };
 }
 

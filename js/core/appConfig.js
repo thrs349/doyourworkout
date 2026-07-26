@@ -119,4 +119,8 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // 안정화 패치로 수정했습니다(router.js에 콜드 스타트 시 hash 검증 후 Home 보정 로직 추가). 같은
 // 이유로 app.js의 init 순서를 한 번 더 조정했습니다(자세한 내용은 각 파일 주석 참고). 기능 추가/UI
 // 변경 없음. 운동 판정/증량/볼륨 계산 로직, JSON 백업/복원 구조, migration, SCHEMA_VERSION 전부 무변경.
-export const APP_VERSION = "v3.0.1";
+// v3.0.2: 종목 정의에 weightDirection(표시 전용) 필드를 추가했습니다. 치닝디핑처럼 "낮은 보조 중량이
+// 더 좋은 기록"인 종목의 카드 "최근 최고" 표시가 지금까지는 항상 max 기준이라 실제와 반대로 보이던
+// 문제를 수정합니다. 종목 카드 통계 계산(stats.js)에서만 사용되며, judge.js/gain.js/volume.js 및
+// 실제 증량 판단·기록 저장 구조는 전혀 건드리지 않았습니다. SCHEMA_VERSION 17 -> 18로 증가.
+export const APP_VERSION = "v3.0.2";

@@ -64,9 +64,12 @@ export function getGenerationSummaries(sessions) {
   return Array.from(byGen.values()).sort((a, b) => a.generation - b.generation);
 }
 
-export function getRecentMaxWeight(trendPoints) {
+// v3.0.2: direction이 "desc"(치닝디핑 등 보조 중량 방식)이면 "가장 낮은 중량 = 최고 기록"이므로 min을,
+// 그 외(기본값 "asc")에는 기존과 동일하게 max를 반환합니다. 판정/증량 로직과는 무관한 표시 전용 계산입니다.
+export function getRecentMaxWeight(trendPoints, direction = "asc") {
   if (!trendPoints.length) return null;
-  return Math.max(...trendPoints.map((p) => p.weight));
+  const weights = trendPoints.map((p) => p.weight);
+  return direction === "desc" ? Math.min(...weights) : Math.max(...weights);
 }
 
 // 그래프 기간과 무관하게, 해당 종목의 가장 최근 세션 기록(요약)을 반환합니다.
