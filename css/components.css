@@ -215,7 +215,8 @@
   bottom: 100%;
   margin-bottom: var(--sp-3);
   width: 52px; height: 52px; border-radius: 50%;
-  background: var(--color-primary); color: var(--color-on-primary); border: none;
+  /* v2.8.1: 기본루틴/회복루틴 버튼(.mode-btn)과 동일한 톤(흰 배경 + 강조색 테두리/아이콘)으로 통일 */
+  background: var(--color-surface); color: var(--color-primary); border: 1.5px solid var(--color-primary);
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 8px 20px rgba(0, 0, 0, .22);
   z-index: 5;

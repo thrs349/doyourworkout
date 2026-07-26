@@ -24,7 +24,7 @@ function fmtRecentSummary(entry, ex) {
   const modeIcon = record.recoveryMode ? " 🌱" : " ⚡";
   if (ex.gainMethod === "bodyweight") {
     const unit = ex.bodyweightGoalType === "time" ? "초" : "회";
-    return `${date} · ${performed}${unit}${judge}${modeIcon}`;
+    return `${date} · ${performed}(${unit})${judge}${modeIcon}`;
   }
   return `${date} · ${record.weightUsed}kg × ${performed}${judge}${modeIcon}`;
 }
