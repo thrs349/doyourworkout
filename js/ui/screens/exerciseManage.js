@@ -1,6 +1,6 @@
 // screens/exerciseManage.js
 import { el, mount } from "../dom.js";
-import { navigate } from "../router.js";
+import { navigate, safeBack } from "../router.js";
 import * as state from "../../core/state.js";
 import { formatExerciseMetaChips, GAIN_METHODS, BODY_PARTS, secondaryTagsFor } from "../../core/models.js";
 import { openModal } from "../components/modal.js";
@@ -371,7 +371,7 @@ export function renderExerciseManage(root) {
 
   const screen = el("div", { id: "exercise-manage-screen", class: "screen-content" }, [
     el("div", { class: "topbar" }, [
-      el("button", { class: "icon-btn", text: "←", onclick: () => history.back() }),
+      el("button", { class: "icon-btn", text: "←", onclick: () => safeBack() }),
       el("div", { class: "title", text: "운동 관리" }),
       editToggleBtn,
     ]),

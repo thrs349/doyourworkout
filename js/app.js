@@ -93,8 +93,13 @@ function bootstrap() {
   registerRoute("/settings", renderSettings);
   registerRoute("/history", renderHistory);
 
-  initRouter(root, "#/home");
+  // v3.0.0: initExitGuard()를 initRouter()보다 먼저 호출합니다. 기존 순서(router 먼저)에서는
+  // 최초 진입 시 location.hash가 비어 있어 initRouter()가 "#/home"을 새로 설정 -> hashchange가
+  // 비동기로 한 번 더 발생 -> exitGuard가 홈 화면 진입을 두 번 감지해 guard용 더미 history 항목을
+  // 중복으로 쌓던 문제가 있었습니다. exitGuard를 먼저 초기화하면 이 시점엔 아직 홈이 아니므로
+  // 더미 항목을 만들지 않고, 이후 hashchange 1회에서만 정상적으로 1개만 쌓입니다.
   initExitGuard();
+  initRouter(root, "#/home");
   checkDraftRecovery();
 }
 

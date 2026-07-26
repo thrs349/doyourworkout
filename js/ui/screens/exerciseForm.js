@@ -1,7 +1,7 @@
 // screens/exerciseForm.js
 // 종목 "추가"(#/exercise-form/:day)와 "수정"(#/exercise-edit/:id) 화면을 함께 다룹니다.
 import { el, mount } from "../dom.js";
-import { navigate } from "../router.js";
+import { navigate, safeBack } from "../router.js";
 import * as state from "../../core/state.js";
 import { BODY_PARTS, secondaryTagsFor, ROLES } from "../../core/models.js";
 import { showAlert } from "../components/modal.js";
@@ -422,7 +422,7 @@ export function renderExerciseForm(root, params) {
       role: ROLES.MAIN,
     },
     stateInitial: null,
-    onBack: () => history.back(),
+    onBack: () => safeBack(),
     // 생성 후에는 루틴에 자동 연결하지 않고(기존 exercisePicker 흐름과 동일 원칙),
     // 진입한 화면으로 그대로 돌아갑니다.
     afterSaveHash: dayKey ? `#/exercise-picker/${dayKey}` : "#/exercise-manage",
@@ -450,7 +450,7 @@ export function renderExerciseEdit(root, params) {
     exerciseId: ex.id,
     defInitial: ex,
     stateInitial: exState,
-    onBack: () => history.back(),
+    onBack: () => safeBack(),
     afterSaveHash: returnHash,
   });
 }

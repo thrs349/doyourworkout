@@ -110,4 +110,8 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // 기능/데이터 구조 변경은 없고 버전 표기만 정리합니다(코드 로직 무변경, 위 상세 이력은 그대로 보존).
 // v2.8.1: v2.8.0 사용자 테스트 반영(FAB 디자인 통일, 버전 표기, 맨몸 그래프 단위 괄호 표기) - 기능/데이터
 // 구조 변경 없이 버전 라벨만 갱신합니다(코드 로직 무변경).
-export const APP_VERSION = "v2.8.1";
+// v3.0.0: UI 업데이트 + 설치형 PWA에서 Settings 등 일부 화면 진입 후 "←"로 화면 이동이 안 되던 버그를
+// 안정화 작업으로 함께 수정했습니다(router.js safeBack() 추가, exitGuard.js 중복 history 항목 방지,
+// service-worker 캐시 버전 정리). 운동 판정/증량/볼륨 계산 로직, JSON 백업/복원 구조, migration,
+// SCHEMA_VERSION은 전부 무변경입니다.
+export const APP_VERSION = "v3.0.0";

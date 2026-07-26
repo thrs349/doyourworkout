@@ -17,6 +17,13 @@ function isHome() {
 
 function armGuard() {
   if (guardArmed) return;
+  // v3.0.0: 현재 history 항목이 이미 guard용 더미 항목이면(예: app.js 초기화 순서상 hashchange가
+  // 뒤늦게 한 번 더 발생하거나, PWA 재개 시 이전 guard 상태가 그대로 남아있는 경우) 다시 pushState를
+  // 호출하지 않습니다. 중복 history 항목이 쌓이는 것을 막을 뿐, 종료 방지 기능 자체는 그대로 유지됩니다.
+  if (history.state && history.state.__exitGuard) {
+    guardArmed = true;
+    return;
+  }
   history.pushState({ __exitGuard: true }, "", location.hash);
   guardArmed = true;
 }

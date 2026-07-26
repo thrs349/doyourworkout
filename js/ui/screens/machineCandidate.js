@@ -1,6 +1,6 @@
 // screens/machineCandidate.js
 import { el, mount } from "../dom.js";
-import { navigate } from "../router.js";
+import { navigate, safeBack } from "../router.js";
 import { todayDayKey } from "../../core/models.js";
 import * as state from "../../core/state.js";
 
@@ -58,7 +58,7 @@ export function renderChallengeCandidate(root) {
 
   const screen = el("div", { id: "machine-candidate-screen", class: "screen-content" }, [
     el("div", { class: "topbar" }, [
-      el("button", { class: "icon-btn", text: "←", onclick: () => history.back() }),
+      el("button", { class: "icon-btn", text: "←", onclick: () => safeBack() }),
       el("div", { class: "title", text: "증량 후보 선택" }),
       el("span", { style: { opacity: 0 } }, "·"),
     ]),
