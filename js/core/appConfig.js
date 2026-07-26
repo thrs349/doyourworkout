@@ -114,4 +114,9 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // 안정화 작업으로 함께 수정했습니다(router.js safeBack() 추가, exitGuard.js 중복 history 항목 방지,
 // service-worker 캐시 버전 정리). 운동 판정/증량/볼륨 계산 로직, JSON 백업/복원 구조, migration,
 // SCHEMA_VERSION은 전부 무변경입니다.
-export const APP_VERSION = "v3.0.0";
+// v3.0.1: 설치형 PWA를 Settings 등 홈이 아닌 화면에서 설치/재실행했을 때 앱이 그 화면으로 바로
+// 시작되고, 이로 인해 종료 방지 가드가 걸리지 않아 시스템 뒤로가기로 앱이 바로 종료되던 문제를
+// 안정화 패치로 수정했습니다(router.js에 콜드 스타트 시 hash 검증 후 Home 보정 로직 추가). 같은
+// 이유로 app.js의 init 순서를 한 번 더 조정했습니다(자세한 내용은 각 파일 주석 참고). 기능 추가/UI
+// 변경 없음. 운동 판정/증량/볼륨 계산 로직, JSON 백업/복원 구조, migration, SCHEMA_VERSION 전부 무변경.
+export const APP_VERSION = "v3.0.1";

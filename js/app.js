@@ -93,13 +93,18 @@ function bootstrap() {
   registerRoute("/settings", renderSettings);
   registerRoute("/history", renderHistory);
 
-  // v3.0.0: initExitGuard()를 initRouter()보다 먼저 호출합니다. 기존 순서(router 먼저)에서는
-  // 최초 진입 시 location.hash가 비어 있어 initRouter()가 "#/home"을 새로 설정 -> hashchange가
-  // 비동기로 한 번 더 발생 -> exitGuard가 홈 화면 진입을 두 번 감지해 guard용 더미 history 항목을
-  // 중복으로 쌓던 문제가 있었습니다. exitGuard를 먼저 초기화하면 이 시점엔 아직 홈이 아니므로
-  // 더미 항목을 만들지 않고, 이후 hashchange 1회에서만 정상적으로 1개만 쌓입니다.
-  initExitGuard();
+  // v3.0.0: 최초 도입 시에는 initExitGuard()를 initRouter()보다 먼저 호출했습니다(콜드 스타트 시
+  // 중복 history 항목 방지 목적). 그런데 v3.0.1에서 initRouter()에 "hash 검증 후 Home 보정"(설치형
+  // PWA 재실행 시 남아있는 hash를 replaceState로 Home으로 되돌리는 처리)이 추가되면서, exitGuard가
+  // router보다 먼저 실행되면 아직 보정되기 전의(예: #/settings) hash를 보고 isHome()을 판단하게 되어
+  // Home 진입 시 자동으로 쌓여야 할 종료 방지용 더미 history 항목이 생성되지 않는 문제가 생깁니다.
+  // 순서를 다시 router 먼저로 되돌립니다 — initRouter()의 hash 보정(replaceState)은 동기적으로
+  // location.hash를 갱신하므로, 뒤이어 실행되는 initExitGuard()의 최초 isHome() 판단은 항상 보정된
+  // hash를 기준으로 이뤄집니다. v3.0.0에서 막았던 "중복 history 항목" 문제는 armGuard()가 이미
+  // idempotent하게(history.state에 __exitGuard가 있으면 재실행하지 않도록) 수정되어 있어, 이 순서로
+  // 되돌려도 재발하지 않습니다.
   initRouter(root, "#/home");
+  initExitGuard();
   checkDraftRecovery();
 }
 

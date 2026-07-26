@@ -11,10 +11,43 @@
 // 간헐적으로 있어, history.back()을 호출해도 되돌아갈 곳이 없어 화면이 멈추는 문제가 있었습니다.
 // safeBack()을 추가해 "되돌아갈 기록이 있으면 back(), 없으면 기본 화면으로 이동"하도록 보강합니다.
 // 기존 history.back() 자체의 동작(쌓인 만큼 자연스럽게 되돌아감)은 그대로 유지합니다.
+//
+// v3.0.1: 설치형 PWA를 재실행했을 때(특히 Settings 등 홈이 아닌 화면에서 설치한 직후) 간헐적으로
+// location.hash가 이전 화면으로 남아있는 상태로 앱이 새로 시작되는 문제가 있었습니다. initRouter()가
+// 이 hash를 검증 없이 그대로 신뢰해 렌더링했기 때문입니다(비어 있을 때만 fallbackHash로 채우는
+// 구조였음). 이번 수정으로 "이번 로드가 이 세션의 첫 로드(콜드 스타트)인지"를 sessionStorage로
+// 판별해, 콜드 스타트인데 hash가 이미 남아있는 경우에만 fallbackHash(Home)로 보정합니다. 같은 세션
+// 안에서의 새로고침이나 앱 내부 이동으로 생긴 hash는 그대로 유지되므로 기존 라우팅 동작에는 영향이
+// 없습니다.
 
 const routes = [];
 let rootEl = null;
 let notFoundFallbackHash = "#/home";
+
+// v3.0.1: 이번 브라우저 세션(탭/설치형 PWA 프로세스)에서 router가 이미 한 번 초기화됐는지 표시하는
+// sessionStorage 키입니다. sessionStorage는 같은 세션 내 새로고침에는 값이 유지되고, 새 탭이나 새로운
+// 설치형 PWA 프로세스가 뜨는 등 완전히 새로운 세션이 시작되면 비워집니다 — "사용자가 실제로 머물던
+// 화면에서 새로고침한 경우"와 "앱이 처음부터 다시 뜨는 콜드 스타트"를 구분하는 데 사용합니다.
+const COLD_START_FLAG_KEY = "__dyw_router_session_started";
+
+function isColdStart() {
+  try {
+    return !sessionStorage.getItem(COLD_START_FLAG_KEY);
+  } catch (e) {
+    // 프라이빗 브라우징 등 sessionStorage를 쓸 수 없는 환경에서는 안전하게 "콜드 스타트 아님"으로
+    // 간주해, 이 수정 이전과 동일하게 기존 hash를 그대로 신뢰합니다(기능 자체가 비활성화될 뿐 에러로
+    // 이어지지 않음).
+    return false;
+  }
+}
+
+function markSessionStarted() {
+  try {
+    sessionStorage.setItem(COLD_START_FLAG_KEY, "1");
+  } catch (e) {
+    // 위와 동일한 이유로 무시합니다.
+  }
+}
 
 export function registerRoute(pattern, render) {
   const paramNames = [];
@@ -39,7 +72,17 @@ export function initRouter(root, fallbackHash = "#/home") {
   rootEl = root;
   notFoundFallbackHash = fallbackHash;
   window.addEventListener("hashchange", handleRouteChange);
-  if (!location.hash) location.hash = fallbackHash;
+
+  if (!location.hash) {
+    location.hash = fallbackHash;
+  } else if (isColdStart()) {
+    // v3.0.1: 이 세션에서 router가 처음 초기화되는데 hash가 이미 남아있는 경우(설치형 PWA 재실행
+    // 시 이전 화면의 hash가 잔존하는 등) -> 신뢰하지 않고 기본 화면으로 보정합니다. replaceState를
+    // 써서 새 history 항목을 쌓지 않고(뒤로가기 스택에 영향 없음) 현재 항목만 덮어씁니다.
+    history.replaceState(history.state, "", fallbackHash);
+  }
+
+  markSessionStarted();
   handleRouteChange();
 }
 
