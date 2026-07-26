@@ -85,6 +85,14 @@ export function renderWorkout(root) {
   // v2.1.2: 상단바에서 요일 표시를 제거하면서 dayLabel을 더 이상 쓰지 않아 선언도 함께 정리했습니다.
   let finishedSession = null;
 
+  // v2.8.0: 상단바 우측 자리(기존에는 균형 맞춤용 투명 "·" placeholder만 있던 자리)에, 회복 모드 세션일
+  // 때만 🌱 배지를 보여줍니다. 별도 공간을 새로 늘리지 않고 기존 placeholder 자리를 그대로 재사용합니다.
+  function topbarModeBadge() {
+    return draft.recoveryMode
+      ? el("span", { class: "topbar-mode-badge", title: "회복 모드" }, "🌱")
+      : el("span", { style: { opacity: 0 } }, "·");
+  }
+
   // v2.2.0 Check Gate ----------------------------------------------------
   // "입력 확인" 버튼의 활성/비활성을 제어하기 위한 참조. 입력이 바뀔 때마다 revalidate()가 다시 계산합니다.
   let confirmBtn = null;
@@ -312,7 +320,7 @@ export function renderWorkout(root) {
       el("div", { class: "topbar" }, [
         el("button", { class: "icon-btn", text: "←", onclick: () => history.back() }),
         el("div", { class: "title", text: "오늘의 운동" }),
-        el("span", { style: { opacity: 0 } }, "·"),
+        topbarModeBadge(),
       ]),
       tableArea,
       el("div", { class: "bottom-fixed" }, [confirmBtn]),
@@ -403,7 +411,7 @@ export function renderWorkout(root) {
         // popstate 핸들러가 기본값(= "다시 수정")으로 처리합니다.
         el("button", { class: "icon-btn", text: "←", onclick: () => history.back() }),
         el("div", { class: "title", text: "입력 확인" }),
-        el("span", { style: { opacity: 0 } }, "·"),
+        topbarModeBadge(),
       ]),
       tableArea,
       el("div", { class: "bottom-fixed" }, [
@@ -562,7 +570,7 @@ export function renderWorkout(root) {
       el("div", { class: "topbar" }, [
         el("button", { class: "icon-btn", text: "←", onclick: () => afterResult() }),
         el("div", { class: "title", text: "운동 결과" }),
-        el("span", { style: { opacity: 0 } }, "·"),
+        topbarModeBadge(),
       ]),
       tableArea,
       el("div", { class: "bottom-fixed" }, [el("button", { class: "btn btn-primary", text: "확인", onclick: afterResult })]),

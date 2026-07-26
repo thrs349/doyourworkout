@@ -196,6 +196,17 @@ export function migrate(data) {
     merged.exercises = (merged.exercises || []).map((ex) => ({ role: "main", ...ex }));
   }
 
+  // v16 -> v17: 회복 모드(Recovery Mode)를 위한 recoveryMode 필드가 세션 기록에 추가됨. 세션 단위 런타임
+  // 상태를 사후에 기록에만 남기는 순수 표시용 필드이며 ExerciseState/ExerciseDefinition에는 아무 필드도
+  // 추가하지 않습니다(judge.js/gain.js 판정·증량 계산과 무관). 과거 기록은 전부 회복 모드 도입 이전이므로
+  // "일반 모드로 수행됨"을 뜻하는 false로 채웁니다.
+  if (fromVersion < 17) {
+    merged.sessions = (merged.sessions || []).map((session) => ({
+      ...session,
+      records: (session.records || []).map((record) => ({ recoveryMode: false, ...record })),
+    }));
+  }
+
   merged.schemaVersion = SCHEMA_VERSION;
   return merged;
 }
