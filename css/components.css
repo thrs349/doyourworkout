@@ -374,6 +374,14 @@
 .volume-bar-label { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .volume-bar-track { display: flex; align-items: center; gap: 4px; min-width: 0; padding: 4px 0; }
 .volume-bar-fill { display: block; height: 10px; min-width: 2px; border-radius: 4px; background: var(--color-primary); flex-shrink: 0; }
+/* v3.0.3: 상체 "팔" 막대 전용 강조색입니다. 팔은 가슴/등/어깨와 분모가 다른 별도 지표(상체 전체 대비 %)라,
+   레이아웃/구분선 없이 막대 색상만으로 "이건 다른 기준"임을 표시합니다. 회색 톤다운이 아니라 별도의
+   식별 가능한 색상이되, 판정 색상(--color-a/--color-b/--color-x, A/B/X 전용 의미)과 겹치지 않도록 그
+   계열은 피했습니다. color-mix()로 각 테마의 --color-primary와 고정 틸(teal) 색을 섞어, 테마가 바뀌어도
+   그 테마의 primary 색감을 일부 반영하면서 자연스럽게 달라지도록 했습니다. color-mix() 미지원 브라우저는
+   위쪽의 고정 폴백색(#2FA8A0)이 그대로 적용됩니다(선언 순서상 안전한 값을 먼저 두고, 지원 브라우저에서만
+   color-mix() 선언이 이를 덮어씀). */
+.volume-bar-fill-detached { background: #2FA8A0; background: color-mix(in srgb, var(--color-primary) 45%, #2FA8A0 55%); }
 .volume-bar-percent { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-primary); white-space: nowrap; }
 
 .result-summary { display: flex; align-items: center; justify-content: space-between; padding: 12px 4px; border-top: 1px solid var(--color-border); }

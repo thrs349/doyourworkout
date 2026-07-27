@@ -123,4 +123,10 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // 더 좋은 기록"인 종목의 카드 "최근 최고" 표시가 지금까지는 항상 max 기준이라 실제와 반대로 보이던
 // 문제를 수정합니다. 종목 카드 통계 계산(stats.js)에서만 사용되며, judge.js/gain.js/volume.js 및
 // 실제 증량 판단·기록 저장 구조는 전혀 건드리지 않았습니다. SCHEMA_VERSION 17 -> 18로 증가.
-export const APP_VERSION = "v3.0.2";
+// v3.0.3: Weekly Volume Dashboard "상체 자극" 계산을 개선했습니다. (1) 주동근/보조근 가중치(1.0/0.65)를
+// "비율로 세트 분배"하는 방식으로 바꿔, 태그 2개 이상인 운동의 총 기여도가 원래 세트수보다 커지던 문제를
+// 없앴습니다. (2) 가슴/등/어깨는 서로 같은 분모(100%)를 공유하고, 팔만 "상체 전체 대비 %"라는 별도
+// 지표로 분리했습니다(팔 막대만 다른 강조색으로 표시, 카드 레이아웃/크기는 무변경). 하체는 계산 방식
+// (1)만 동일하게 적용되고 분모 구조(2)는 기존과 동일합니다. volume.js/judge.js/gain.js/state.js,
+// secondaryTags 저장 구조, SCHEMA_VERSION 전부 무변경 - routineList.js/components.css만 수정했습니다.
+export const APP_VERSION = "v3.0.3";
