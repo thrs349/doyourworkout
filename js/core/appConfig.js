@@ -126,7 +126,12 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // v3.0.3: Weekly Volume Dashboard "상체 자극" 계산을 개선했습니다. (1) 주동근/보조근 가중치(1.0/0.65)를
 // "비율로 세트 분배"하는 방식으로 바꿔, 태그 2개 이상인 운동의 총 기여도가 원래 세트수보다 커지던 문제를
 // 없앴습니다. (2) 가슴/등/어깨는 서로 같은 분모(100%)를 공유하고, 팔만 "상체 전체 대비 %"라는 별도
-// 지표로 분리했습니다(팔 막대만 다른 강조색으로 표시, 카드 레이아웃/크기는 무변경). 하체는 계산 방식
-// (1)만 동일하게 적용되고 분모 구조(2)는 기존과 동일합니다. volume.js/judge.js/gain.js/state.js,
-// secondaryTags 저장 구조, SCHEMA_VERSION 전부 무변경 - routineList.js/components.css만 수정했습니다.
-export const APP_VERSION = "v3.0.3";
+// 지표로 분리했습니다. 하체는 계산 방식(1)만 동일하게 적용되고 분모 구조(2)는 기존과 동일합니다.
+// volume.js/judge.js/gain.js/state.js, secondaryTags 저장 구조, SCHEMA_VERSION 전부 무변경.
+// v3.0.4: v3.0.3 UI 후속 수정 - 팔 막대의 별도 강조색(color-mix)을 되돌리고, 대신 가슴/등/어깨와 팔
+// 사이에 얇은 구분선(--color-border)을 추가해 분모가 다른 지표임을 표시했습니다. 또한 알람센터/도전세트
+// 후보 FAB의 내부 배경을 흰색(--color-surface) 고정값에서 메인 홈 화면과 같은 테마별 배경색
+// (--color-bg)으로 바꿔, 흰 배경 때문에 별도 요소처럼 보이던 문제를 해결했습니다(테두리 강조색·아이콘·
+// 크기·그림자는 무변경). 이번 릴리즈는 CSS/UI 표시 변경만 포함하며, 계산 로직·데이터 구조·
+// localStorage/JSON 백업 호환성·SCHEMA_VERSION은 전부 무변경입니다.
+export const APP_VERSION = "v3.0.4";

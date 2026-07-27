@@ -137,18 +137,23 @@ function buildBarSection(label, rows) {
     el(
       "div",
       { class: "volume-bar-grid" },
-      rows.map(({ label: rowLabel, percent, detached }) => {
+      rows.flatMap(({ label: rowLabel, percent, detached }) => {
         // 막대 폭 = (해당 부위 비율 / 그룹 내 최대 비율) × 80%. 그룹 전체가 0%면(운동 없음) 막대 폭도 0.
         const barWidth = maxPercent > 0 ? (percent / maxPercent) * 80 : 0;
-        // v3.0.3: 팔(detached)은 가슴/등/어깨와 분모가 다른 별도 지표라, 막대 색상만 다르게 표시합니다
-        // (레이아웃/정렬/카드 크기는 무변경, 구분선도 추가하지 않음 - 색상만으로 구분).
-        return el("div", { class: "volume-bar-row" }, [
+        const rowEl = el("div", { class: "volume-bar-row" }, [
           el("span", { class: "volume-bar-label", text: rowLabel }),
           el("div", { class: "volume-bar-track" }, [
-            el("span", { class: `volume-bar-fill${detached ? " volume-bar-fill-detached" : ""}`, style: { width: `${barWidth}%` } }),
+            el("span", { class: "volume-bar-fill", style: { width: `${barWidth}%` } }),
             el("span", { class: "volume-bar-percent", text: `${percent}%` }),
           ]),
         ]);
+        // v3.0.3(UI 수정): 팔(detached)은 가슴/등/어깨와 분모가 다른 별도 지표라는 것을, 막대 색상
+        // 대신 "팔 행 바로 위 얇은 구분선"으로 표시합니다. 구분선 div는 이 부위 섹션(.volume-bar-grid)
+        // 내부에서만 grid-column: 1/-1로 두 열(라벨~막대) 전체를 가로지르므로, 라벨 텍스트가 시작하는
+        // x축과 같은 지점에서 시작해 이 섹션(상체) 끝까지만 그어지고, 카드 전체 폭이나 하체 섹션까지는
+        // 절대 넘어가지 않습니다(하체는 애초에 detached 행이 없어 이 코드 경로 자체를 타지 않으므로
+        // 완전히 무영향입니다).
+        return detached ? [el("div", { class: "volume-bar-divider" }), rowEl] : [rowEl];
       })
     ),
   ]);
