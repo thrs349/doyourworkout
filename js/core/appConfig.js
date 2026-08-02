@@ -140,4 +140,9 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // 모두 동일하게 유지됩니다. FAB 배경색(--color-bg) 변경은 v3.0.4 그대로 유지됩니다. calcTagRowsForBodyPart
 // 계산 로직, volume.js/gain.js/judge.js/state.js/storage.js/models.js, SCHEMA_VERSION, weightDirection
 // 관련 로직 전부 무변경 - 순수 UI 표시 릴리즈입니다.
-export const APP_VERSION = "v3.0.5";
+// v3.0.6: v3.0.5의 구분선이 실제로는 화면에 보이지 않던 버그를 수정했습니다. position:absolute + 
+// grid-column:1/-1만으로는 containing block의 가로 "범위"만 정해질 뿐 left/right가 없으면 요소가
+// shrink-to-fit(내용물 없음 = 0px 너비)으로 축소되어 사실상 렌더링되지 않았습니다. .volume-bar-divider에
+// left:0; right:0;을 추가해 실제로 라벨 시작 x축 ~ 상체 섹션 끝까지 채워지도록 했습니다. CSS 속성 2줄
+// 추가 외 다른 변경은 없으며, JS(routineList.js)·계산 로직·데이터 구조·SCHEMA_VERSION 전부 무변경입니다.
+export const APP_VERSION = "v3.0.6";

@@ -394,10 +394,17 @@
    축의 위치는 이 값으로 완전히 결정되어 align-self는 필요 없습니다). grid-column: 1/-1은 그대로 유지해
    라벨 텍스트 시작 x축부터 이 섹션(상체) 끝까지만 그어지고, 하체 섹션까지는 구조상(별도 .volume-bar-grid
    인스턴스라 이 규칙 자체가 적용될 대상이 없음) 넘어갈 수 없습니다. 색상은 테마 변수 --color-border를
-   그대로 재사용합니다(예: .result-summary의 border-top과 동일한 변수). */
+   그대로 재사용합니다(예: .result-summary의 border-top과 동일한 변수).
+   v3.0.6: grid-column만으로는 containing block의 가로 "범위"만 정해질 뿐, left/right가 둘 다 auto면
+   절대 위치 요소는 CSS 표준 규칙상 shrink-to-fit(내용물 크기, 이 요소는 자식이 없어 사실상 0px)으로
+   축소되어 실제로는 보이지 않는 버그가 있었습니다. left: 0; right: 0;을 추가해 containing block(=
+   grid-column으로 지정된 상체 섹션 가로 범위) 양 끝에 완전히 고정시켜, 라벨 시작 x축부터 상체 섹션
+   끝까지 실제로 꽉 채워지도록 수정했습니다. */
 .volume-bar-divider {
   position: absolute;
   grid-column: 1 / -1;
+  left: 0;
+  right: 0;
   bottom: -1px;
   height: 1px;
   background: var(--color-border);
