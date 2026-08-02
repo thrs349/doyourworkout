@@ -67,16 +67,17 @@ export function renderExercisePicker(root, params) {
     return el("div", { class: "list-row", style: { flexDirection: "column", alignItems: "stretch" } }, [
       el("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" } }, [
         el("div", { class: "name", text: ex.name }),
-        el("button", {
-          class: "btn btn-ghost",
-          style: { width: "auto", height: "36px", padding: "0 14px", fontSize: "12.5px", flexShrink: 0 },
-          text: already ? "추가됨" : "추가",
-          disabled: already,
-          onclick: () => {
-            state.addExerciseToRoutine(dayKey, version.id, ex.id);
-            navigate(`#/routine/${dayKey}`, { replace: true });
-          },
-        }),
+        el("div", { class: "btn-row-h compact" }, [
+          el("button", {
+            class: "btn btn-ghost btn-compact",
+            text: already ? "추가됨" : "추가",
+            disabled: already,
+            onclick: () => {
+              state.addExerciseToRoutine(dayKey, version.id, ex.id);
+              navigate(`#/routine/${dayKey}`, { replace: true });
+            },
+          }),
+        ]),
       ]),
       buildMetaChipsRow(ex),
     ]);
