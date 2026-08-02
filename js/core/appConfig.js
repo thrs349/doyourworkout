@@ -134,4 +134,10 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // (--color-bg)으로 바꿔, 흰 배경 때문에 별도 요소처럼 보이던 문제를 해결했습니다(테두리 강조색·아이콘·
 // 크기·그림자는 무변경). 이번 릴리즈는 CSS/UI 표시 변경만 포함하며, 계산 로직·데이터 구조·
 // localStorage/JSON 백업 호환성·SCHEMA_VERSION은 전부 무변경입니다.
-export const APP_VERSION = "v3.0.4";
+// v3.0.5: v3.0.4의 상체 자극 구분선 구현 방식을 수정했습니다. 구분선이 grid의 독립된 행을 차지해
+// row-gap이 중복 적용되면서 어깨-팔 간격만 넓어지던 문제(v3.0.4)를, 구분선을 position:absolute 오버레이
+// 로 바꿔 해결했습니다 - grid 행 배치·row-gap·카드 높이에 전혀 관여하지 않으므로 가슴/등/어깨/팔 행간이
+// 모두 동일하게 유지됩니다. FAB 배경색(--color-bg) 변경은 v3.0.4 그대로 유지됩니다. calcTagRowsForBodyPart
+// 계산 로직, volume.js/gain.js/judge.js/state.js/storage.js/models.js, SCHEMA_VERSION, weightDirection
+// 관련 로직 전부 무변경 - 순수 UI 표시 릴리즈입니다.
+export const APP_VERSION = "v3.0.5";

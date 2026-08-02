@@ -130,32 +130,37 @@ function buildBalanceHeader(rows) {
 // 가장 긴 라벨"에 맞춰 자동으로 결정되도록 했습니다(예: 하체의 "대퇴사두"). 기존엔 라벨 폭이 고정 40px로
 // 두 섹션에 공유되어, 사실상 상체/하체가 같은 x축 기준으로 정렬되어 보였습니다 - 이제 상체 섹션과 하체
 // 섹션이 각자 독립적으로 정렬되고, 같은 섹션 안의 행들끼리는(=섹션 내부 기준) 여전히 서로 정렬됩니다.
+// v3.0.4(UI 수정): 구분선(.volume-bar-divider)이 grid-column:1/-1로 자기만의 grid row를 차지하면서
+// row-gap이 그 앞뒤로 중복 적용되어 어깨-팔 행간만 넓어지는 문제가 있었습니다(v3.0.3). 이번에는 구조
+// 자체를 바꿔, 구분선을 grid 레이아웃에 참여하는 "행"이 아니라 position:absolute로 떠 있는 순수 장식
+// 요소로 만듭니다. grid-row는 여전히 지정하지만(어깨 행의 grid 트랙을 좌표 참조용으로만 사용),
+// position:absolute라 실제 행 배치·row-gap·카드 높이에는 전혀 관여하지 않습니다 - 가슴/등/어깨/팔 4행
+// 구조와 행간(row-gap: 2px)이 100% 그대로 유지됩니다.
 function buildBarSection(label, rows) {
   const maxPercent = Math.max(0, ...rows.map((r) => r.percent));
+  const detachedIdx = rows.findIndex((r) => r.detached); // 0-based. 상체가 아니면(하체) -1이라 구분선 자체가 안 생김.
+  const rowEls = rows.map(({ label: rowLabel, percent }) => {
+    // 막대 폭 = (해당 부위 비율 / 그룹 내 최대 비율) × 80%. 그룹 전체가 0%면(운동 없음) 막대 폭도 0.
+    const barWidth = maxPercent > 0 ? (percent / maxPercent) * 80 : 0;
+    return el("div", { class: "volume-bar-row" }, [
+      el("span", { class: "volume-bar-label", text: rowLabel }),
+      el("div", { class: "volume-bar-track" }, [
+        el("span", { class: "volume-bar-fill", style: { width: `${barWidth}%` } }),
+        el("span", { class: "volume-bar-percent", text: `${percent}%` }),
+      ]),
+    ]);
+  });
+  if (detachedIdx > 0) {
+    // detachedIdx(0-based)는 팔 행의 위치이고, 그 바로 위 행(어깨)의 1-based grid row 번호는 detachedIdx와
+    // 같습니다(예: 팔이 배열의 4번째=idx 3이면, 어깨는 3번째 행=grid-row 3). 구분선은 이 행의 grid 트랙
+    // 하단 경계(어깨-팔 사이)에 CSS로 정렬되므로, 행 높이가 나중에 바뀌어도 px 하드코딩 없이 항상 정확한
+    // 위치를 따라갑니다. grid-column: 1/-1로 라벨 시작 x축부터 이 섹션(상체) 끝까지만 그어지고, 하체는
+    // detachedIdx가 -1이라 이 블록 자체가 실행되지 않아 완전히 무영향입니다.
+    rowEls.push(el("div", { class: "volume-bar-divider", style: { gridRow: `${detachedIdx} / ${detachedIdx + 1}` } }));
+  }
   return el("div", { class: "volume-bar-section" }, [
     el("div", { class: "volume-grid-title", text: label }),
-    el(
-      "div",
-      { class: "volume-bar-grid" },
-      rows.flatMap(({ label: rowLabel, percent, detached }) => {
-        // 막대 폭 = (해당 부위 비율 / 그룹 내 최대 비율) × 80%. 그룹 전체가 0%면(운동 없음) 막대 폭도 0.
-        const barWidth = maxPercent > 0 ? (percent / maxPercent) * 80 : 0;
-        const rowEl = el("div", { class: "volume-bar-row" }, [
-          el("span", { class: "volume-bar-label", text: rowLabel }),
-          el("div", { class: "volume-bar-track" }, [
-            el("span", { class: "volume-bar-fill", style: { width: `${barWidth}%` } }),
-            el("span", { class: "volume-bar-percent", text: `${percent}%` }),
-          ]),
-        ]);
-        // v3.0.3(UI 수정): 팔(detached)은 가슴/등/어깨와 분모가 다른 별도 지표라는 것을, 막대 색상
-        // 대신 "팔 행 바로 위 얇은 구분선"으로 표시합니다. 구분선 div는 이 부위 섹션(.volume-bar-grid)
-        // 내부에서만 grid-column: 1/-1로 두 열(라벨~막대) 전체를 가로지르므로, 라벨 텍스트가 시작하는
-        // x축과 같은 지점에서 시작해 이 섹션(상체) 끝까지만 그어지고, 카드 전체 폭이나 하체 섹션까지는
-        // 절대 넘어가지 않습니다(하체는 애초에 detached 행이 없어 이 코드 경로 자체를 타지 않으므로
-        // 완전히 무영향입니다).
-        return detached ? [el("div", { class: "volume-bar-divider" }), rowEl] : [rowEl];
-      })
-    ),
+    el("div", { class: "volume-bar-grid" }, rowEls),
   ]);
 }
 
