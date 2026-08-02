@@ -1,6 +1,6 @@
 // screens/settings.js
 import { el, mount, onLongPress } from "../dom.js";
-import { navigate } from "../router.js";
+import { navigate, safeBack } from "../router.js";
 import * as state from "../../core/state.js";
 import { THEMES, getThemeName, applyTheme } from "../../core/theme.js";
 import { openModal, showAlert } from "../components/modal.js";
@@ -192,7 +192,7 @@ export function renderSettings(root) {
 
   const screen = el("div", { id: "settings-screen", class: "screen-content" }, [
     el("div", { class: "topbar" }, [
-      el("button", { class: "icon-btn", text: "←", onclick: () => history.back() }),
+      el("button", { class: "icon-btn", text: "←", onclick: () => safeBack() }),
       el("div", { class: "title", text: "설정" }),
       el("span", { style: { opacity: 0 } }, "·"),
     ]),

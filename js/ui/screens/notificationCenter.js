@@ -5,7 +5,7 @@
 // 각 카드의 액션(목표 수정/현행 유지)도 state.js에 이미 있거나 이번에 추가된 함수(clearBodyweightGoalPending,
 // clearHighRepReviewAlert)를 그대로 호출할 뿐, 이 파일 자체는 어떤 판정/증량 상태도 직접 계산하지 않습니다.
 import { el, mount } from "../dom.js";
-import { navigate } from "../router.js";
+import { navigate, safeBack } from "../router.js";
 import * as state from "../../core/state.js";
 
 // 1. 🏋 도전세트 후보 — Read Only. 선택 기능 없음(기존 #/machine-candidate FAB 기능은 그대로 유지).
@@ -104,7 +104,7 @@ export function renderNotificationCenter(root) {
 
     const screen = el("div", { id: "notification-center-screen", class: "screen-content" }, [
       el("div", { class: "topbar" }, [
-        el("button", { class: "icon-btn", text: "←", onclick: () => history.back() }),
+        el("button", { class: "icon-btn", text: "←", onclick: () => safeBack() }),
         el("div", { class: "title", text: "운동 알림" }),
         el("span", { style: { opacity: "0" } }, "·"),
       ]),

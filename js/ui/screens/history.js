@@ -43,7 +43,10 @@ function buildExerciseCard(ex) {
   }
 
   const trend = getWeightTrend(sessions, ex.id, 90, ex.gainMethod);
-  const maxWeight = getRecentMaxWeight(trend);
+  // v3.0.2: 종목의 weightDirection에 따라 "최근 최고"의 계산 방향(max/min)만 바뀝니다. 카드 레이아웃/
+  // 문구("최근 최고")는 기존과 동일하게 유지합니다 — 치닝디핑도 "최고 기록"이라는 의미 자체는 같고,
+  // 그 값을 구하는 방식(낮은 보조 중량일수록 좋음)만 다르기 때문입니다.
+  const maxWeight = getRecentMaxWeight(trend, ex.weightDirection);
 
   return el("div", { class: "exercise-card" }, [
     el("div", { class: "ec-head" }, [

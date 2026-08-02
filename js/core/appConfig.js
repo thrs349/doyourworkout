@@ -110,4 +110,39 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // 기능/데이터 구조 변경은 없고 버전 표기만 정리합니다(코드 로직 무변경, 위 상세 이력은 그대로 보존).
 // v2.8.1: v2.8.0 사용자 테스트 반영(FAB 디자인 통일, 버전 표기, 맨몸 그래프 단위 괄호 표기) - 기능/데이터
 // 구조 변경 없이 버전 라벨만 갱신합니다(코드 로직 무변경).
-export const APP_VERSION = "v2.8";
+// v3.0.0: UI 업데이트 + 설치형 PWA에서 Settings 등 일부 화면 진입 후 "←"로 화면 이동이 안 되던 버그를
+// 안정화 작업으로 함께 수정했습니다(router.js safeBack() 추가, exitGuard.js 중복 history 항목 방지,
+// service-worker 캐시 버전 정리). 운동 판정/증량/볼륨 계산 로직, JSON 백업/복원 구조, migration,
+// SCHEMA_VERSION은 전부 무변경입니다.
+// v3.0.1: 설치형 PWA를 Settings 등 홈이 아닌 화면에서 설치/재실행했을 때 앱이 그 화면으로 바로
+// 시작되고, 이로 인해 종료 방지 가드가 걸리지 않아 시스템 뒤로가기로 앱이 바로 종료되던 문제를
+// 안정화 패치로 수정했습니다(router.js에 콜드 스타트 시 hash 검증 후 Home 보정 로직 추가). 같은
+// 이유로 app.js의 init 순서를 한 번 더 조정했습니다(자세한 내용은 각 파일 주석 참고). 기능 추가/UI
+// 변경 없음. 운동 판정/증량/볼륨 계산 로직, JSON 백업/복원 구조, migration, SCHEMA_VERSION 전부 무변경.
+// v3.0.2: 종목 정의에 weightDirection(표시 전용) 필드를 추가했습니다. 치닝디핑처럼 "낮은 보조 중량이
+// 더 좋은 기록"인 종목의 카드 "최근 최고" 표시가 지금까지는 항상 max 기준이라 실제와 반대로 보이던
+// 문제를 수정합니다. 종목 카드 통계 계산(stats.js)에서만 사용되며, judge.js/gain.js/volume.js 및
+// 실제 증량 판단·기록 저장 구조는 전혀 건드리지 않았습니다. SCHEMA_VERSION 17 -> 18로 증가.
+// v3.0.3: Weekly Volume Dashboard "상체 자극" 계산을 개선했습니다. (1) 주동근/보조근 가중치(1.0/0.65)를
+// "비율로 세트 분배"하는 방식으로 바꿔, 태그 2개 이상인 운동의 총 기여도가 원래 세트수보다 커지던 문제를
+// 없앴습니다. (2) 가슴/등/어깨는 서로 같은 분모(100%)를 공유하고, 팔만 "상체 전체 대비 %"라는 별도
+// 지표로 분리했습니다. 하체는 계산 방식(1)만 동일하게 적용되고 분모 구조(2)는 기존과 동일합니다.
+// volume.js/judge.js/gain.js/state.js, secondaryTags 저장 구조, SCHEMA_VERSION 전부 무변경.
+// v3.0.4: v3.0.3 UI 후속 수정 - 팔 막대의 별도 강조색(color-mix)을 되돌리고, 대신 가슴/등/어깨와 팔
+// 사이에 얇은 구분선(--color-border)을 추가해 분모가 다른 지표임을 표시했습니다. 또한 알람센터/도전세트
+// 후보 FAB의 내부 배경을 흰색(--color-surface) 고정값에서 메인 홈 화면과 같은 테마별 배경색
+// (--color-bg)으로 바꿔, 흰 배경 때문에 별도 요소처럼 보이던 문제를 해결했습니다(테두리 강조색·아이콘·
+// 크기·그림자는 무변경). 이번 릴리즈는 CSS/UI 표시 변경만 포함하며, 계산 로직·데이터 구조·
+// localStorage/JSON 백업 호환성·SCHEMA_VERSION은 전부 무변경입니다.
+// v3.0.5: v3.0.4의 상체 자극 구분선 구현 방식을 수정했습니다. 구분선이 grid의 독립된 행을 차지해
+// row-gap이 중복 적용되면서 어깨-팔 간격만 넓어지던 문제(v3.0.4)를, 구분선을 position:absolute 오버레이
+// 로 바꿔 해결했습니다 - grid 행 배치·row-gap·카드 높이에 전혀 관여하지 않으므로 가슴/등/어깨/팔 행간이
+// 모두 동일하게 유지됩니다. FAB 배경색(--color-bg) 변경은 v3.0.4 그대로 유지됩니다. calcTagRowsForBodyPart
+// 계산 로직, volume.js/gain.js/judge.js/state.js/storage.js/models.js, SCHEMA_VERSION, weightDirection
+// 관련 로직 전부 무변경 - 순수 UI 표시 릴리즈입니다.
+// v3.0.6: v3.0.5의 구분선이 실제로는 화면에 보이지 않던 버그를 수정했습니다. position:absolute + 
+// grid-column:1/-1만으로는 containing block의 가로 "범위"만 정해질 뿐 left/right가 없으면 요소가
+// shrink-to-fit(내용물 없음 = 0px 너비)으로 축소되어 사실상 렌더링되지 않았습니다. .volume-bar-divider에
+// left:0; right:0;을 추가해 실제로 라벨 시작 x축 ~ 상체 섹션 끝까지 채워지도록 했습니다. CSS 속성 2줄
+// 추가 외 다른 변경은 없으며, JS(routineList.js)·계산 로직·데이터 구조·SCHEMA_VERSION 전부 무변경입니다.
+export const APP_VERSION = "v3.0.6";

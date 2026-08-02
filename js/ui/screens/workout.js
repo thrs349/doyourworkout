@@ -1,6 +1,6 @@
 // screens/workout.js
 import { el, mount } from "../dom.js";
-import { navigate } from "../router.js";
+import { navigate, safeBack } from "../router.js";
 import { openModal } from "../components/modal.js";
 import { buildCueNoteViewerContent } from "../components/cueNoteViewer.js";
 import * as state from "../../core/state.js";
@@ -318,7 +318,7 @@ export function renderWorkout(root) {
 
     const screen = el("div", { id: "workout-screen", class: "screen-content" }, [
       el("div", { class: "topbar" }, [
-        el("button", { class: "icon-btn", text: "←", onclick: () => history.back() }),
+        el("button", { class: "icon-btn", text: "←", onclick: () => safeBack() }),
         el("div", { class: "title", text: "오늘의 운동" }),
         topbarModeBadge(),
       ]),
@@ -407,9 +407,9 @@ export function renderWorkout(root) {
 
     const screen = el("div", { id: "workout-checkgate-screen", class: "screen-content" }, [
       el("div", { class: "topbar" }, [
-        // 화면 내 "←"도 물리 뒤로가기와 동일하게 history.back()만 호출합니다. 별도 플래그를 세우지 않으므로
-        // popstate 핸들러가 기본값(= "다시 수정")으로 처리합니다.
-        el("button", { class: "icon-btn", text: "←", onclick: () => history.back() }),
+        // 화면 내 "←"도 물리 뒤로가기와 동일하게 safeBack()(내부적으로 history.back())을 호출합니다.
+        // 별도 플래그를 세우지 않으므로 popstate 핸들러가 기본값(= "다시 수정")으로 처리합니다.
+        el("button", { class: "icon-btn", text: "←", onclick: () => safeBack() }),
         el("div", { class: "title", text: "입력 확인" }),
         topbarModeBadge(),
       ]),
@@ -443,7 +443,11 @@ export function renderWorkout(root) {
   }
 
   function onCheckGateRetry() {
-    history.back(); // pushState로 쌓은 더미 항목을 소비 -> popstate -> 위 핸들러가 입력 화면으로 복귀
+    // v3.0.0: pushState로 쌓은 더미 항목을 소비 -> popstate -> 위 핸들러가 입력 화면으로 복귀.
+    // safeBack()으로 교체해, 만약 PWA가 백그라운드/재개를 거치며 그 더미 항목이 사라진 극히 드문
+    // 경우에도 화면이 멈추지 않고 기본 화면으로 안전하게 빠져나가도록 보강했습니다. 정상적인 경우의
+    // 동작(popstate -> 입력 화면 복귀)은 기존과 동일합니다.
+    safeBack();
   }
 
   // 운동 완료: history 정리(리스너 제거 + back())를 먼저 끝내 Check Gate의 흔적을 지운 뒤,

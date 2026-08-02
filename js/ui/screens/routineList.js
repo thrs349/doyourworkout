@@ -16,6 +16,15 @@ function buildMetaText(summary) {
 // 완전히 제거했습니다(다른 화면에서 쓰지 않는 걸 확인함 - 요일 카드 메타 텍스트는 별도의
 // calcDayRoleSetSummary를 씀). volume.js/state.js는 전혀 수정하지 않고, 이미 공개되어 있던
 // state.getRoutineExercisesForEdit(dayKey)만 사용해 아래 두 계산을 이 파일 안에서 새로 만듭니다.
+//
+// v3.0.3: 상체 자극 계산 방식을 두 가지로 개선했습니다. (1) 주동근/보조근 가중치(1.0/0.65)를 "그대로
+// 더하는" 방식에서 "비율로 세트를 분배"하는 방식으로 변경 - 태그 2개 이상인 운동의 총 기여도가 원래
+// 세트수보다 커지던 문제를 없앴습니다(calcTagRowsForBodyPart 주석 참고). (2) 상체의 가슴/등/어깨는
+// 서로 같은 분모(100%)를 공유하고, 팔만 "상체 전체 대비 %"라는 별도 분모를 쓰도록 분리했습니다(팔을
+// 보조근으로 잡는 운동이 없어 팔 비중이 과대해 보이던 문제의 해석을 돕기 위함). 하체(대퇴사두/둔근/
+// 햄스트링)는 이 분리 대상이 아니라 기존과 완전히 동일하게 동작합니다. UI는 팔 막대 색상만 다르게
+// 표시하고, 카드 레이아웃·정렬·크기는 전혀 바꾸지 않았습니다. volume.js/state.js/judge.js/gain.js,
+// secondaryTags 저장 구조는 무변경입니다.
 
 // 헤더용: 상위 분류(상체/하체/코어) 단순 세트 합산. 주동근/보조근 가중치를 적용하지 않는 "순수 운동량".
 function calcPrimarySetSum(bodyPart) {
@@ -28,9 +37,23 @@ function calcPrimarySetSum(bodyPart) {
   return sum;
 }
 
-// 내용 영역용: Secondary Tag별 raw 세트 합(표시용 "OO세트")과, 주동근(선택 순서 0번째, ×1.0)/보조근
-// (1~2번째, ×0.5) 가중치를 적용한 기여도 비율(%). 태그 개수로 나누는 균등분배는 하지 않고, 종목 하나가
-// 여러 태그를 가지면 각 태그에 가중치를 그대로 반영합니다(요청하신 계산식 그대로).
+// v3.0.3: 주동근/보조근 가중치를 "그대로 더하는" 방식에서 "비율로 세트를 분배"하는 방식으로 변경합니다.
+// 기존 방식(contribution += sets × weight)은 태그가 2개 이상인 운동의 총 기여도가 원래 세트수보다
+// 커지는 문제가 있었습니다(예: 3세트 운동이 주동 3 + 보조 1.5 = 4.5로 계상). 새 방식은 항상
+// totalWeight = 1.0 + (보조근 개수 × ASSIST_WEIGHT)로 정규화해, 태그가 몇 개든 "운동 하나의 총
+// 기여도 합 = 원래 세트수"가 보존되도록 합니다. 가중치 자체(주동 1.0/보조 0.65)의 의미(어느 쪽을 더
+// 강하게 볼지)는 기존과 동일하게 유지하면서, "비율"로 쓰는 것으로 계산 방식만 바꾼 것입니다.
+const ASSIST_WEIGHT = 0.65;
+
+// v3.0.3: 부위별로 "팔처럼 별도 분모(상체 전체 대비 %)를 쓰는 태그"가 있으면 이름을 지정합니다. 상체만
+// 해당하고(가슴/등/어깨는 서로 같은 분모, 팔만 분리), 하체(대퇴사두/둔근/햄스트링)는 지정하지 않아
+// 기존과 동일하게 3개 태그가 하나의 분모(100%)를 그대로 공유합니다 - 하체 계산 로직/결과는 무변경입니다.
+const DETACHED_TAG_BY_BODY_PART = { 상체: "팔" };
+
+// 내용 영역용: Secondary Tag별 raw 세트 합(표시용, 현재 UI에서는 미사용)과, 주동근(선택 순서 0번째,
+// ×1.0)/보조근(1~2번째, ×0.65) 가중치를 "비율 분배"로 적용한 기여도(%). 종목 하나의 총 기여도 합은
+// 항상 원래 세트수(sets)와 같습니다(태그 개수와 무관). 상체는 가슴/등/어깨 세 태그가 같은 분모를
+// 공유해 100%를 이루고, 팔만 "상체 전체 contribution 대비 %"라는 별도 분모를 씁니다.
 function calcTagRowsForBodyPart(bodyPart) {
   const rawSets = {};
   const contribution = {};
@@ -42,23 +65,41 @@ function calcTagRowsForBodyPart(bodyPart) {
     state.getRoutineExercisesForEdit(d.key).forEach((ex) => {
       if (!ex || ex.primaryBodyPart !== bodyPart) return;
       const sets = ex.baseSets || 0;
-      (ex.secondaryTags || []).forEach((tag, idx) => {
-        if (!(tag in rawSets)) return;
+      const tags = (ex.secondaryTags || []).filter((tag) => tag in rawSets);
+      if (tags.length === 0) return;
+      const assistCount = tags.length - 1;
+      const totalWeight = 1.0 + assistCount * ASSIST_WEIGHT; // 주동근 1개 + 보조근 N개
+      tags.forEach((tag, idx) => {
         rawSets[tag] += sets;
-        contribution[tag] += sets * (idx === 0 ? 1.0 : 0.5); // 0번째=주동근(①), 1~2번째=보조근(②)
+        const weight = idx === 0 ? 1.0 : ASSIST_WEIGHT; // 0번째=주동근(①), 1~2번째=보조근(②)
+        contribution[tag] += sets * (weight / totalWeight);
       });
     });
   });
-  const total = Object.values(contribution).reduce((sum, v) => sum + v, 0);
+
+  const detachedTag = DETACHED_TAG_BY_BODY_PART[bodyPart];
+  const allTags = secondaryTagsFor(bodyPart);
+  const mainTags = detachedTag ? allTags.filter((tag) => tag !== detachedTag) : allTags;
+  // 전체 분모(팔의 "상체 전체 대비 %"용) / 메인 그룹 분모(가슴·등·어깨끼리 100%용). detachedTag가 없는
+  // 부위(하체)는 mainTags가 allTags와 같아 mainTotal === allTotal이 되어 기존과 동일하게 동작합니다.
+  const allTotal = allTags.reduce((sum, tag) => sum + contribution[tag], 0);
+  const mainTotal = mainTags.reduce((sum, tag) => sum + contribution[tag], 0);
+
   // "round 적용, 표시 합계가 100%가 되도록" -> 각 태그별로 독립적으로 Math.round합니다. (참고: 이는
   // 대부분의 경우 합계를 100%에 가깝게 만들지만, 나머지값이 특정 방향으로 몰리는 드문 경우엔 99%/101%처럼
-  // 정확히 100이 안 될 수 있습니다 - 이는 "독립 반올림" 방식의 수학적 특성이며, 예시(29+36+21+14=100)에서는
-  // 정확히 100%로 맞아떨어집니다.)
-  return secondaryTagsFor(bodyPart).map((tag) => ({
-    label: tag,
-    value: rawSets[tag],
-    percent: total > 0 ? Math.round((contribution[tag] / total) * 100) : 0,
-  }));
+  // 정확히 100이 안 될 수 있습니다 - 이는 "독립 반올림" 방식의 수학적 특성입니다.) 팔(detachedTag)은
+  // 애초에 가슴/등/어깨의 100%에 합산되는 대상이 아니라 별도 분모(상체 전체)를 쓰므로, 이 "합계 100%"
+  // 특성은 메인 그룹(가슴/등/어깨)에만 적용됩니다.
+  return allTags.map((tag) => {
+    const isDetached = tag === detachedTag;
+    const denom = isDetached ? allTotal : mainTotal;
+    return {
+      label: tag,
+      value: rawSets[tag],
+      percent: denom > 0 ? Math.round((contribution[tag] / denom) * 100) : 0,
+      detached: isDetached, // v3.0.3: UI에서 팔 막대만 다른 강조색을 쓰기 위한 표시용 플래그
+    };
+  });
 }
 
 // v2.7.5: 상/하체 밸런스(상체·하체·코어 Primary total)를 별도 좌측 컬럼이 아니라 헤더 행에 "라벨 + 3개 값"
@@ -89,25 +130,37 @@ function buildBalanceHeader(rows) {
 // 가장 긴 라벨"에 맞춰 자동으로 결정되도록 했습니다(예: 하체의 "대퇴사두"). 기존엔 라벨 폭이 고정 40px로
 // 두 섹션에 공유되어, 사실상 상체/하체가 같은 x축 기준으로 정렬되어 보였습니다 - 이제 상체 섹션과 하체
 // 섹션이 각자 독립적으로 정렬되고, 같은 섹션 안의 행들끼리는(=섹션 내부 기준) 여전히 서로 정렬됩니다.
+// v3.0.4(UI 수정): 구분선(.volume-bar-divider)이 grid-column:1/-1로 자기만의 grid row를 차지하면서
+// row-gap이 그 앞뒤로 중복 적용되어 어깨-팔 행간만 넓어지는 문제가 있었습니다(v3.0.3). 이번에는 구조
+// 자체를 바꿔, 구분선을 grid 레이아웃에 참여하는 "행"이 아니라 position:absolute로 떠 있는 순수 장식
+// 요소로 만듭니다. grid-row는 여전히 지정하지만(어깨 행의 grid 트랙을 좌표 참조용으로만 사용),
+// position:absolute라 실제 행 배치·row-gap·카드 높이에는 전혀 관여하지 않습니다 - 가슴/등/어깨/팔 4행
+// 구조와 행간(row-gap: 2px)이 100% 그대로 유지됩니다.
 function buildBarSection(label, rows) {
   const maxPercent = Math.max(0, ...rows.map((r) => r.percent));
+  const detachedIdx = rows.findIndex((r) => r.detached); // 0-based. 상체가 아니면(하체) -1이라 구분선 자체가 안 생김.
+  const rowEls = rows.map(({ label: rowLabel, percent }) => {
+    // 막대 폭 = (해당 부위 비율 / 그룹 내 최대 비율) × 80%. 그룹 전체가 0%면(운동 없음) 막대 폭도 0.
+    const barWidth = maxPercent > 0 ? (percent / maxPercent) * 80 : 0;
+    return el("div", { class: "volume-bar-row" }, [
+      el("span", { class: "volume-bar-label", text: rowLabel }),
+      el("div", { class: "volume-bar-track" }, [
+        el("span", { class: "volume-bar-fill", style: { width: `${barWidth}%` } }),
+        el("span", { class: "volume-bar-percent", text: `${percent}%` }),
+      ]),
+    ]);
+  });
+  if (detachedIdx > 0) {
+    // detachedIdx(0-based)는 팔 행의 위치이고, 그 바로 위 행(어깨)의 1-based grid row 번호는 detachedIdx와
+    // 같습니다(예: 팔이 배열의 4번째=idx 3이면, 어깨는 3번째 행=grid-row 3). 구분선은 이 행의 grid 트랙
+    // 하단 경계(어깨-팔 사이)에 CSS로 정렬되므로, 행 높이가 나중에 바뀌어도 px 하드코딩 없이 항상 정확한
+    // 위치를 따라갑니다. grid-column: 1/-1로 라벨 시작 x축부터 이 섹션(상체) 끝까지만 그어지고, 하체는
+    // detachedIdx가 -1이라 이 블록 자체가 실행되지 않아 완전히 무영향입니다.
+    rowEls.push(el("div", { class: "volume-bar-divider", style: { gridRow: `${detachedIdx} / ${detachedIdx + 1}` } }));
+  }
   return el("div", { class: "volume-bar-section" }, [
     el("div", { class: "volume-grid-title", text: label }),
-    el(
-      "div",
-      { class: "volume-bar-grid" },
-      rows.map(({ label: rowLabel, percent }) => {
-        // 막대 폭 = (해당 부위 비율 / 그룹 내 최대 비율) × 80%. 그룹 전체가 0%면(운동 없음) 막대 폭도 0.
-        const barWidth = maxPercent > 0 ? (percent / maxPercent) * 80 : 0;
-        return el("div", { class: "volume-bar-row" }, [
-          el("span", { class: "volume-bar-label", text: rowLabel }),
-          el("div", { class: "volume-bar-track" }, [
-            el("span", { class: "volume-bar-fill", style: { width: `${barWidth}%` } }),
-            el("span", { class: "volume-bar-percent", text: `${percent}%` }),
-          ]),
-        ]);
-      })
-    ),
+    el("div", { class: "volume-bar-grid" }, rowEls),
   ]);
 }
 

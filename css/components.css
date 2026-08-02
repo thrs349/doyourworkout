@@ -216,7 +216,13 @@
   margin-bottom: var(--sp-3);
   width: 52px; height: 52px; border-radius: 50%;
   /* v2.8.1: 기본루틴/회복루틴 버튼(.mode-btn)과 동일한 톤(흰 배경 + 강조색 테두리/아이콘)으로 통일 */
-  background: var(--color-surface); color: var(--color-primary); border: 1.5px solid var(--color-primary);
+  /* v3.0.3(UI 수정): 흰 배경(--color-surface)이 메인 홈 화면 배경(--color-bg)과 분리된 별도 요소처럼
+     보이는 문제를 해결하기 위해, 내부 배경을 메인 화면과 동일한 --color-bg로 교체했습니다. --color-bg는
+     테마별로(theme.js) 각각 다른 값을 갖는 변수라, 테마가 바뀌어도 FAB가 항상 그 테마의 홈 화면 배경과
+     자연스럽게 어울립니다. 테두리 강조색(--color-primary)·아이콘 색·크기·그림자는 그대로 유지합니다.
+     알람센터 FAB(.fab-btn.left)와 도전세트 후보 FAB(.fab-btn.right)가 이 규칙 하나를 공유하므로,
+     이 한 줄 변경만으로 두 FAB 모두에 동일하게 적용됩니다. */
+  background: var(--color-bg); color: var(--color-primary); border: 1.5px solid var(--color-primary);
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 8px 20px rgba(0, 0, 0, .22);
   z-index: 5;
@@ -369,12 +375,41 @@
 .volume-bar-columns .volume-bar-section:first-child { flex: 47 1 0; min-width: 0; }
 .volume-bar-columns .volume-bar-section:last-child { flex: 53 1 0; min-width: 0; }
 .volume-grid-title { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--color-primary); text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; margin-bottom: 4px; }
-.volume-bar-grid { display: grid; grid-template-columns: auto 1fr; column-gap: 6px; row-gap: 2px; align-items: center; }
+.volume-bar-grid { display: grid; grid-template-columns: auto 1fr; column-gap: 6px; row-gap: 2px; align-items: center; position: relative; }
 .volume-bar-row { display: contents; }
 .volume-bar-label { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .volume-bar-track { display: flex; align-items: center; gap: 4px; min-width: 0; padding: 4px 0; }
 .volume-bar-fill { display: block; height: 10px; min-width: 2px; border-radius: 4px; background: var(--color-primary); flex-shrink: 0; }
+/* v3.0.3(UI 수정): "팔" 막대 전용 강조색(color-mix 기반)은 되돌리고, 팔 행이 가슴/등/어깨와 분모가 다른
+   지표라는 것은 막대 위 얇은 구분선(.volume-bar-divider)으로만 표시합니다. */
 .volume-bar-percent { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-primary); white-space: nowrap; }
+/* v3.0.4(UI 수정): 구분선을 grid 레이아웃에 참여하는 "행"이 아니라, position:absolute로 떠 있는 순수
+   장식 오버레이로 바꿨습니다(v3.0.3에서는 grid-column:1/-1로 자기만의 grid row를 차지해 row-gap이
+   앞뒤로 중복 적용되면서 어깨-팔 행간만 넓어지는 문제가 있었음). position:absolute인 grid 자식은
+   실제 행 배치·row-gap·카드 높이에 전혀 관여하지 않으므로, 가슴/등/어깨/팔 4행 구조와 행간은 100%
+   그대로 유지됩니다. 다만 grid-row는 여전히 지정해(JS에서 어깨 행의 grid 트랙 번호를 계산해 인라인
+   style로 넘김) 그 트랙의 경계를 "좌표 참조"로만 사용합니다 - .volume-bar-grid에 준 position:relative
+   가 이 좌표계의 기준(containing block)이 됩니다. bottom:-1px로 참조한 행(어깨)의 아래쪽 경계에서
+   1px만큼 아래(팔 쪽)로 내려, 어깨-팔 사이 2px 여백 안에 오도록 했습니다(bottom을 명시했으므로 이
+   축의 위치는 이 값으로 완전히 결정되어 align-self는 필요 없습니다). grid-column: 1/-1은 그대로 유지해
+   라벨 텍스트 시작 x축부터 이 섹션(상체) 끝까지만 그어지고, 하체 섹션까지는 구조상(별도 .volume-bar-grid
+   인스턴스라 이 규칙 자체가 적용될 대상이 없음) 넘어갈 수 없습니다. 색상은 테마 변수 --color-border를
+   그대로 재사용합니다(예: .result-summary의 border-top과 동일한 변수).
+   v3.0.6: grid-column만으로는 containing block의 가로 "범위"만 정해질 뿐, left/right가 둘 다 auto면
+   절대 위치 요소는 CSS 표준 규칙상 shrink-to-fit(내용물 크기, 이 요소는 자식이 없어 사실상 0px)으로
+   축소되어 실제로는 보이지 않는 버그가 있었습니다. left: 0; right: 0;을 추가해 containing block(=
+   grid-column으로 지정된 상체 섹션 가로 범위) 양 끝에 완전히 고정시켜, 라벨 시작 x축부터 상체 섹션
+   끝까지 실제로 꽉 채워지도록 수정했습니다. */
+.volume-bar-divider {
+  position: absolute;
+  grid-column: 1 / -1;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: var(--color-border);
+  pointer-events: none;
+}
 
 .result-summary { display: flex; align-items: center; justify-content: space-between; padding: 12px 4px; border-top: 1px solid var(--color-border); }
 .result-summary:first-child { border-top: none; }

@@ -207,6 +207,20 @@ export function migrate(data) {
     }));
   }
 
+  // v17 -> v18: 종목 카드 "최근 최고" 표시/그래프 해석 전용 weightDirection 필드가 추가됨. judge.js/gain.js/
+  // volume.js는 이 필드를 전혀 참조하지 않으며(판정·증량·볼륨 계산과 무관), currentWeight를 올리고 내리는
+  // 방식(machine/freeweight 등 gainMethod별 진행 로직)도 이 migration으로 전혀 바뀌지 않습니다. 기존 종목은
+  // 전부 기존 동작과 동일한 "asc"(높은 중량 = 최고 기록)로 채우고, 이름이 정확히 "치닝디핑"인 종목만
+  // "desc"(낮은 보조 중량 = 최고 기록)로 예외 처리합니다. 개인 사용 앱이라는 전제로 띄어쓰기 제거/특수문자
+  // 보정 같은 추가 정규화는 하지 않고, 저장된 이름 그대로 정확히 일치하는 경우만 처리합니다(요청 사항).
+  // 이름 매칭은 이 migration 시점에서 1회만 쓰이며, 이후 런타임에서는 이 필드값(weightDirection)만 참조합니다.
+  if (fromVersion < 18) {
+    merged.exercises = (merged.exercises || []).map((ex) => ({
+      weightDirection: ex.name === "치닝디핑" ? "desc" : "asc",
+      ...ex,
+    }));
+  }
+
   merged.schemaVersion = SCHEMA_VERSION;
   return merged;
 }

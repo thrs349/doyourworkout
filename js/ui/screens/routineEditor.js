@@ -1,7 +1,7 @@
 // screens/routineEditor.js
 // v1.1: 드래그 UX 개선 - 드래그 핸들 + 손가락을 따라 이동하는 플로팅 카드 + 이동 위치를 보여주는 placeholder.
 import { el, mount } from "../dom.js";
-import { navigate } from "../router.js";
+import { navigate, safeBack } from "../router.js";
 import * as state from "../../core/state.js";
 import { DAYS, effectiveRole } from "../../core/models.js";
 import { openCueNoteEditor } from "../components/cueNoteEditor.js";
@@ -195,7 +195,7 @@ export function renderRoutineEditor(root, params) {
 
   const screen = el("div", { id: "routine-editor-screen", class: "screen-content" }, [
     el("div", { class: "topbar" }, [
-      el("button", { class: "icon-btn", text: "←", onclick: () => history.back() }),
+      el("button", { class: "icon-btn", text: "←", onclick: () => safeBack() }),
       titleEl,
       el("button", { class: "icon-btn", text: "✎", onclick: renameTitle }),
     ]),
