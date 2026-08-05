@@ -55,10 +55,11 @@ h1, h2, h3, p {
    icon.png(64.9%/54.7%) 대비 이미 확대 효과가 있습니다. 목표(OS Splash 실측 폭 37%/1080px 기준
    400px)에 맞추려면 박스는 400 ÷ 92.5% ≈ 432px(화면폭 대비 40%)이면 충분합니다(34vw에서 40vw로).
    중심 위치(Y)도 OS Splash(50.4%)에 가깝도록 그룹 전체에 소폭 하향 오프셋을 추가했습니다. */
-/* v3.1.2-sssplash: 직전 패치(48vw/18px)가 실기기 체감상 OS Splash보다 커 보인다는 피드백에 따라
-   40vw~48vw 사이에서 하향 재조정합니다. 아이콘 44vw(48vw 대비 예상 폭 33.6%/363px, 40vw보다는
-   크고 48vw보다는 작음), 태그라인 14px(아이콘 대비 주목도가 과하지 않도록), gap 19px(18~20px
-   권장 범위 내). 중심 Y 보정용 padding-top(8vh)은 이번 요청 범위 밖이라 유지합니다. */
+/* v3.1.2-ssssplash: splash(40vw)와 sssplash(44vw) 사이 중간값으로 최종 조정합니다. 아이콘 42vw
+   (44vw 대비 예상 폭 ≈347px/32.1%, 40vw의 331px보다는 크고 44vw~48vw 계열의 "튀어나오는" 느낌보다는
+   작음), 태그라인은 권장 범위(14~15px) 중 15px로 설정(아이콘 대비 과하지 않으면서 sssplash의 14px
+   보다 가독성 우선), gap은 이미 18~20px 권장 범위 내(19px)라 그대로 유지합니다. max-width도 42/44
+   비율로 축소(330px -> 315px). 중심 Y 보정용 padding-top(8vh)은 이번 요청 범위 밖이라 유지합니다. */
 #splash {
   position: fixed;
   inset: 0;
@@ -78,8 +79,8 @@ h1, h2, h3, p {
 }
 #splash img {
   display: block;
-  width: 44vw;
-  max-width: 330px;
+  width: 42vw;
+  max-width: 315px;
   aspect-ratio: 1 / 1;
   height: auto;
   object-fit: contain;
@@ -87,7 +88,7 @@ h1, h2, h3, p {
 #splash .splash-tagline {
   color: #FFFFFF;
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 15px;
   letter-spacing: .02em;
   white-space: nowrap;
 }
