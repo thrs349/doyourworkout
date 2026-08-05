@@ -13,10 +13,16 @@ function nameCompare(a, b) {
 }
 
 const GAIN_METHOD_ORDER = [GAIN_METHODS.MACHINE, GAIN_METHODS.FREEWEIGHT, GAIN_METHODS.HIGH_REP, GAIN_METHODS.BODYWEIGHT];
-// v2.6.0: 정렬 버튼(이름순/최근사용순)을 제거했습니다. 목록은 항상 "운동 유형 순(머신 → 프리웨이트 →
-// 고반복 → 맨몸) → 각 유형 내부 가나다순"으로 고정 정렬합니다(유형 필터를 적용해도 동일한 정렬 기준 유지).
+// v2.6.0: 정렬 버튼(이름순/최근사용순)을 제거하고 "운동 유형 순(머신 → 프리웨이트 → 고반복 → 맨몸) →
+// 각 유형 내부 가나다순"으로 고정 정렬했었습니다(유형 필터를 적용해도 동일한 정렬 기준 유지).
+// v3.1.1: 위 고정 그룹 정렬을 되돌립니다. 기본 진입 시에는 가나다순(nameCompare)만 사용하고,
+// "운동 유형"/"운동 부위" 버튼을 선택했을 때만(filterMode) 해당 기준으로 그룹 정렬합니다.
 function methodCompare(a, b) {
   const diff = GAIN_METHOD_ORDER.indexOf(a.gainMethod) - GAIN_METHOD_ORDER.indexOf(b.gainMethod);
+  return diff !== 0 ? diff : nameCompare(a, b);
+}
+function bodyPartCompare(a, b) {
+  const diff = BODY_PARTS.indexOf(a.primaryBodyPart) - BODY_PARTS.indexOf(b.primaryBodyPart);
   return diff !== 0 ? diff : nameCompare(a, b);
 }
 const GAIN_METHOD_LABELS = { machine: "머신", freeweight: "프리웨이트", high_rep: "고반복", bodyweight: "맨몸" };
@@ -63,11 +69,19 @@ export function renderExerciseManage(root) {
     return matchesSearch(ex) && matchesType(ex) && matchesBodyPart(ex) && matchesTags(ex);
   }
 
+  // v3.1.1: filterMode가 없으면(기본 진입) 가나다순, "운동 유형" 선택 시 유형별 그룹,
+  // "운동 부위" 선택 시 부위별 그룹으로 정렬 기준을 전환합니다.
+  function currentSort() {
+    if (filterMode === "type") return methodCompare;
+    if (filterMode === "bodyPart") return bodyPartCompare;
+    return nameCompare;
+  }
+
   function activeList() {
-    return state.getData().exercises.filter((e) => e.active !== false && matchesFilters(e)).sort(methodCompare);
+    return state.getData().exercises.filter((e) => e.active !== false && matchesFilters(e)).sort(currentSort());
   }
   function inactiveList() {
-    return state.getData().exercises.filter((e) => e.active === false && matchesFilters(e)).sort(methodCompare);
+    return state.getData().exercises.filter((e) => e.active === false && matchesFilters(e)).sort(currentSort());
   }
 
   /* ---------------- 활성 탭 ---------------- */

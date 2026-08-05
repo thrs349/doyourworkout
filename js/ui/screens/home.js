@@ -83,7 +83,7 @@ export function renderHome(root) {
         "aria-label": "도전세트 후보 선택",
         onclick: () => navigate("#/machine-candidate"),
         title: "도전세트 후보 선택",
-      }, [el("span", { class: "fab-icon", text: "🔥" })])
+      }, [el("span", { class: "fab-icon", text: "🏆" })])
     : null;
 
   // v2.4.0: 운동 알림(Exercise Notification Center) FAB. 도전세트 후보 FAB와 같은 home-cta 컨테이너에

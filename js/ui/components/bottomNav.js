@@ -7,7 +7,7 @@ export function renderBottomNav(activeKey) {
   const items = [
     { key: "routine", label: "루틴", icon: "☰", hash: "#/routine-list" },
     { key: "home", label: "홈", icon: "⌂", hash: "#/home" },
-    { key: "history", label: "기록", icon: "▤", hash: "#/history", sub: "지난 운동" },
+    { key: "history", label: "기록", icon: "↗", hash: "#/history" },
   ];
 
   return el(
@@ -23,7 +23,6 @@ export function renderBottomNav(activeKey) {
         [
           el("span", { class: "nav-icon", text: item.icon }),
           el("span", { text: item.label }),
-          item.sub ? el("span", { class: "nav-sub", text: item.sub }) : null,
         ]
       )
     )

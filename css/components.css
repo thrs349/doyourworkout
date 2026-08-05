@@ -229,7 +229,6 @@
 }
 .fab-btn.right { right: 0; }
 .fab-btn.left { left: 0; } /* v2 알림 FAB용으로 미리 준비해둔 자리 */
-.fab-btn:active { transform: scale(.96); }
 .fab-btn .fab-icon { font-size: 22px; line-height: 1; }
 
 /* 폼(종목 추가) */

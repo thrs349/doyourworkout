@@ -145,8 +145,8 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // shrink-to-fit(내용물 없음 = 0px 너비)으로 축소되어 사실상 렌더링되지 않았습니다. .volume-bar-divider에
 // left:0; right:0;을 추가해 실제로 라벨 시작 x축 ~ 상체 섹션 끝까지 채워지도록 했습니다. CSS 속성 2줄
 // 추가 외 다른 변경은 없으며, JS(routineList.js)·계산 로직·데이터 구조·SCHEMA_VERSION 전부 무변경입니다.
-// v3.1.0: UI System Refinement - Design Token Audit(하드코딩 색상 제거), Component System 정리(Card/Icon Button
-// radius 토큰 통일, ExercisePicker 버튼 스타일 통일), Typography 정리(btn-danger 테두리형 변경, nav-item.active/
-// type-opt.selected bold 제거)를 정식 반영합니다. CSS/UI 표시 변경만 포함하며, 계산 로직·데이터 구조·
+// v3.1.1: 기능 개선 - FAB scale 모션 삭제, 도전세트 후보 FAB 이모지 롤백(🔥→🏆), 종목 정렬 UX 변경
+// (exerciseManage/exercisePicker 기본 가나다순 + 운동유형/운동부위 버튼 선택 시에만 그룹 정렬로 전환),
+// 하단 네비 '기록' 아이콘 변경(▤→↗) 및 서브텍스트("지난 운동") 제거를 반영합니다. 계산 로직·데이터 구조·
 // localStorage/JSON 백업 호환성·SCHEMA_VERSION은 전부 무변경입니다.
-export const APP_VERSION = "v3.1.0";
+export const APP_VERSION = "v3.1.1";
