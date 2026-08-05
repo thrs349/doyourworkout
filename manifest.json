@@ -1,15 +1,15 @@
 {
-  "name": "Do Your Workout - 운동 헌장 앱",
-  "short_name": "Do Your Workout",
+  "name": "NextLift — Train. Judge. Progress.",
+  "short_name": "NextLift",
   "description": "개인 운동 헌장 규칙 기반 운동 관리 앱",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#D6FF3D",
-  "theme_color": "#D6FF3D",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "icons": [
-    { "src": "icons/icon.svg?v=3", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "icons/icon.svg?v=3", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+    { "src": "icons/icon.png?v=4", "sizes": "1024x1024", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon.png?v=4", "sizes": "1024x1024", "type": "image/png", "purpose": "maskable" }
   ]
 }

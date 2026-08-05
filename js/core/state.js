@@ -817,7 +817,7 @@ export function backupNow() {
 export async function readBackupFile(file) {
   const parsed = await readJSONFile(file);
   if (!validateBackupShape(parsed)) {
-    throw new Error("올바른 Do Your Workout 백업 파일이 아닙니다.");
+    throw new Error("올바른 NextLift 백업 파일이 아닙니다.");
   }
   return parsed;
 }

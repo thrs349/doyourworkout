@@ -1,8 +1,8 @@
 // appConfig.js
 // 앱 표시 이름을 한 곳에서만 관리합니다. 이름을 바꾸려면 이 값만 수정하면 됩니다.
 // (내부 화면 표시, PWA manifest name/short_name, index.html 제목에 모두 반영됩니다.)
-export const APP_NAME = "Do Your Workout";
-export const APP_TAGLINE = "운동 헌장 앱";
+export const APP_NAME = "NextLift";
+export const APP_TAGLINE = "Train. Judge. Progress.";
 // v2.4.1: 사용자에게 보여주는 "릴리즈" 버전입니다. models.js의 SCHEMA_VERSION(저장 데이터 구조 migration 번호)과는
 // 완전히 별개이며 서로 참조하지 않습니다 — 이 값은 릴리즈마다 사람이 직접 갱신합니다.
 // v2.6.0: Exercise Tag System(운동 종목 태그 시스템) 릴리즈.
@@ -149,4 +149,9 @@ export const APP_TAGLINE = "운동 헌장 앱";
 // (exerciseManage/exercisePicker 기본 가나다순 + 운동유형/운동부위 버튼 선택 시에만 그룹 정렬로 전환),
 // 하단 네비 '기록' 아이콘 변경(▤→↗) 및 서브텍스트("지난 운동") 제거를 반영합니다. 계산 로직·데이터 구조·
 // localStorage/JSON 백업 호환성·SCHEMA_VERSION은 전부 무변경입니다.
-export const APP_VERSION = "v3.1.1";
+// v3.1.2: NextLift 브랜딩 적용 - 앱 이름/아이콘을 NextLift로 전환(v3.1.2 이전 턴에서 아이콘/APP_NAME
+// 선반영), 정식 표기를 "NextLift — Train. Judge. Progress."로 확정(APP_TAGLINE 변경 + app.js 결합
+// 구분자 em dash 적용), manifest background/theme_color를 아이콘 배경색(#000000)에 맞춤, 부팅 시
+// 흰 화면 깜빡임 방지용 Splash Screen 추가(index.html 정적 레이어 + app.js 최소 1초 노출 후 제거).
+// 계산 로직·데이터 구조·localStorage(STORAGE_KEY)·백업 구조·SCHEMA_VERSION은 전부 무변경입니다.
+export const APP_VERSION = "v3.1.2";

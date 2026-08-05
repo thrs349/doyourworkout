@@ -22,14 +22,14 @@ import { renderHistory } from "./ui/screens/history.js";
 // 앱 이름은 core/appConfig.js 한 곳에서만 관리합니다. 이 함수가 그 값을
 // 문서 제목과 PWA manifest(name/short_name)에 실행 시점에 반영합니다.
 function applyAppIdentity() {
-  document.title = `${APP_NAME} - ${APP_TAGLINE}`;
+  document.title = `${APP_NAME} — ${APP_TAGLINE}`;
 
   const manifestLink = document.querySelector('link[rel="manifest"]');
   if (!manifestLink) return;
   fetch(manifestLink.href)
     .then((res) => res.json())
     .then((base) => {
-      const manifest = { ...base, name: `${APP_NAME} - ${APP_TAGLINE}`, short_name: APP_NAME };
+      const manifest = { ...base, name: `${APP_NAME} — ${APP_TAGLINE}`, short_name: APP_NAME };
       const blob = new Blob([JSON.stringify(manifest)], { type: "application/json" });
       manifestLink.href = URL.createObjectURL(blob);
     })
@@ -65,6 +65,23 @@ function checkDraftRecovery() {
     ]),
   ]);
   const close = openModal(content, { dismissible: false });
+}
+
+// v3.1.2: Splash 최소 노출 시간 관리. 실제 부트스트랩(state.init~initRouter 첫 렌더링)은 이미 동기적으로
+// 끝나 있으므로, 이 타이머는 "앱 실행을 지연"시키는 게 아니라 이미 준비된 화면 위에 떠 있는 splash를
+// 최소 1초는 유지했다가 치우는 순수 연출용 지연입니다. 로딩이 1초보다 오래 걸리는 경우(느린 기기 등)에는
+// remaining이 0이 되어 추가 대기 없이 즉시 제거됩니다 — 실제 로딩보다 길게 강제 대기하지 않습니다.
+const SPLASH_MIN_MS = 1000;
+const splashStartedAt = performance.now();
+
+function hideSplash() {
+  const splash = document.getElementById("splash");
+  if (!splash) return;
+  const remaining = Math.max(0, SPLASH_MIN_MS - (performance.now() - splashStartedAt));
+  setTimeout(() => {
+    splash.classList.add("splash-hide");
+    setTimeout(() => splash.remove(), 260); // CSS transition(.25s) 종료 후 DOM에서 완전히 제거
+  }, remaining);
 }
 
 function bootstrap() {
@@ -106,6 +123,7 @@ function bootstrap() {
   initRouter(root, "#/home");
   initExitGuard();
   checkDraftRecovery();
+  hideSplash();
 }
 
 if (document.readyState === "loading") {

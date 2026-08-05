@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#D6FF3D">
-<title>Do Your Workout - 운동 헌장 앱</title>
+<meta name="theme-color" content="#000000">
+<title>NextLift — Train. Judge. Progress.</title>
 <link rel="manifest" href="./manifest.json">
-<link rel="icon" href="./icons/icon.svg?v=3" type="image/svg+xml">
-<link rel="apple-touch-icon" href="./icons/icon.svg?v=3">
+<link rel="icon" href="./icons/icon.png?v=4" type="image/png">
+<link rel="apple-touch-icon" href="./icons/icon.png?v=4">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./css/tokens.css">
@@ -16,6 +16,13 @@
 <link rel="stylesheet" href="./css/screens.css">
 </head>
 <body>
+  <!-- v3.1.2: NextLift 브랜딩 Splash. index.html에 정적으로 배치해 JS 실행 전(첫 페인트 시점)부터
+       바로 표시되도록 하여 흰 화면 깜빡임을 막습니다. app.js의 bootstrap() 완료 후 최소 1초를
+       채우고 나서 자동으로 제거/페이드아웃됩니다(js/app.js의 hideSplash 참고). -->
+  <div id="splash">
+    <img src="./icons/icon.png?v=4" alt="NextLift" width="96" height="96">
+    <div class="splash-tagline">Train. Judge. Progress.</div>
+  </div>
   <div id="app"></div>
   <script type="module" src="./js/app.js"></script>
 </body>

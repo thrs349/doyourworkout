@@ -185,7 +185,7 @@ export function renderSettings(root) {
         const parsed = await state.readBackupFile(file);
         confirmRestore(parsed);
       } catch (err) {
-        showAlert("올바른 Do Your Workout 백업 파일이 아닙니다."); // v2.6.1: 네이티브 alert() 대신 앱 통일 팝업 스타일 사용
+        showAlert("올바른 NextLift 백업 파일이 아닙니다."); // v2.6.1: 네이티브 alert() 대신 앱 통일 팝업 스타일 사용
       }
     },
   });
