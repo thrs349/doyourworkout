@@ -79,8 +79,8 @@ h1, h2, h3, p {
 }
 #splash img {
   display: block;
-  width: 42vw;
-  max-width: 315px;
+  width: 41vw;
+  max-width: 308px;
   aspect-ratio: 1 / 1;
   height: auto;
   object-fit: contain;
