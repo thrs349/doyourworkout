@@ -58,7 +58,7 @@ h1, h2, h3, p {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 20px;
   background: #000000;
   transition: opacity .25s ease;
 }
@@ -66,10 +66,17 @@ h1, h2, h3, p {
   opacity: 0;
   pointer-events: none;
 }
+/* v3.1.2 2차 보정: 갤럭시 S25(CSS 뷰포트 360px, DPR 3) 기준 OS 네이티브 스플래시 아이콘 실측 비율
+   (화면폭 대비 약 36.2%)에 더 가깝게 32vw -> 34vw로 상향. vw는 CSS 뷰포트 기준으로 계산되므로
+   기기의 물리 해상도/DPR과 무관하게 항상 동일한 화면 대비 비율을 유지합니다. max-width는 폰 화면
+   에서는 사실상 작동하지 않는 값이고(갤럭시 S25 기준 34vw=122.4px로 260px보다 훨씬 작음), 태블릿
+   등 넓은 화면에서만 과도하게 커지는 것을 막는 상한입니다. */
 #splash img {
   display: block;
-  width: 96px;
-  height: 96px;
+  width: 34vw;
+  max-width: 260px;
+  aspect-ratio: 1 / 1;
+  height: auto;
   object-fit: contain;
 }
 #splash .splash-tagline {
