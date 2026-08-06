@@ -12,6 +12,16 @@
 /* v2.4.6: 루틴 설정 화면은 뒤로가기 버튼이 없어 "운동 관리" 버튼 하나만 정상 flex 흐름에 남습니다.
    justify-content:space-between은 자식이 1개면 좌측에 붙이므로, 우측 정렬을 명시적으로 유지합니다. */
 #routine-list-screen .topbar { justify-content: flex-end; }
+/* v3.1.3: 루틴 편집 화면은 상단 우측에 복사(⎘)+수정(✎) 버튼 2개가 나란히 있어, 이 둘을 하나의
+   컨테이너로 묶어 순서(복사→수정)를 보장합니다. 제목은 여전히 화면 정중앙에 절대 위치로 고정되는
+   전역 규칙(.topbar .title)을 그대로 따르므로, 버튼이 2개로 늘어난 이 화면에서만 제목이 버튼
+   클러스터와 겹칠 수 있어 폭 제한(ellipsis)과 pointer-events:none(제목 자체는 클릭 대상이 아니므로
+   겹치더라도 아래 버튼의 터치가 항상 우선되도록)을 이 화면에만 스코프해 추가합니다. 아이콘은 터치
+   영역(30x30px)은 그대로 두고 글리프 크기만 14px -> 17px로 키워 선명하게 보이도록 합니다(이 화면의
+   topbar-actions 안에서만 적용, 다른 화면의 icon-btn에는 영향 없음). */
+#routine-editor-screen .topbar .title { max-width: calc(100% - 160px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
+.topbar-actions { display: flex; align-items: center; gap: 4px; }
+#routine-editor-screen .topbar-actions .icon-btn { font-size: 17px; }
 .icon-btn {
   width: 30px; height: 30px; border-radius: 9px; background: transparent;
   border: 1.5px solid var(--color-text-secondary); display: flex; align-items: center; justify-content: center;

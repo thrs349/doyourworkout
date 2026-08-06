@@ -254,8 +254,10 @@ export function renderRoutineEditor(root, params) {
     el("div", { class: "topbar" }, [
       el("button", { class: "icon-btn", text: "←", onclick: () => safeBack() }),
       titleEl,
-      el("button", { class: "icon-btn", text: "⎘", title: "루틴 복사", onclick: () => openDayPickerModal() }),
-      el("button", { class: "icon-btn", text: "✎", onclick: renameTitle }),
+      el("div", { class: "topbar-actions" }, [
+        el("button", { class: "icon-btn", text: "⎘", title: "루틴 복사", onclick: () => openDayPickerModal() }),
+        el("button", { class: "icon-btn", text: "✎", onclick: renameTitle }),
+      ]),
     ]),
     el("div", { class: "helper-text", text: "≡ 핸들을 눌러 드래그하면 순서가 바뀝니다." }),
     renderList(),

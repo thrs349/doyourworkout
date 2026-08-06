@@ -149,8 +149,9 @@ export const APP_TAGLINE = "Train. Judge. Progress.";
 // (exerciseManage/exercisePicker 기본 가나다순 + 운동유형/운동부위 버튼 선택 시에만 그룹 정렬로 전환),
 // 하단 네비 '기록' 아이콘 변경(▤→↗) 및 서브텍스트("지난 운동") 제거를 반영합니다. 계산 로직·데이터 구조·
 // localStorage/JSON 백업 호환성·SCHEMA_VERSION은 전부 무변경입니다.
-// v3.1.3: 기능 패치 - Splash Screen 위치/크기 최종 확정(41vw/308px/gap 19px/15px/padding-top 7.0vh,
-// 더 이상 실험 버전 아님), 요일별 루틴 복사 기능 추가(routineEditor.js 상단 📋 버튼 → 요일 선택 모달 →
-// 기존 운동 있으면 덮어쓰기 확인 → 기본 버전 items만 복사, title은 대상 요일 값 유지). 계산 로직·
-// 데이터 구조·localStorage 키·SCHEMA_VERSION은 전부 무변경입니다.
-export const APP_VERSION = "v3.1.3";
+// v3.1.4: 버그 수정 - 루틴 편집 화면 상단바에서 복사(⎘)/수정(✎) 버튼이 제목과 겹쳐 터치가 어렵던
+// 문제를 수정합니다. 두 버튼을 topbar-actions 컨테이너로 묶어 순서(복사→수정)를 명확히 하고,
+// 이 화면에 한해 제목에 말줄임 처리(overflow ellipsis)와 pointer-events:none을 적용해 버튼 터치가
+// 항상 우선되도록 했습니다. 아이콘 글리프 크기만 14px->17px로 키우고 터치 영역(30x30px)은 유지합니다.
+// 계산 로직·데이터 구조·SCHEMA_VERSION은 전부 무변경입니다.
+export const APP_VERSION = "v3.1.4";
