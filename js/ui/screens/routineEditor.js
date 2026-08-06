@@ -3,9 +3,10 @@
 import { el, mount } from "../dom.js";
 import { navigate, safeBack } from "../router.js";
 import * as state from "../../core/state.js";
-import { DAYS, effectiveRole } from "../../core/models.js";
+import { DAYS, DAYS_DISPLAY_ORDER, effectiveRole } from "../../core/models.js";
 import { openCueNoteEditor } from "../components/cueNoteEditor.js";
 import { openModal } from "../components/modal.js";
+import { showToast } from "../components/toast.js";
 
 // v2.7.0: 루틴 Editor 전용 읽기 전용 역할 표시. 확정된 디자인(🅼 Main/🅢 Assist/🅒 Core)을 그대로 사용합니다.
 // OS별 이모지 렌더링 차이 가능성은 검토 단계에서 안내드렸으나, 이번 버전은 이 확정안을 유지하기로 결정되었습니다.
@@ -191,12 +192,69 @@ export function renderRoutineEditor(root, params) {
     });
   }
 
+  // v3.1.3: 요일별 루틴 복사. 현재 화면(dayKey)의 기본 버전을 다른 요일로 복사합니다. 복사는 항상
+  // 현재 화면이 아닌 "다른 요일"의 데이터만 바꾸므로, 복사 후 이 화면 자체는 다시 그릴 필요가
+  // 없습니다(orderedIds/렌더된 목록 그대로 유지) — 모달을 닫고 토스트만 띄웁니다.
+  function runCopy(toDayKey, toLabel) {
+    state.copyRoutine(dayKey, toDayKey);
+    showToast(`${dayLabel}요일 루틴이 ${toLabel}요일에 복사되었습니다.`);
+  }
+
+  function confirmOverwrite(toDayKey, toLabel, closeDayPicker) {
+    const content = el("div", { class: "duration-modal" }, [
+      el("div", { class: "duration-title", text: `${toLabel}요일 루틴이 이미 있습니다` }),
+      el("div", { style: { margin: "0 0 16px" } }, [
+        el("p", { class: "detail", style: { textAlign: "center", margin: "0" }, text: "덮어쓸까요?" }),
+      ]),
+      el("div", { class: "btn-row-h" }, [
+        el("button", {
+          class: "btn btn-primary",
+          text: "덮어쓰기",
+          onclick: () => {
+            runCopy(toDayKey, toLabel);
+            closeConfirm();
+            closeDayPicker();
+          },
+        }),
+        el("button", { class: "btn btn-ghost", text: "취소", onclick: () => closeConfirm() }),
+      ]),
+    ]);
+    const closeConfirm = openModal(content, { dismissible: true });
+  }
+
+  function openDayPickerModal() {
+    const rows = DAYS_DISPLAY_ORDER.filter((d) => d.key !== dayKey).map((d) =>
+      el("button", {
+        class: "list-row",
+        style: { width: "100%" },
+        text: `${d.label}요일`,
+        onclick: () => {
+          if (state.hasRoutineItems(d.key)) {
+            confirmOverwrite(d.key, d.label, closeDayPicker);
+          } else {
+            runCopy(d.key, d.label);
+            closeDayPicker();
+          }
+        },
+      })
+    );
+    const content = el("div", { class: "duration-modal" }, [
+      el("div", { class: "duration-title", text: "붙여넣을 요일 선택" }),
+      el("div", {}, rows),
+      el("div", { class: "btn-row-h", style: { marginTop: "12px" } }, [
+        el("button", { class: "btn btn-ghost", text: "취소", onclick: () => closeDayPicker() }),
+      ]),
+    ]);
+    const closeDayPicker = openModal(content, { dismissible: true });
+  }
+
   const titleEl = el("div", { class: "title", text: `${version.title}` });
 
   const screen = el("div", { id: "routine-editor-screen", class: "screen-content" }, [
     el("div", { class: "topbar" }, [
       el("button", { class: "icon-btn", text: "←", onclick: () => safeBack() }),
       titleEl,
+      el("button", { class: "icon-btn", text: "⎘", title: "루틴 복사", onclick: () => openDayPickerModal() }),
       el("button", { class: "icon-btn", text: "✎", onclick: renameTitle }),
     ]),
     el("div", { class: "helper-text", text: "≡ 핸들을 눌러 드래그하면 순서가 바뀝니다." }),

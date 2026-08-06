@@ -210,6 +210,22 @@ export function renameRoutineVersion(dayKey, versionId, title) {
   persist();
 }
 
+// v3.1.3: 요일별 루틴 복사. 기본 버전(isDefault)의 items만 복사 대상이며, 대상 요일의 버전 title은
+// 그대로 유지합니다(운동 목록만 교체). exerciseId는 원래 전역 종목 목록을 가리키는 참조라 요일 간
+// 복사해도 참조가 깨지지 않습니다. structuredClone으로 원본/대상 items 배열 참조가 절대 공유되지
+// 않도록 합니다. 대상 요일에 이미 운동이 있는지 여부는 UI(routineEditor.js)에서 이 함수 호출 전에
+// hasRoutineItems()로 먼저 확인해 덮어쓰기 확인 모달을 띄우는 흐름입니다.
+export function hasRoutineItems(dayKey) {
+  return getDefaultVersion(dayKey).items.length > 0;
+}
+
+export function copyRoutine(fromDayKey, toDayKey) {
+  const fromVersion = getDefaultVersion(fromDayKey);
+  const toVersion = getDefaultVersion(toDayKey);
+  toVersion.items = structuredClone(fromVersion.items);
+  persist();
+}
+
 export function addExerciseToRoutine(dayKey, versionId, exerciseId) {
   const day = getRoutineDay(dayKey);
   const v = day.versions.find((v) => v.id === versionId);

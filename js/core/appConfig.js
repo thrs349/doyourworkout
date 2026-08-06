@@ -149,9 +149,8 @@ export const APP_TAGLINE = "Train. Judge. Progress.";
 // (exerciseManage/exercisePicker 기본 가나다순 + 운동유형/운동부위 버튼 선택 시에만 그룹 정렬로 전환),
 // 하단 네비 '기록' 아이콘 변경(▤→↗) 및 서브텍스트("지난 운동") 제거를 반영합니다. 계산 로직·데이터 구조·
 // localStorage/JSON 백업 호환성·SCHEMA_VERSION은 전부 무변경입니다.
-// v3.1.2: NextLift 브랜딩 적용 - 앱 이름/아이콘을 NextLift로 전환(v3.1.2 이전 턴에서 아이콘/APP_NAME
-// 선반영), 정식 표기를 "NextLift — Train. Judge. Progress."로 확정(APP_TAGLINE 변경 + app.js 결합
-// 구분자 em dash 적용), manifest background/theme_color를 아이콘 배경색(#000000)에 맞춤, 부팅 시
-// 흰 화면 깜빡임 방지용 Splash Screen 추가(index.html 정적 레이어 + app.js 최소 1초 노출 후 제거).
-// 계산 로직·데이터 구조·localStorage(STORAGE_KEY)·백업 구조·SCHEMA_VERSION은 전부 무변경입니다.
-export const APP_VERSION = "v3.1.2";
+// v3.1.3: 기능 패치 - Splash Screen 위치/크기 최종 확정(41vw/308px/gap 19px/15px/padding-top 7.0vh,
+// 더 이상 실험 버전 아님), 요일별 루틴 복사 기능 추가(routineEditor.js 상단 📋 버튼 → 요일 선택 모달 →
+// 기존 운동 있으면 덮어쓰기 확인 → 기본 버전 items만 복사, title은 대상 요일 값 유지). 계산 로직·
+// 데이터 구조·localStorage 키·SCHEMA_VERSION은 전부 무변경입니다.
+export const APP_VERSION = "v3.1.3";
