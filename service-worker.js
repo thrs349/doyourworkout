@@ -101,3 +101,5 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
+// trigger pages deployment
